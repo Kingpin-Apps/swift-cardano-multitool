@@ -3,9 +3,9 @@ import SystemPackage
 
 /// Environment variables
 enum Environment: String {
-    case config = "CSPO_TOOLS_CONFIG"
-    case configs = "CSPO_TOOLS_CONFIGS"
-    case decryptPassword = "CSPO_DECRYPT_PASSWORD"
+    case config = "CARDANO_MULTITOOL_CONFIG"
+    case configs = "CARDANO_MULTITOOL_CONFIGS"
+    case decryptPassword = "CARDANO_MULTITOOL_DECRYPT_PASSWORD"
     
     static func get(_ name: Environment) -> String? {
         guard let cString = getenv(name.rawValue) else {

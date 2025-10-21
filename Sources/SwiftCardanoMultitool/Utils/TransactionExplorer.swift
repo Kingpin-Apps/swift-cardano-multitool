@@ -1,5 +1,6 @@
 import Foundation
 import SwiftCardanoUtils
+import SwiftCardanoCore
 import Configuration
 
 /// Transaction explorer protocol

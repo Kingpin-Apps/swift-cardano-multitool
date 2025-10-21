@@ -2,6 +2,7 @@ import ArgumentParser
 import Noora
 import Foundation
 import SwiftFigletKit
+import Logging
 
 enum MainCommands: String, CaseIterable, CustomStringConvertible {
     case build
@@ -19,6 +20,7 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
     case transaction
     case version
     case workOffline = "work-offline"
+    case exit
     
     var description: String {
         switch self {
@@ -52,6 +54,8 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
                 return "Show version information"
             case .workOffline:
                 return "Work offline operations"
+            case .exit:
+                return "Exit the program."
         }
     }
     
@@ -87,15 +91,17 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
                 return VersionMainCommand.self
             case .workOffline:
                 return WorkOfflineMainCommand.self
+            case .exit:
+                return ExitCommand.self
         }
     }
 }
 
 @main
-struct CardanoSPOTools: AsyncParsableCommand {
+struct SwiftCardanoMultitool: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "cspo",
-        abstract: "Cardano SPO Tools - A collection of tools for Cardano Stake Pool Operators",
+        commandName: "scm",
+        abstract: "SwiftCardanoMultitool - A collection of tools for Cardano.",
         version: "0.1.0",
         subcommands: MainCommands.allCases.map { $0.command() },
         defaultSubcommand: nil
@@ -103,7 +109,7 @@ struct CardanoSPOTools: AsyncParsableCommand {
     
     func run() async throws {
         let greeting = SFKRenderer.render(
-            text: "Cardano SPO Tools",
+            text: "Swift Cardano Multitool",
             font: .named("ANSI Shadow"),
             color: .gradient(palette: [.blue, .white, .black]),
             options: .init(newline: true)
@@ -111,18 +117,11 @@ struct CardanoSPOTools: AsyncParsableCommand {
         
         print(greeting)
         
-        let noora = try await Terminal.shared.noora()
+        // Bootstrap Logging
+        LoggingSystem.bootstrap { label in
+            OSLogHandler(subsystem: "com.swift-cardano-multitool", category: label)
+        }
         
-        let selectedOption: MainCommands = noora.singleChoicePrompt(
-            title: "Select Command",
-            question: "Select the operation that you would like to perform.",
-            description: "CSPO Tools can help you manage and optimize your Cardano Stake Pool Operations."
-        )
-        
-        print(noora.format(
-            "Runing \(.command(selectedOption.rawValue)) command...\n"
-        ))
-        
-        await selectedOption.command().main()
+        await MainMenuCommand.main()
     }
 }

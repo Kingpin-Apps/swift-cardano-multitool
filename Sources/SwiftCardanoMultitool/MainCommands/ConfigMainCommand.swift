@@ -52,8 +52,6 @@ struct ConfigMainCommand: AsyncParsableCommand {
     )
     
     func run() async throws {
-        let noora = try await Terminal.shared.noora()
-        
         let selectedOption: ConfigCommands = noora.singleChoicePrompt(
             title: "Select Config Command",
             question: "Select the operation that you would like to perform.",
@@ -61,7 +59,7 @@ struct ConfigMainCommand: AsyncParsableCommand {
         )
         
         print(noora.format(
-            "Runing \(.command(selectedOption.rawValue)) command...\n"
+            "Running \(.command(selectedOption.rawValue)) command...\n"
         ))
         
         await selectedOption.command().main()

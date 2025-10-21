@@ -12,9 +12,10 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.2.0"),
         .package(url: "https://github.com/apple/swift-configuration", .upToNextMinor(from: "0.1.1")),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.6.3"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.1.5"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.2.7"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.1.23"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.1.11"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.1"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.2.0"),
         .package(url: "https://github.com/tuist/Noora", .upToNextMajor(from: "0.15.0")),
         .package(url: "https://github.com/wrkstrm/SwiftFigletKit.git", from: "1.3.0"),
         // Provides Crypto compatible APIs on Linux
@@ -33,6 +34,7 @@ let package = Package(
                 .product(name: "SystemPackage", package: "swift-system"),
                 .product(name: "SwiftCardanoUtils", package: "swift-cardano-utils"),
                 .product(name: "GnuPG", package: "swift-gnupg"),
+                .product(name: "SwiftCardanoChain", package: "swift-cardano-chain"),
                 .product(name: "SwiftCardanoCore", package: "swift-cardano-core"),
                 // Only link Crypto on Linux; on Apple platforms CryptoKit is available.
                 .product(name: "Crypto", package: "swift-crypto", condition: .when(platforms: [.linux])),

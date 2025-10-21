@@ -40,15 +40,23 @@ struct RunMainCommand: AsyncParsableCommand {
     )
     
     func run() async throws {
-        print("Use 'run --help' to see available subcommands")
+        let noora = try await Terminal.shared.noora()
+        
+        let selectedOption: RunCommands = noora.singleChoicePrompt(
+            title: "Select Run Command",
+            question: "Select the operation that you would like to perform.",
+            description: "Available commands:" ,
+        )
+        
+        print(noora.format(
+            "Running \(.command(selectedOption.rawValue)) command...\n"
+        ))
+        
+        await selectedOption.command().main()
     }
 }
 
 extension RunMainCommand {
-    struct Node: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Run cardano-node.")
-        func run() async throws { print("Run node command not yet implemented") }
-    }
     struct DbSync: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Run cardano-db-sync.")
         func run() async throws { print("Run db-sync command not yet implemented") }
@@ -60,13 +68,5 @@ extension RunMainCommand {
     struct SubmitApi: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Run cardano-submit-api.")
         func run() async throws { print("Run submit-api command not yet implemented") }
-    }
-    struct Ogmios: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Run Ogmios.")
-        func run() async throws { print("Run ogmios command not yet implemented") }
-    }
-    struct Kupo: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Run Kupo.")
-        func run() async throws { print("Run kupo command not yet implemented") }
     }
 }

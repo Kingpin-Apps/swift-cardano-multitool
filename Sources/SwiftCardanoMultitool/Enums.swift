@@ -1,11 +1,11 @@
 import ArgumentParser
 
-public enum LogLevel: String, CaseIterable, CodingKeyRepresentable, Codable, Hashable, Sendable {
-    case info = "info"
-    case debug = "debug"
-    case warn = "warn"
-    case error = "error"
-}
+//public enum LogLevel: String, CaseIterable, CodingKeyRepresentable, Codable, Hashable, Sendable {
+//    case info = "info"
+//    case debug = "debug"
+//    case warn = "warn"
+//    case error = "error"
+//}
 
 public enum Mode: String, CaseIterable, CodingKeyRepresentable, Codable, Hashable , Sendable{
     case auto = "auto"
@@ -96,6 +96,20 @@ public enum KeyGenMethod: String, CaseIterable, CustomStringConvertible, Express
                 return "Payment keys using Ledger/Trezor HW-Keys (MultiSig-Path 1854H/1815H/<Acc>/0/<Idx>), Staking keys via cli and encrypted via a Password."
             case .mnemonics:
                 return "Payment & Staking keys via cardano-cli or SwiftCardano library and also generates Mnemonics for LightWallet import possibilities."
+        }
+    }
+}
+
+public enum StartStopChoice: String, CaseIterable, CustomStringConvertible, ExpressibleByArgument, Sendable, Codable, Hashable {
+    case start
+    case stop
+    
+    public var description: String {
+        switch self {
+            case .start:
+                return "Start process"
+            case .stop:
+                return "Stop process"
         }
     }
 }

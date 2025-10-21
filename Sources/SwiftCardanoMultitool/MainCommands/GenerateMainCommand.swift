@@ -77,8 +77,6 @@ struct GenerateMainCommand: AsyncParsableCommand {
     )
     
     func run() async throws {
-        let noora = try await Terminal.shared.noora()
-        
         let selectedOption: GenerateCommands = noora.singleChoicePrompt(
             title: "Select Generate Command",
             question: "Select the operation that you would like to perform.",
@@ -86,7 +84,7 @@ struct GenerateMainCommand: AsyncParsableCommand {
         )
         
         print(noora.format(
-            "Runing \(.command(selectedOption.rawValue)) command...\n"
+            "Running \(.command(selectedOption.rawValue)) command...\n"
         ))
         
         await selectedOption.command().main()

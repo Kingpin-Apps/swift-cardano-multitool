@@ -1,6 +1,7 @@
 import Foundation
 import SystemPackage
 import ArgumentParser
+import SwiftCardanoCore
 import SwiftCardanoUtils
 import Configuration
 import Noora

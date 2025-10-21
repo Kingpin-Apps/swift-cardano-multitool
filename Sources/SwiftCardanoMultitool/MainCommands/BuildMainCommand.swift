@@ -5,6 +5,8 @@ import Noora
 enum BuildCommands: String, CaseIterable, CustomStringConvertible {
     case paymentAddress
     case stakeAddress
+    case back
+    case exit
     
     var description: String {
         switch self {
@@ -12,6 +14,10 @@ enum BuildCommands: String, CaseIterable, CustomStringConvertible {
                 return "Build a Cardano payment address from the Cardano-cli address key files."
             case .stakeAddress:
                 return "Build a Cardano stake address from the stake verification key file."
+            case .back:
+                return "Go back to the main menu."
+            case .exit:
+                return "Exit the program."
         }
     }
     
@@ -21,6 +27,10 @@ enum BuildCommands: String, CaseIterable, CustomStringConvertible {
                 return BuildMainCommand.PaymentAddress.self
             case .stakeAddress:
                 return BuildMainCommand.StakeAddress.self
+            case .back:
+                return MainMenuCommand.self
+            case .exit:
+                return ExitCommand.self
         }
     }
 }
@@ -32,9 +42,7 @@ struct BuildMainCommand: AsyncParsableCommand {
         subcommands: BuildCommands.allCases.map { $0.command() },
     )
     
-    func run() async throws {        
-        let noora = try await Terminal.shared.noora()
-        
+    func run() async throws {                
         let selectedOption: BuildCommands = noora.singleChoicePrompt(
             title: "Select Build Command",
             question: "Select the operation that you would like to perform.",
@@ -42,7 +50,7 @@ struct BuildMainCommand: AsyncParsableCommand {
         )
         
         print(noora.format(
-            "Runing \(.command(selectedOption.rawValue)) command...\n"
+            "Running \(.command(selectedOption.rawValue)) command...\n"
         ))
         
         await selectedOption.command().main()

@@ -205,6 +205,7 @@ extension GenerateMainCommand {
                     print(noora.format(
                         "Using \(.primary("SwiftCardano")) to generate address keys")
                     )
+                    
                     let paymentKeyPair = try PaymentKeyPair.generate()
                     try paymentKeyPair.verificationKey.save(to: paymentVKey.string)
                     try paymentKeyPair.signingKey.save(to: paymentSKey.string)

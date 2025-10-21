@@ -28,8 +28,6 @@ struct DownloadMainCommand: AsyncParsableCommand {
     )
     
     func run() async throws {
-        let noora = try await Terminal.shared.noora()
-        
         let selectedOption: DownloadCommands = noora.singleChoicePrompt(
             title: "Select Download Command",
             question: "Select the operation that you would like to perform.",
@@ -37,7 +35,7 @@ struct DownloadMainCommand: AsyncParsableCommand {
         )
         
         print(noora.format(
-            "Runing \(.command(selectedOption.rawValue)) command...\n"
+            "Running \(.command(selectedOption.rawValue)) command...\n"
         ))
         
         await selectedOption.command().main()

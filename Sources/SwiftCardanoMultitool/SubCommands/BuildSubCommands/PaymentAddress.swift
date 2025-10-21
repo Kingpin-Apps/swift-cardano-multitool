@@ -26,8 +26,6 @@ extension BuildMainCommand {
         
         /// Wizard to interactively gather missing parameters
         mutating func wizard() async throws {
-            let noora = try await Terminal.shared.noora()
-            
             let getAddressBy: GetAddressBy = try await getAddressBy()
             
             switch getAddressBy {
@@ -204,7 +202,7 @@ extension BuildMainCommand {
                 address = try Address(
                     paymentPart: .verificationKeyHash(try paymentVerificationKey.hash()),
                     stakingPart: stakingPart,
-                    network: config.cardano.network.network
+                    network: config.cardano.network.networkId
                 )
             }
             

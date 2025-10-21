@@ -859,13 +859,13 @@ extension GenerateMainCommand {
                 let paymentAddr = try Address(
                     paymentPart: .verificationKeyHash(_paymentVKey.hash()),
                     stakingPart: .verificationKeyHash(_stakeVKey.hash()),
-                    network: config.cardano.network.network
+                    network: config.cardano.network.networkId
                 )
                 try paymentAddr.save(to: paymentAddress.string)
                 
                 let stakeAddr = try Address(
                     stakingPart: .verificationKeyHash(_stakeVKey.hash()),
-                    network: config.cardano.network.network
+                    network: config.cardano.network.networkId
                 )
                 try stakeAddr.save(to: stakeAddress.string)
             }

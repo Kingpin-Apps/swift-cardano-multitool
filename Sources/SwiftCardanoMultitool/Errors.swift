@@ -10,6 +10,7 @@ public enum SwiftCardanoMultitoolError: Error, LocalizedError {
     case ioError(Error)
     case jsonError(String)
     case gpgNotFound
+    case notImplemented
     case gpgFailed(String)
     case invalidHex(String)
     case fileMissing(FilePath)
@@ -50,6 +51,8 @@ public enum SwiftCardanoMultitoolError: Error, LocalizedError {
                 return "Encryption Error: \(message)"
             case .decryptionError(let message):
                 return "Decryption Error: \(message)"
+            case .notImplemented:
+                return "This feature is not yet implemented"
         }
     }
 }

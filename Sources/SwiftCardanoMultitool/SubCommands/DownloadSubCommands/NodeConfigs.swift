@@ -2,6 +2,7 @@ import Foundation
 import ArgumentParser
 import Noora
 import SystemPackage
+import SwiftCardanoCore
 import SwiftCardanoUtils
 
 

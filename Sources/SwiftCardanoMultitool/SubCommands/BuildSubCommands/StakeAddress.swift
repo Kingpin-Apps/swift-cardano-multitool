@@ -152,7 +152,7 @@ extension BuildMainCommand {
                 address = try Address(
                     paymentPart: nil,
                     stakingPart: .verificationKeyHash(try stakeVerificationKey.hash()),
-                    network: config.cardano.network.network
+                    network: config.cardano.network.networkId
                 )
             }
             

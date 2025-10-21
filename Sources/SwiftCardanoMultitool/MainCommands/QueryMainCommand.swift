@@ -46,16 +46,21 @@ struct QueryMainCommand: AsyncParsableCommand {
     )
     
     func run() async throws {
-        print("Use 'query --help' to see available subcommands")
+        let selectedOption: QueryCommands = noora.singleChoicePrompt(
+            title: "Select Query Command",
+            question: "Select the operation that you would like to perform.",
+            description: "Query various data from the Cardano blockchain."
+        )
+        
+        print(noora.format(
+            "Running \(.command(selectedOption.rawValue)) command...\n"
+        ))
+        
+        await selectedOption.command().main()
     }
 }
 
 extension QueryMainCommand {
-    struct Tip: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Query the tip of the blockchain.")
-        func run() async throws { print("Query tip command not yet implemented") }
-    }
-    
     struct Balance: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Query balance of an address.")
         func run() async throws { print("Query balance command not yet implemented") }

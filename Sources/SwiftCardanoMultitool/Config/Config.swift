@@ -4,6 +4,7 @@ import Noora
 import Configuration
 import SystemPackage
 import SwiftCardanoUtils
+import Logging
 
 // MARK: - MultitoolConfigs Models
 @dynamicMemberLookup
@@ -99,6 +100,9 @@ public struct MultitoolConfig: Codable, Sendable {
     /// Blockfrost project ID for API access
     public var blockfrostProjectId: String?
     
+    /// API key for Koios access
+    public var koiosApiKey: String?
+    
     /// Cardano node and CLI configuration
     public var cardano: CardanoConfig
     
@@ -125,7 +129,7 @@ public struct MultitoolConfig: Codable, Sendable {
     public var adaHandlePolicy: NetworkPolicyIds
     
     /// Log level (info, debug, warn, error)
-    public var logLevel: LogLevel?
+    public var logLevel: Logger.Level?
     
     /// Whether to show version information
     public var showVersionInfo: Bool?
@@ -162,7 +166,7 @@ public struct MultitoolConfig: Codable, Sendable {
         tokenMetaServer: NetworkUrls,
         blockchainExplorer: BlockchainExplorer = .cexplorer,
         adaHandlePolicy: NetworkPolicyIds,
-        logLevel: LogLevel? = .warn,
+        logLevel: Logger.Level? = .info,
         showVersionInfo: Bool? = true,
         queryTokenRegistry: Bool? = true,
         cropTxOutput: Bool? = true
@@ -251,8 +255,8 @@ public struct MultitoolConfig: Codable, Sendable {
         
         self.logLevel = config.string(
             forKey: "\(key(.logLevel))",
-            as: LogLevel.self,
-            default: .warn
+            as: Logger.Level.self,
+            default: .info
         )
         
         self.showVersionInfo = config.bool(
@@ -291,7 +295,7 @@ public struct MultitoolConfig: Codable, Sendable {
                 preprod: "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a",
                 preview: "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a"
             ),
-            logLevel: .warn,
+            logLevel: .warning,
             showVersionInfo: true,
             queryTokenRegistry: true,
             cropTxOutput: true
