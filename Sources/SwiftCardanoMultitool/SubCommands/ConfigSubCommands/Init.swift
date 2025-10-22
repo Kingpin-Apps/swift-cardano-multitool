@@ -78,11 +78,8 @@ extension ConfigMainCommand {
             if !isDryRun {
                 try config.save(to: configPath!)
                 
-                print(
-                    noora.format(
-                        "Configuration file saved to: \(.path(try .init(validating: configPath!.string)))"
-                    ),
-                    terminator: "\n\n"
+                spacedPrint(
+                    "Configuration file saved to: \(.path(try .init(validating: configPath!.string)))"
                 )
                 
                 noora.success(

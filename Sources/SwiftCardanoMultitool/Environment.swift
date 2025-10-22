@@ -6,6 +6,7 @@ enum Environment: String {
     case config = "CARDANO_MULTITOOL_CONFIG"
     case configs = "CARDANO_MULTITOOL_CONFIGS"
     case decryptPassword = "CARDANO_MULTITOOL_DECRYPT_PASSWORD"
+    case blockfrostProjectId = "BLOCKFROST_PROJECT_ID"
     
     static func get(_ name: Environment) -> String? {
         guard let cString = getenv(name.rawValue) else {

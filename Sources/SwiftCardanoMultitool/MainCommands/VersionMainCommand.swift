@@ -10,9 +10,8 @@ struct VersionMainCommand: AsyncParsableCommand {
     )
     
     func run() async throws {
-        let noora = try await Terminal.shared.noora()
-        
         let config = try await MultitoolConfig.load()
+        
     #if DEBUG
         let version = "development"
     #else

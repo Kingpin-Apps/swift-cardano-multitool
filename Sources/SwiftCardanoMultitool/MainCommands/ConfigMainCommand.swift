@@ -4,7 +4,7 @@ import ArgumentParser
 enum ConfigCommands: String, CaseIterable, CustomStringConvertible {
     case `init`
     case show
-    case set
+    case select
     case network
     case node
     case paths
@@ -15,8 +15,8 @@ enum ConfigCommands: String, CaseIterable, CustomStringConvertible {
             return "Initialize a new configuration file."
         case .show:
             return "Show current configuration."
-        case .set:
-            return "Set configuration values."
+        case .select:
+            return "Select configuration values."
         case .network:
             return "Configure network settings."
         case .node:
@@ -32,8 +32,8 @@ enum ConfigCommands: String, CaseIterable, CustomStringConvertible {
             return ConfigMainCommand.Init.self
         case .show:
             return ConfigMainCommand.Show.self
-        case .set:
-            return ConfigMainCommand.Set.self
+        case .select:
+            return ConfigMainCommand.Select.self
         case .network:
             return ConfigMainCommand.Network.self
         case .node:
@@ -58,35 +58,15 @@ struct ConfigMainCommand: AsyncParsableCommand {
             description: "Config Commands:",
         )
         
-        print(noora.format(
+        spacedPrint(
             "Running \(.command(selectedOption.rawValue)) command...\n"
-        ))
+        )
         
-        await selectedOption.command().main()
+        await selectedOption.command().main([])
     }
 }
 
 extension ConfigMainCommand {
-    struct Show: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(
-            abstract: "Show current configuration."
-        )
-        
-        func run() async throws {
-            print("Config show command not yet implemented")
-        }
-    }
-    
-    struct Set: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(
-            abstract: "Set configuration values."
-        )
-        
-        func run() async throws {
-            print("Config set command not yet implemented")
-        }
-    }
-    
     struct Network: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Configure network settings."

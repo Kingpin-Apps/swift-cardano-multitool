@@ -11,10 +11,10 @@ struct MainMenuCommand: AsyncParsableCommand {
             description: "CSPO Tools can help you manage and optimize your Cardano Stake Pool Operations."
         )
         
-        print(noora.format(
+        spacedPrint(
             "Runing \(.command(selectedOption.rawValue)) command...\n"
-        ))
+        )
         
-        await selectedOption.command().main()
+        await selectedOption.command().main([])
     }
 }

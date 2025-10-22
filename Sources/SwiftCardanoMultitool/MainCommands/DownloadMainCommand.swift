@@ -38,7 +38,7 @@ struct DownloadMainCommand: AsyncParsableCommand {
             "Running \(.command(selectedOption.rawValue)) command...\n"
         ))
         
-        await selectedOption.command().main()
+        await selectedOption.command().main([])
     }
 }
 

@@ -124,4 +124,5 @@ struct SwiftCardanoMultitool: AsyncParsableCommand {
         
         await MainMenuCommand.main()
     }
+    
 }

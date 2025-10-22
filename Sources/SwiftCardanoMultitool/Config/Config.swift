@@ -8,8 +8,8 @@ import Logging
 
 // MARK: - MultitoolConfigs Models
 @dynamicMemberLookup
-struct MultitoolConfigs: Codable, Sendable {
-    public var configs: [String: FilePath] = [:]
+struct MultitoolConfigs: Sendable {
+    public var configs: [String: FilePath]
     
     subscript(dynamicMember key: String) -> FilePath? {
         get { configs[key] }
@@ -24,16 +24,30 @@ struct MultitoolConfigs: Codable, Sendable {
         configs.values
     }
     
-    /// Creates a new MultitoolConfigs using values from the provided reader.
-    ///
-    /// - Parameter config: The config reader to read configuration values from.
-    public init(config: ConfigReader) {
-        self.configs = config.string(
-            forKey: "configs",
-            as: Dictionary<String, FilePath>.self
-        ) ?? [:]
+    public init(configs: [String: FilePath]) {
+        self.configs = configs
+    }
+}
+
+// MARK: - MultitoolConfigs Codable
+extension MultitoolConfigs: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case configs
     }
     
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let configsDict = try container.decode([String: String].self, forKey: .configs)
+        self.configs = configsDict.mapValues { FilePath($0) }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        let configsDict = configs.mapValues { $0.string }
+        try container.encode(configsDict, forKey: .configs)
+    }
+    
+    /// Save the JSON representation to a file.
     /// Save the JSON representation to a file.
     /// - Parameter path: The file path.
     /// - Throws: An error if the file cannot be written.
@@ -52,8 +66,6 @@ struct MultitoolConfigs: Codable, Sendable {
     /// - Throws: An error if the file cannot be read or parsed.
     /// - Note: Environment variables will override values in the JSON file.
     static func load() async throws -> MultitoolConfigs {
-        let noora = Noora(theme: Style.theme, content: Style.content)
-        
         guard let configPath = Environment.getFilePath(.configs) else {
             noora.error(.alert("Unable to find configurations path.", takeaways: [
                 "Make sure the \(Environment.configs.rawValue) environment variable is set.",
@@ -70,8 +82,8 @@ struct MultitoolConfigs: Codable, Sendable {
             throw ExitCode.failure
         }
         
-        print(noora.format(
-            "Using config from: \(.primary(configPath.string))")
+        spacedPrint(
+            "Using configs from: \(.primary(configPath.string))"
         )
         
         return try await load(from: configPath)
@@ -81,14 +93,9 @@ struct MultitoolConfigs: Codable, Sendable {
     /// - Parameter path: The file path.
     /// - Returns: The loaded configuration.
     /// - Throws: An error if the file cannot be read or parsed.
-    /// - Note: Environment variables will override values in the JSON file.
     static func load(from path: FilePath) async throws -> MultitoolConfigs {
-        
-        let config = ConfigReader(providers: [
-            EnvironmentVariablesProvider(),
-            try await JSONProvider(filePath: .init(path.string))
-        ])
-        return MultitoolConfigs(config: config)
+        let data = try Data(contentsOf: URL(fileURLWithPath: path.string))
+        return try JSONDecoder().decode(MultitoolConfigs.self, from: data)
     }
 }
 
@@ -278,7 +285,7 @@ public struct MultitoolConfig: Codable, Sendable {
     static func `default`() throws -> MultitoolConfig {
         let cwd = FilePath(FileManager.default.currentDirectoryPath)
         return MultitoolConfig(
-            blockfrostProjectId: nil,
+            blockfrostProjectId: Environment.get(.blockfrostProjectId),
             cardano: try CardanoConfig.default(),
             ogmios: try? OgmiosConfig.default(),
             kupo: try? KupoConfig.default(),
@@ -338,9 +345,8 @@ public struct MultitoolConfig: Codable, Sendable {
             throw ExitCode.failure
         }
         
-        print(
-            noora.format("Using config from: \(.path(try .init(validating: configPath.string)))"),
-            terminator: "\n\n"
+        spacedPrint(
+            "Using config from: \(.path(try .init(validating: configPath.string)))"
         )
         
         return try await load(from: configPath)
