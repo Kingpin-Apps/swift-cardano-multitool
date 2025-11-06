@@ -10,6 +10,7 @@ enum GenerateCommands: String, CaseIterable, CustomStringConvertible {
     case paymentAddressOnly = "payment-address-only"
     case paymentAndStakeAddress = "payment-and-stake-address"
     case keyRotation = "key-rotation"
+    case rewardsWithdraw = "rewards-wirhdraw"
     case stakeAddressRegistrationCertificate = "stake-address-registration-certificate"
     case stakepoolRegistrationCertificate = "stakepool-registration-certificate"
     case stakepoolDeregistrationCertificate = "stakepool-deregistration-certificate"
@@ -32,6 +33,8 @@ enum GenerateCommands: String, CaseIterable, CustomStringConvertible {
             return "Generate a payment and stake address."
         case .keyRotation:
             return "Rotate KES Keys and Node Operational Certificate :param name: The name of the pools :param number_of_pools: The number of pools to rotate"
+        case .rewardsWithdraw:
+            return "Generate a rewards withdraw transaction."
         case .stakeAddressRegistrationCertificate:
             return "Generates the registration certificate name.stake.cert to register a stake-address from the blockchain."
         case .stakepoolRegistrationCertificate:
@@ -59,6 +62,8 @@ enum GenerateCommands: String, CaseIterable, CustomStringConvertible {
             return GenerateMainCommand.PaymentAndStakeAddress.self
         case .keyRotation:
             return GenerateMainCommand.KeyRotation.self
+        case .rewardsWithdraw:
+            return GenerateMainCommand.RewardsWithdraw.self
         case .stakeAddressRegistrationCertificate:
             return GenerateMainCommand.StakeAddressRegistrationCertificate.self
         case .stakepoolRegistrationCertificate:

@@ -21,7 +21,7 @@ public struct Style: Sendable {
         successAlertTitle: "✅ Success",
         successAlertRecommendedTitle: "Takeaways",
         infoAlertTitle: "🔎 Info",
-        infoAlertRecommendedTitle: "Takeaways",
+        infoAlertRecommendedTitle: "Details",
         choicePromptFilterTitle: "Filter",
         choicePromptInstructionWithoutFilter: "↑/↓/k/j up/down • enter confirm",
         choicePromptInstructionWithFilter: "↑/↓/k/j up/down • / filter • enter confirm",

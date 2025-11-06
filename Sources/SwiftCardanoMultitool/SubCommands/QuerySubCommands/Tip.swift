@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 import Noora
-
+import SwiftCardanoChain
 
 extension QueryMainCommand {
     struct Tip: AsyncParsableCommand {
@@ -12,11 +12,40 @@ extension QueryMainCommand {
             
             let context = try await getContext(config: config)
             
-            let tip = try await context.lastBlockSlot()
+            try await printInfo(config: config, context: context)
             
-            print(noora.format(
-                "Current Tip: \(.primary(tip.description)) \(.muted("(via \(String(describing: type(of: context))))"))"
-            ))
+            if let context = context as? CardanoCliChainContext {
+                let chainTip = try await noora.progressStep(
+                    message: "Querying blockchain tip...",
+                    successMessage: "Successfully retrieved the blockchain tip.",
+                    errorMessage: "Failed to retrieve the blockchain tip.",
+                    showSpinner: true
+                ) { updateMessage in
+                    return try await context.queryChainTip()
+                }
+                
+                spacedPrint(
+                    "\nCurrent Tip: "
+                )
+                try noora.json(chainTip)
+                
+                spacedPrint(
+                    "\n\n\(.muted("(via \(context.name))"))"
+                )
+            } else {
+                let tip = try await noora.progressStep(
+                    message: "Querying blockchain tip...",
+                    successMessage: "Successfully retrieved the blockchain tip.",
+                    errorMessage: "Failed to retrieve the blockchain tip.",
+                    showSpinner: true
+                ) { updateMessage in
+                    return try await context.lastBlockSlot()
+                }
+                
+                spacedPrint(
+                    "Current Tip: \(.primary(tip.description)) \(.muted("(via \(context.name))"))"
+                )
+            }
         }
     }
 }

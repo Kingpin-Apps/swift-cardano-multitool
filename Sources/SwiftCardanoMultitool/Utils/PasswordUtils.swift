@@ -68,8 +68,6 @@ public class PasswordUtils {
         allowEmpty: Bool = false,
         validateStrength: Bool = true
     ) async throws -> String {
-        let noora = try await Terminal.shared.noora()
-        
         func abort() throws {
             if let files = cleanup {
                 for file in files {
@@ -110,7 +108,6 @@ public class PasswordUtils {
     }
     
     public static func getConfirmedPassword(prompt: TerminalText, cleanup: [FilePath]? = nil) async throws-> String {
-        let noora = try await Terminal.shared.noora()
         print(
             noora.format("Please provide a strong password \(.primary("(min. 10 chars, uppercase, lowercase, special chars)")) for the encryption ...\n"),
             terminator: "\n\n"
@@ -166,7 +163,7 @@ public class PasswordUtils {
             description: "Choose 'Yes' to display the password briefly, or 'No' to keep it hidden."
         )
         if response {
-            _ = try await Noora().progressStep(
+            _ = try await noora.progressStep(
                 message: "Chosen password is '\(pass1)' ",
                 successMessage: "Visual confirmation done.",
                 errorMessage: "Failed to show the password.",
@@ -183,7 +180,6 @@ public class PasswordUtils {
     // MARK: - Utilities
     
     private static func readSecureLine(prompt: TerminalText) async throws -> String? {
-        let noora = try await Terminal.shared.noora()
         let response = noora.secureTextPrompt(
             title: "Secure Input",
             prompt: prompt,

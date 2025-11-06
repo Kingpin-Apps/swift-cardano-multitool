@@ -61,7 +61,6 @@ struct FileUtils {
         do {
             try checkFileNotExists(path)
         } catch {
-            let noora = try await Terminal.shared.noora()
             noora.error(
                 .alert(
                     "File already exists at path: \(.path(try .init(validating: path.string)))",
@@ -97,7 +96,6 @@ struct FileUtils {
         do {
             try chmodFile(path, perms: "400")
         } catch {
-            let noora = try await Terminal.shared.noora()
             noora.warning(.alert("Could not lock file: \(.path(try .init(validating: path.string)))"))
         }
     }
@@ -110,7 +108,6 @@ struct FileUtils {
             do {
                 try chmodFile(path, perms: "600")
             } catch {
-                let noora = try await Terminal.shared.noora()
                 noora.error(
                     .alert(
                         "Could not unlock file: \(.path(try .init(validating: path.string)))",
@@ -130,7 +127,6 @@ struct FileUtils {
     /// - Parameter files: Files to unlock and remove.
     /// - Throws: Always throws `ExitCode.failure` after completion.
     static func terminate(_ files: [FilePath]) async throws -> Never {
-        let noora = try await Terminal.shared.noora()
         try await noora.progressStep(
             message: "Cleaning up files...",
             successMessage: "Files removed.",

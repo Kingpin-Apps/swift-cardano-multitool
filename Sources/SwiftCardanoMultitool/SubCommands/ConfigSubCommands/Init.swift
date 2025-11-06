@@ -19,8 +19,6 @@ extension ConfigMainCommand {
         
         /// Wizard to interactively gather missing parameters
         mutating func wizard() async throws {
-            let noora = try await Terminal.shared.noora()
-            
             self.isDryRun = noora.yesOrNoChoicePrompt(
                 title: "Is Dry Run",
                 question: "Perform a dry run without writing the file?",
@@ -62,7 +60,6 @@ extension ConfigMainCommand {
                 try await self.wizard()
             }
             
-            let noora = try await Terminal.shared.noora()
             let config = try MultitoolConfig.default()
             
             let encoder = JSONEncoder()

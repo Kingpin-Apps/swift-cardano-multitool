@@ -1,5 +1,17 @@
 import Logging
+import SwiftCardanoUtils
 import os
+
+public func getLogger(config: MultitoolConfig) -> Logging.Logger {
+    var logger = Logger(
+        label: "com.swift-cardano-multitool",
+        factory: { label in
+            OSLogHandler(subsystem: "com.swift-cardano-multitool", category: label)
+        }
+    )
+    logger.logLevel = config.logLevel ?? .error
+    return logger
+}
 
 struct OSLogHandler: LogHandler {
     let logger: os.Logger

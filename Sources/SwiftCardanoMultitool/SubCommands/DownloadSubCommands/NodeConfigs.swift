@@ -26,8 +26,6 @@ extension DownloadMainCommand {
         
         /// Wizard to interactively gather missing parameters
         mutating func wizard() async throws {
-            let noora = try await Terminal.shared.noora()
-            
             network = noora.singleChoicePrompt(
                 title: "Cardano Network",
                 question: "Select the Cardano network to download configs for:",
@@ -65,8 +63,6 @@ extension DownloadMainCommand {
             if network == nil {
                 try await self.wizard()
             }
-            
-            let noora = try await Terminal.shared.noora()
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
             

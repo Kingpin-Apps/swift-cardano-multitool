@@ -1,5 +1,5 @@
 {
-  "originHash" : "17aa77e4a4c537ca8656a169cb68421775f5830068f6a5cc1c3315e7f07cf66c",
+  "originHash" : "1a9ed80a346c4ba21a90b976a421637b561c36e944cc1a3fdefdeaf9d7465452",
   "pins" : [
     {
       "identity" : "base32",
@@ -168,8 +168,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
       "state" : {
-        "revision" : "6717e3e0c5bb0c765f23d401d73557f0cf3ecc42",
-        "version" : "0.1.24"
+        "revision" : "55193d99529d4226de1e6513b3fb568186dda746",
+        "version" : "0.1.39"
       }
     },
     {
@@ -177,8 +177,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "b6d7f6913415cdd28078f3ae5d9aee8f87d2d731",
-        "version" : "0.2.8"
+        "revision" : "35d01b8d35c9fdd73659063a11c8e4059905fd69",
+        "version" : "0.2.21"
+      }
+    },
+    {
+      "identity" : "swift-cardano-txbuilder",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git",
+      "state" : {
+        "revision" : "8a0f31346d3f73d3c825bcb6acfddaf671292ef5",
+        "version" : "0.2.0"
       }
     },
     {
@@ -186,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-utils.git",
       "state" : {
-        "revision" : "98f59a672cf26ff0bbe20697c7c3693161beb8b0",
-        "version" : "0.1.12"
+        "revision" : "6bde91783827ae4be3ad02f34a8a37bbfa154dfb",
+        "version" : "0.1.21"
       }
     },
     {
@@ -258,8 +267,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-koios.git",
       "state" : {
-        "revision" : "8cd7d3f5ae75101ab7ae5eee1a27312017bd6896",
-        "version" : "0.1.2"
+        "revision" : "261c2053269f26727e4bc8cbb4661edd15dc6e16",
+        "version" : "0.1.4"
       }
     },
     {
@@ -368,6 +377,15 @@
       "state" : {
         "revision" : "075344faec47dadba98bef6a319e310c98be0820",
         "version" : "0.2.1"
+      }
+    },
+    {
+      "identity" : "version",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mxcl/Version.git",
+      "state" : {
+        "revision" : "67ce582bb9de70e1eb2ee41fd71aad3b5f86d97b",
+        "version" : "2.2.0"
       }
     },
     {

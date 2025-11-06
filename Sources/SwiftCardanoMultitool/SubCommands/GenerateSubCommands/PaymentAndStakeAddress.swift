@@ -73,9 +73,7 @@ extension GenerateMainCommand {
         }
         
         /// Wizard to interactively gather missing parameters
-        mutating func wizard() async throws {
-            let noora = try await Terminal.shared.noora()
-            
+        mutating func wizard() async throws {            
             addressName = noora.textPrompt(
                 title: "Address Name",
                 prompt: "Enter the name of the address (without .payment.addr or .stake.addr):",
@@ -159,8 +157,6 @@ extension GenerateMainCommand {
             if addressName == nil && keyGenMethod == nil {
                 try await self.wizard()
             }
-            
-            let noora = try await Terminal.shared.noora()
             
             let config = try await MultitoolConfig.load()
             

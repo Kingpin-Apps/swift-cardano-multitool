@@ -13,6 +13,7 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
     case download
     case get
     case generate
+    case protect
     case query
     case register
     case run
@@ -40,6 +41,8 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
                 return "Get various data from the Cardano node"
             case .generate:
                 return "Generate operations"
+            case .protect:
+                return "Protect operations"
             case .query:
                 return "Query operations"
             case .register:
@@ -77,6 +80,8 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
                 return GetMainCommand.self
             case .generate:
                 return GenerateMainCommand.self
+            case .protect:
+                return ProtectMainCommand.self
             case .query:
                 return QueryMainCommand.self
             case .register:
@@ -102,7 +107,7 @@ struct SwiftCardanoMultitool: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "scm",
         abstract: "SwiftCardanoMultitool - A collection of tools for Cardano.",
-        version: "0.1.0",
+        version: SwiftCardanoMultitool.version?.description ?? "",
         subcommands: MainCommands.allCases.map { $0.command() },
         defaultSubcommand: nil
     )

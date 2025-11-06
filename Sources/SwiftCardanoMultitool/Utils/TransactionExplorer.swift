@@ -5,7 +5,7 @@ import Configuration
 
 /// Transaction explorer protocol
 public protocol TransactionExplorable: Sendable {
-    func exploreTransaction(txHash: String, network: Network) async throws -> URL
+    func viewTransaction(txHash: String, network: Network) throws -> URL
 }
 
 /// Enum of supported blockchain explorers
@@ -36,11 +36,11 @@ public enum BlockchainExplorer: String, Codable, CaseIterable, CustomStringConve
 
 /// Transaction explorer for adastat.net
 public struct AdaStat: TransactionExplorable {
-    private let networkUrls: NetworkUrls = NetworkUrls(
+    private let networkUrls: NetworkURLs = NetworkURLs(
         mainnet: URL(string: "https://adastat.net")!,
     )
     
-    public func exploreTransaction(txHash: String, network: Network) async throws -> URL {
+    public func viewTransaction(txHash: String, network: Network) throws -> URL {
         switch network {
             case .mainnet:
                 return networkUrls.mainnet
@@ -55,13 +55,13 @@ public struct AdaStat: TransactionExplorable {
 
 /// Transaction explorer for cardanoscan.io
 public struct CardanoScan: TransactionExplorable {
-    private let networkUrls: NetworkUrls = NetworkUrls(
+    private let networkUrls: NetworkURLs = NetworkURLs(
         mainnet: URL(string: "https://cardanoscan.io")!,
         preprod: URL(string: "https://preprod.cardanoscan.io")!,
         preview: URL(string: "https://preview.cardanoscan.io")!
     )
     
-    public func exploreTransaction(txHash: String, network: Network) async throws -> URL {
+    public func viewTransaction(txHash: String, network: Network) throws -> URL {
         switch network {
             case .mainnet:
                 return networkUrls.mainnet
@@ -84,13 +84,13 @@ public struct CardanoScan: TransactionExplorable {
 
 /// Transaction explorer for cexplorer.io
 public struct Cexplorer: TransactionExplorable {
-    private let networkUrls: NetworkUrls = NetworkUrls(
+    private let networkUrls: NetworkURLs = NetworkURLs(
         mainnet: URL(string: "https://cexplorer.io")!,
         preprod: URL(string: "https://preprod.cexplorer.io")!,
         preview: URL(string: "https://preview.cexplorer.io")!
     )
     
-    public func exploreTransaction(txHash: String, network: Network) async throws -> URL {
+    public func viewTransaction(txHash: String, network: Network) throws -> URL {
         switch network {
             case .mainnet:
                 return networkUrls.mainnet
@@ -113,13 +113,11 @@ public struct Cexplorer: TransactionExplorable {
 
 /// Transaction explorer for eutxo.org
 public struct Eutxo: TransactionExplorable {
-    private let networkUrls: NetworkUrls = NetworkUrls(
+    private let networkUrls: NetworkURLs = NetworkURLs(
         mainnet: URL(string: "https://eutxo.org")!,
-        preprod: URL(string: "https://preprod.cexplorer.io")!,
-        preview: URL(string: "https://preview.cexplorer.io")!
     )
     
-    public func exploreTransaction(txHash: String, network: Network) async throws -> URL {
+    public func viewTransaction(txHash: String, network: Network) throws -> URL {
         switch network {
             case .mainnet:
                 return networkUrls.mainnet

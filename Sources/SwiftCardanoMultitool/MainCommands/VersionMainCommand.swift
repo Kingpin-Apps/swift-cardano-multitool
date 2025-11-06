@@ -12,11 +12,7 @@ struct VersionMainCommand: AsyncParsableCommand {
     func run() async throws {
         let config = try await MultitoolConfig.load()
         
-    #if DEBUG
-        let version = "development"
-    #else
-        let version = ProcessInfo.processInfo.environment["PACKAGE_VERSION"] ?? "unknown"
-    #endif
+        let version = SwiftCardanoMultitool.version?.description ?? "unknown"
         
         let cli = try await CardanoCLI(
             configuration: config.toSwiftCardanoUtilsConfig()

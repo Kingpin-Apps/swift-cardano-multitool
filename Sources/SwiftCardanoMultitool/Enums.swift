@@ -1,11 +1,5 @@
 import ArgumentParser
-
-//public enum LogLevel: String, CaseIterable, CodingKeyRepresentable, Codable, Hashable, Sendable {
-//    case info = "info"
-//    case debug = "debug"
-//    case warn = "warn"
-//    case error = "error"
-//}
+import SystemPackage
 
 public enum Mode: String, CaseIterable, CodingKeyRepresentable, Codable, Hashable , Sendable{
     case auto = "auto"
@@ -24,6 +18,23 @@ enum GetAddressBy: String, CaseIterable, CustomStringConvertible {
                 return "The name of the stem of the file."
             case .path:
                 return "The path to the file."
+        }
+    }
+}
+
+enum EnterAddressBy: String, CaseIterable, CustomStringConvertible {
+    case adahandle
+    case address
+    case path
+    
+    var description: String {
+        switch self {
+            case .adahandle:
+                return "The adahandle associated with the address."
+            case .address:
+                return "The address in Bech32 or Hex format."
+            case .path:
+                return "The path to the file containing the address."
         }
     }
 }
@@ -113,3 +124,17 @@ public enum StartStopChoice: String, CaseIterable, CustomStringConvertible, Expr
         }
     }
 }
+
+public enum SigningMethod {
+    case softwareKey(FilePath)
+    case hardwareWallet(FilePath)
+    
+    public var isHardware: Bool {
+        switch self {
+            case .hardwareWallet: return true
+            case .softwareKey: return false
+        }
+    }
+}
+
+

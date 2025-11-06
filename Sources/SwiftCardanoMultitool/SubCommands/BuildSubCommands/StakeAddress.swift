@@ -22,8 +22,6 @@ extension BuildMainCommand {
         
         /// Wizard to interactively gather missing parameters
         mutating func wizard() async throws {
-            let noora = try await Terminal.shared.noora()
-            
             let getAddressBy: GetAddressBy = try await getAddressBy()
             
             switch getAddressBy {
@@ -62,8 +60,6 @@ extension BuildMainCommand {
             if addressName == nil && stakeVkey == nil {
                 try await self.wizard()
             }
-            
-            let noora = try await Terminal.shared.noora()
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
             

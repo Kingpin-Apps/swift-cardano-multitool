@@ -147,8 +147,6 @@ public struct TextEnvelope: JSONLoadable, Sendable {
     /// - Returns: The loaded (and possibly decrypted) TextEnvelope.
     /// - Throws: An error if loading or decryption fails.
     public static func load(from path: FilePath) async throws -> Self {
-        let noora = try await Terminal.shared.noora()
-        
         do {
             try FileUtils.checkFileExists(path)
         } catch {

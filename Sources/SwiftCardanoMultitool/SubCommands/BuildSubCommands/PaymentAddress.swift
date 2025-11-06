@@ -85,8 +85,6 @@ extension BuildMainCommand {
                 try await self.wizard()
             }
             
-            let noora = try await Terminal.shared.noora()
-            
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
             let paymentAddress: FilePath

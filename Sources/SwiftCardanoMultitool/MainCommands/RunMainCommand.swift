@@ -39,9 +39,7 @@ struct RunMainCommand: AsyncParsableCommand {
         subcommands: RunCommands.allCases.map { $0.command() }
     )
     
-    func run() async throws {
-        let noora = try await Terminal.shared.noora()
-        
+    func run() async throws {        
         let selectedOption: RunCommands = noora.singleChoicePrompt(
             title: "Select Run Command",
             question: "Select the operation that you would like to perform.",

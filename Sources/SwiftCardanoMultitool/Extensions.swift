@@ -2,6 +2,7 @@ import Foundation
 import SystemPackage
 import ArgumentParser
 import SwiftCardanoCore
+import SwiftCardanoChain
 import SwiftCardanoUtils
 import Configuration
 import Noora
@@ -114,3 +115,106 @@ extension Noora {
         return passwordStr
     }
 }
+
+// MARK: - AddressInfo Struct
+
+/// Address information model for Cardano addresses
+/// Supports payment and stake addresses with metadata, UTxOs, and rewards
+extension AddressInfo: @retroactive _SendableMetatype {}
+extension AddressInfo: @retroactive ExpressibleByArgument {
+    
+    // MARK: ExpressibleByArgument
+    
+    public init?(argument: String) {
+        let trimmed = argument.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmed.hasPrefix("$") {
+            // Case 1: $adahandle
+            try? self.init(fromAdaHandle: trimmed)
+        }
+        else if trimmed.hasPrefix("addr") || trimmed.hasPrefix("stake") {
+            // Case 2: Bech32 address (starts with addr or stake)
+            try? self.init(fromAddressString: trimmed)
+        } else {
+            // Case 3: File name (e.g., owner.payment or owner)
+            var addressFileName = trimmed
+            let fileManager = FileManager.default
+            let currentDir = fileManager.currentDirectoryPath
+            let filePath = currentDir.appending(addressFileName)
+            
+            if fileManager.fileExists(atPath: filePath) {
+                try? self.init(fromFile: FilePath(filePath))
+            }
+            
+            let variations = [
+                "\(addressFileName).payment.addr",
+                "\(addressFileName).stake.addr",
+                "\(addressFileName).addr"
+            ]
+            
+            var foundFiles: [String] = []
+            for fileName in variations {
+                let filePath = currentDir.appending(fileName)
+                if fileManager.fileExists(atPath: filePath) {
+                    foundFiles.append(fileName)
+                }
+            }
+            
+            // Handle results
+            if !foundFiles.isEmpty, foundFiles.count == 1, let firstFile = foundFiles.first {
+                let filePath = currentDir.appending(firstFile)
+                try? self.init(fromFile: FilePath(filePath))
+            } else  {
+                return nil
+            }
+        }
+    }
+    
+    /// Address type and era formatted string
+    public func addressTypeEra() -> Void {
+        guard let type = self.type,
+              let era = self.era else {
+            print("\nAddress-Type / Era: UNKNOWN")
+            return
+        }
+        
+        let typeStr = type.description.capitalized
+        let eraStr = era.description.capitalized
+        spacedPrint(
+            "\nAddress-Type / Era: \(.primary("\(typeStr)")) / \(.primary("\(eraStr)"))"
+        )
+    }
+    
+    mutating func updateUTxOs(context: any ChainContext) async throws -> Void {
+        
+        guard let address = self.address else {
+            throw AddressInfoError.invalidAddress("Address is missing; cannot fetch UTxOs.")
+        }
+        
+        self.utxos = try await noora.progressStep(
+            message: "Fetching UTXOs for payment address via \(context.name)...",
+            successMessage: "Successfully retrieved UTXOs.",
+            errorMessage: "Failed to retrieve UTXOs.",
+            showSpinner: true
+        ) { updateMessage in
+            return try await context.utxos(address: address)
+        }
+    }
+    
+    mutating func updateStakeAddressInfo(context: any ChainContext) async throws -> Void {
+        
+        guard let address = self.address else {
+            throw AddressInfoError.invalidAddress("Address is missing; cannot fetch stake address info.")
+        }
+        
+        self.stakeAddressInfo = try await noora.progressStep(
+            message: "Fetching info for stake address via \(context.name)...",
+            successMessage: "Successfully retrieved stake address info.",
+            errorMessage: "Failed to retrieve stake address info.",
+            showSpinner: true
+        ) { updateMessage in
+            return try await context.stakeAddressInfo(address: address)
+        }
+    }
+}
+
