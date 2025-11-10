@@ -39,6 +39,32 @@ enum EnterAddressBy: String, CaseIterable, CustomStringConvertible {
     }
 }
 
+enum EnterDRepBy: String, CaseIterable, CustomStringConvertible {
+    case bech32
+    case hex
+    case path
+    case vkey
+    case skey
+    case mnemonics
+    
+    var description: String {
+        switch self {
+            case .bech32:
+                return "The DRep in Bech32 format."
+            case .hex:
+                return "The DRep in Hex format."
+            case .path:
+                return "The path to the file containing the DRep Id."
+            case .vkey:
+                return "The path to the verification key file."
+            case .skey:
+                return "The path to the signing key file."
+            case .mnemonics:
+                return "The mnemonics used to derive the DRep Id."
+        }
+    }
+}
+
 public enum KeyGenMethod: String, CaseIterable, CustomStringConvertible, ExpressibleByArgument, Sendable, Codable, Hashable {
 
     case cli = "cli"
@@ -133,6 +159,13 @@ public enum SigningMethod {
         switch self {
             case .hardwareWallet: return true
             case .softwareKey: return false
+        }
+    }
+    
+    public var path: FilePath {
+        switch self {
+            case .hardwareWallet(let path): return path
+            case .softwareKey(let path): return path
         }
     }
 }

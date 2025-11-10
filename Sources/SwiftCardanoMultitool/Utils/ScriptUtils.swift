@@ -4,6 +4,9 @@ import SwiftCardanoUtils
 import SwiftCardanoCore
 import Logging
 import Noora
+import ArgumentParser
+import SystemPackage
+
 
 /// Get the appropriate chain context based on the multitool configuration
 /// - Parameter config: The multitool configuration
@@ -11,13 +14,7 @@ import Noora
 public func getContext(config: MultitoolConfig) async throws -> any ChainContext {
     
     func getOnlineContext(config: MultitoolConfig) async throws -> CardanoCliChainContext {
-        var logger = Logger(
-            label: CardanoCLI.binaryName,
-            factory: { label in
-                OSLogHandler(subsystem: "com.swift-cardano-multitool", category: label)
-            }
-        )
-        logger.logLevel = config.logLevel ?? .error
+        let logger = getLogger(config: config)
         
         let cli = try await CardanoCLI(
             configuration: Config(cardano: config.cardano),
@@ -29,28 +26,16 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
     
     func getLiteContext(config: MultitoolConfig) async throws -> any ChainContext {
         if let blockfrostProjectId = config.blockfrostProjectId {
-//            spacedPrint(
-//                "Using \(.primary("Blockfrost"))."
-//            )
-            
             return try await BlockFrostChainContext(
                 projectId: blockfrostProjectId,
                 network: config.cardano.network
             )
         } else if let koiosApiKey = config.koiosApiKey {
-//            spacedPrint(
-//                "Using \(.primary("Koios")) with API Key."
-//            )
-            
             return try await KoiosChainContext(
                 apiKey: koiosApiKey,
                 network: config.cardano.network
             )
         } else {
-//            spacedPrint(
-//                "Using \(.primary("Koios")) with no API Key."
-//            )
-            
             return try await KoiosChainContext(
                 network: config.cardano.network
             )
@@ -62,10 +47,6 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
             do {
                 let cliContext = try await getOnlineContext(config: config)
                 try await cliContext.cli.checkOnline()
-                
-//                spacedPrint(
-//                    "Using \(.primary("Cardano-CLI"))."
-//                )
                 
                 return cliContext
             }
@@ -80,9 +61,6 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
                 return try await getLiteContext(config: config)
             }
         case .online:
-//            spacedPrint(
-//                "Using \(.primary("Cardano-CLI"))."
-//            )
             return try await getOnlineContext(config: config)
         case .lite:
             return try await getLiteContext(config: config)
@@ -93,8 +71,9 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
 }
 
 public func stakeAddressInfoSummary(
-    stakeAddressInfo: [StakeAddressInfo],
+    stakeAddressInfo: [SwiftCardanoCore.StakeAddressInfo],
     config: MultitoolConfig,
+    protocolParams: ProtocolParameters
 ) async throws {
     let entries = stakeAddressInfo.count
     let entryStr = entries == 1 ? "entry" : "entries"
@@ -112,11 +91,159 @@ public func stakeAddressInfoSummary(
     var rows: [StyledTableRow] = []
     
     for (idx, info) in stakeAddressInfo.enumerated() {
+        let stakeDelegation: TableCellStyle
+        
+        if info.stakeDelegation == nil {
+            stakeDelegation = .danger("✗ Not Delegated")
+        } else {
+            stakeDelegation = .primary(try info.stakeDelegation!.id())
+        }
+            
         rows.append([
             .plain("\(idx + 1)"),
             .primary("\(lovelaceToAdaString(UInt64(info.rewardAccountBalance))) (\(info.rewardAccountBalance) lovelaces)"),
-            .primary(try info.stakeDelegation!.id())
+            stakeDelegation
         ])
+    }
+    
+    noora.table(headers: headers, rows: rows)
+    
+    guard !stakeAddressInfo.isEmpty,
+          let stakeAddressInfo = stakeAddressInfo.first else {
+        noora.error(.alert(
+            "Stake Registration: \(.danger("✗ Not Registered"))",
+            takeaways: [
+                "Register the stake address before withdrawing rewards.",
+                "Use 'generate stake-address-registration' command to register."
+            ]
+        ))
+        throw ExitCode.failure
+    }
+    
+    spacedPrint(
+        "Staking Address is \(.success("✓ Registered")) on the chain with a deposit of \(.primary("\(stakeAddressInfo.stakeRegistrationDeposit ?? 0)")) lovelaces"
+    )
+    
+    if stakeAddressInfo.rewardAccountBalance == 0 {
+        noora.warning(.alert(
+            "Rewards Balance: \(.danger("0 lovelaces"))",
+            takeaway: "No rewards available to withdraw. \nWait for rewards to accumulate before claiming."
+            
+        ))
+    } else {
+        spacedPrint(
+            "Rewards Balance: \(.primary(lovelaceToAdaString(UInt64(stakeAddressInfo.rewardAccountBalance)))) \(.muted("(\(stakeAddressInfo.rewardAccountBalance) lovelaces)"))"
+        )
+    }
+    
+    
+    // If delegated to a pool, show the current pool ID
+    if let poolOperator = stakeAddressInfo.stakeDelegation {
+        spacedPrint(
+            "Account is delegated to a Pool with ID: \(.primary(try poolOperator.id()))"
+        )
+        
+        let koiosContext = try await KoiosChainContext(
+            apiKey: config.koiosApiKey,
+            network: config.cardano.network
+        )
+        
+        let poolInfo = try await noora.progressStep(
+            message: "Fetching stake pool info...",
+            successMessage: "Successfully retrieved stake pool info.",
+            errorMessage: "Failed to retrieve stake pool info.",
+            showSpinner: true
+        ) { updateMessage in
+            return try await withRetry() {
+                try await koiosContext.poolInfo(poolIds: [poolOperator.id()])
+            }
+        }
+        
+        if let poolDetails = poolInfo.first {
+            noora.info(.alert(
+                "Delegated Stake Pool Details:",
+                takeaways: [
+                    "Name: \(poolDetails.metaJson?.name ?? "N/A")",
+                    "Ticker: \(poolDetails.metaJson?.ticker ?? "N/A")",
+                    "Status: \(String(describing: poolDetails.poolStatus ?? .none))",
+                    "Pledge: \(poolDetails.pledge ?? "N/A")",
+                    "Live Pledge: \(poolDetails.livePledge ?? "N/A")",
+                    "Live Stake: \(poolDetails.liveStake ?? "N/A")",
+                    "Block Count: \(poolDetails.blockCount ?? 0)"
+                ]
+            ))
+        } else {
+            noora.warning(.alert(
+                "Failed to retrieve details for stake pool ID: \(try poolOperator.id())"
+            ))
+        }
+    } else {
+        spacedPrint(
+            "\(.danger("Account is not delegated to a Pool."))"
+        )
+    }
+    
+    
+    // Show the current status of the voteDelegation
+    if let voteDelegation = stakeAddressInfo.voteDelegation {
+        
+        spacedPrint(
+            "DRep Delegation: \(.success("✓ Delegated"))"
+        )
+        
+        switch voteDelegation.credential {
+            case .alwaysNoConfidence:
+                noora.info(.alert(
+                    "Voting-Power of Staking Address is currently set to: \(.primary("ALWAYS NO CONFIDENCE"))"
+                ))
+            case .alwaysAbstain:
+                noora.info(.alert(
+                    "Voting-Power of Staking Address is currently set to: \(.primary("ALWAYS ABSTAIN"))"
+                ))
+            case .scriptHash(_):
+                noora.info(.alert(
+                    "Voting-Power of Staking Address is delegated to the following DRep-Script:",
+                    takeaways: [
+                        "CIP129 DRep-ID: \(.primary(try voteDelegation.id((.bech32, .cip129))))",
+                        "Legacy DRep-ID: \(.primary(try voteDelegation.id((.bech32, .cip105))))",
+                        "DRep-HASH: \(.primary(try voteDelegation.id((.hex, .cip105))))",
+                    ]
+                ))
+            case .verificationKeyHash(_):
+                let drepId = try voteDelegation.id((.bech32, .cip129))
+                noora.info(.alert(
+                    "Voting-Power of Staking Address is delegated to the following DRep: \(.primary(drepId))",
+                    takeaways: [
+                        "CIP129 DRep-ID: \(.primary(try voteDelegation.id((.bech32, .cip129))))",
+                        "Legacy DRep-ID: \(.primary(try voteDelegation.id((.bech32, .cip105))))",
+                        "DRep-HASH: \(.primary(try voteDelegation.id((.hex, .cip105))))",
+                    ]
+                ))
+        }
+    } else {
+        
+        spacedPrint(
+            "\(.danger("Voting-Power of Staking Address is not delegated to a DRep."))"
+        )
+        
+        if protocolParams.protocolVersion.major >= 10 {
+            noora.warning(.alert(
+                "\(.danger("⚠️  You need to delegate your stake account to a DRep in order to claim your rewards!"))",
+                takeaway: "Run the appropriate generate and register command to delegate your stake account to a DRep."
+            ))
+        }
+    }
+    
+    if let govActionDeposits = stakeAddressInfo.govActionDeposits,
+       govActionDeposits.isEmpty == false {
+        noora.info(.alert(
+            "👀 Staking Address is used in the following \(govActionDeposits.count) governance action(s):",
+            takeaways: try govActionDeposits
+                .map({ (key: String, value: UInt64) in
+                    let govActionID = try GovActionID(from: .list([.string(key), .uint(UInt(value))]))
+                    return "\(.primary(try govActionID.id())) -> \(.primary("\(lovelaceToAdaString(value)) deposit"))"
+                })
+        ))
     }
     
 }
@@ -409,15 +536,148 @@ public func printInfo(
         )
     }
     
+    var takeaways: [TerminalText] = [
+        "Chain Context: \(.primary("\(context.name)"))",
+        "Scripts-Mode: \(.accent("\(config.mode.rawValue.capitalized)"))",
+        "Platform: \(.info(ProcessInfo.processInfo.operatingSystemVersionString))",
+        infoString
+    ]
+    
+    if let _ = context as? CardanoCliChainContext {
+        
+        let cli = try await CardanoCLI(
+            configuration: config.toSwiftCardanoUtilsConfig()
+        )
+        
+        let node = try await CardanoNode(
+            configuration: config.toSwiftCardanoUtilsConfig()
+        )
+        
+        let cliVersion = try await cli.version()
+        let nodeVersion = try await node.version()
+        
+        takeaways.append("Cardano-CLI: \(.primary(cliVersion))")
+        takeaways.append("Cardano-Node: \(.primary(nodeVersion))")
+    }
+        
+    
     noora.info(
         .alert(
             "SwiftCardanoMultitool v\(version)",
-            takeaways: [
-                "Chain Context: \(.primary("\(context.name)"))",
-                "Scripts-Mode: \(.accent("\(config.mode.rawValue.capitalized)"))",
-                infoString
-            ]
+            takeaways: takeaways
         )
     )
     spacedPrint("")
+}
+
+// MARK: - Get Current Protocol Parameters
+
+/// Retrieves the current protocol parameters from the chain context and saves them to a file
+/// - Parameters:
+///   - context: The chain context to use for querying protocol parameters
+///   - protocolParamsFile: The file path to save protocol parameters
+/// - Returns: The retrieved protocol parameters
+public func getProtocolParameters(
+    context: any ChainContext,
+    protocolParamsFile: FilePath? = nil
+) async throws -> ProtocolParameters {
+    let protocolParams = try await noora.progressStep(
+        message: "Querying protocol parameters...",
+        successMessage: "Successfully retrieved protocol parameters.",
+        errorMessage: "Failed to retrieve protocol parameters.",
+        showSpinner: true
+    ) { updateMessage in
+        return try await context.protocolParameters()
+    }
+    
+    if let protocolParamsFile = protocolParamsFile {
+        try protocolParams.save(to: protocolParamsFile.string, overwrite: true)
+    }
+    
+    return protocolParams
+}
+
+// MARK: - Chain State Querying
+
+/// Queries chain state for stake address info
+/// - Parameters:
+///   - context: The chain context to use for querying
+///   - config: The multitool configuration
+///   - protocolParamsFile: The file path to save protocol parameters
+/// - Returns: A tuple containing the current tip, calculated TTL, and protocol parameters
+public func queryChainState(
+    context: any ChainContext,
+    config: MultitoolConfig,
+) async throws -> (tip: Int, ttl: Int) {
+    // Query chain state
+    print(noora.format(
+        "\n\(.primary("━━━ Querying Chain State ━━━"))\n"
+    ))
+    
+    let tip = try await noora.progressStep(
+        message: "Querying blockchain tip...",
+        successMessage: "Successfully retrieved the blockchain tip.",
+        errorMessage: "Failed to retrieve the blockchain tip.",
+        showSpinner: true
+    ) { updateMessage in
+        return try await context.lastBlockSlot()
+    }
+    
+    let ttl = tip + config.cardano.ttlBuffer
+    
+    return (tip, ttl)
+}
+
+/// Displays chain info to the user
+/// - Parameters:
+///   - context: The chain context to use for querying
+///   - tip: The current tip of the blockchain
+///   - ttl: The calculated TTL value
+public func displayChainInfo(
+    context: any ChainContext,
+    tip: Int,
+    ttl: Int
+) async throws {
+    // Display chain info
+    print(noora.format(
+        "\n\(.primary("━━━ Chain Status ━━━"))\n"
+    ))
+    
+    spacedPrint(
+        "Current Slot-Height: \(.primary("\(tip)")) \(.muted("(setting TTL[invalid_hereafter] to \(ttl))"))"
+    )
+    
+    spacedPrint(
+        "Current Epoch: ~\(try await context.epoch())"
+    )
+}
+
+/// Checks the size of the transaction against protocol limits
+/// - Parameters:
+///  - transaction: The transaction to check
+///  - protocolParameters: The protocol parameters containing size limits
+/// - Throws: ExitCode.failure if the transaction exceeds size limits
+public func checkTransactionSize(
+    transaction: Transaction,
+    protocolParameters: ProtocolParameters
+) throws -> Void {
+    let cborHex = try transaction.toCBORHex()
+    let txSize = cborHex.count / 2 // Each byte is represented by 2 hex characters
+    let maxTxSize = protocolParameters.maxTxSize
+    
+    if txSize > maxTxSize {
+        noora.error(.alert(
+            "Transaction size exceeds the maximum allowed size.",
+            takeaways: [
+                "Transaction size: \(txSize) bytes",
+                "Maximum allowed size: \(maxTxSize) bytes",
+                "Consider reducing the number of inputs or outputs."
+            ]
+        ))
+        throw ExitCode.failure
+    } else {
+        spacedPrint(
+            "\nTransaction size: \(.primary("\(txSize) bytes")) (within the limit of \(maxTxSize) bytes)"
+        )
+    }
 }

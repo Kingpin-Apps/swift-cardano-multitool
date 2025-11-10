@@ -26,8 +26,6 @@ extension ConfigMainCommand {
             
             Environment.set(.config, value: configPath.string)
             
-            let config = try await MultitoolConfig.load(from: configPath)
-            
             let encoder = JSONEncoder()
             encoder.outputFormatting = [
                 .prettyPrinted,

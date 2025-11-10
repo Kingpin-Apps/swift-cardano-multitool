@@ -16,9 +16,9 @@ public struct Style: Sendable {
     public static let content: Content = Content(
         errorAlertTitle: "❗️ Error",
         errorAlertRecommendedTitle: "Sorry this didn’t work. Here’s what to try next",
-        warningAlertTitle: "⚠️ Warning",
+        warningAlertTitle: "⚠️  Warning",
         warningAlertRecommendedTitle: "The following items may need attention",
-        successAlertTitle: "✅ Success",
+        successAlertTitle: "✅  Success",
         successAlertRecommendedTitle: "Takeaways",
         infoAlertTitle: "🔎 Info",
         infoAlertRecommendedTitle: "Details",
@@ -36,6 +36,4 @@ public struct Style: Sendable {
         yesOrNoChoicePromptPositiveText: YesNoAnswerContent(fullText: "Yes", character: "y"),
         yesOrNoChoicePromptNegativeText: YesNoAnswerContent(fullText: "No", character: "n")
     )
-    
-//    public static let noora = Noora(content: customContent, theme: theme)
 }

@@ -12,24 +12,8 @@ struct VersionMainCommand: AsyncParsableCommand {
     func run() async throws {
         let config = try await MultitoolConfig.load()
         
-        let version = SwiftCardanoMultitool.version?.description ?? "unknown"
+        let context = try await getContext(config: config)
         
-        let cli = try await CardanoCLI(
-            configuration: config.toSwiftCardanoUtilsConfig()
-        )
-        
-        let node = try await CardanoNode(
-            configuration: config.toSwiftCardanoUtilsConfig()
-        )
-        
-        let text: TerminalText = """
-        \(.raw("Cardano SPO Tools"))
-        Version: \(.info(version))
-        Platform: \(.info(ProcessInfo.processInfo.operatingSystemVersionString))
-        cardano-cli version: \(await .info(try cli.version()))
-        cardano-node version: \(await .info(try node.version()))
-        """
-        
-        print(noora.format(text))
+        try await printInfo(config: config, context: context)
     }
 }

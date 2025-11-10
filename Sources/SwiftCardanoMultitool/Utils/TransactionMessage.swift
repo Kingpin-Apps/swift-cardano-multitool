@@ -2,6 +2,7 @@ import Foundation
 import SystemPackage
 import SwiftCardanoCore
 import ArgumentParser
+import OrderedCollections
 
 #if canImport(CommonCrypto)
 import CommonCrypto
@@ -71,12 +72,14 @@ public struct TransactionMessage {
             return nil
         }
         
+        if messages?.isEmpty == true, metadataJson?.isEmpty == true, metadataCbor?.isEmpty == true {
+            return nil
+        }
+        
         var allMetadata = try Metadata([:])
         
-        
-        
         let transactionMessageMetadata: Metadata
-        if let messages = messages, messages.isEmpty {
+        if let messages = messages, !messages.isEmpty {
             
             switch encryption {
                 case .basic:
@@ -84,20 +87,28 @@ public struct TransactionMessage {
                     let encryptedMessages = try encryptMessagesBasic(messages: messages, passphrase: passphrase)
                     
                     transactionMessageMetadata = try Metadata(
-                        [674:
-                                .map([
-                                    .text("enc"): .text("basic"),
-                                    .text("msg"): .list(encryptedMessages.map({ .text($0) })),
-                                ]),
+                        [
+                            674: .map(
+                                OrderedDictionary(
+                                    uniqueKeysWithValues: [
+                                        .text("enc"): .text("basic"),
+                                        .text("msg"): .list(encryptedMessages.map({ .text($0) })),
+                                    ]
+                                )
+                            ),
                         ]
                     )
                 case .none:
                     // Plain text messages
                     transactionMessageMetadata = try Metadata(
-                        [674:
-                                .map([
-                                    .text("msg"): .list(messages.map({ .text($0) })),
-                                ]),
+                        [
+                            674: .map(
+                                OrderedDictionary(
+                                    uniqueKeysWithValues: [
+                                        .text("msg"): .list(messages.map({ .text($0) })),
+                                    ]
+                                )
+                            ),
                         ]
                     )
             }

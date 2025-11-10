@@ -100,7 +100,7 @@ extension MultitoolConfigs: Codable {
         }
         
         spacedPrint(
-            "Using configs from: \(.primary(path.string))"
+            "\nUsing configs from: \(.primary(path.string))"
         )
         
         let data = try Data(contentsOf: URL(fileURLWithPath: path.string))

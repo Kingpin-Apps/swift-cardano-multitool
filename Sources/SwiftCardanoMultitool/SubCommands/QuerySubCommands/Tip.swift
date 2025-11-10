@@ -9,9 +9,7 @@ extension QueryMainCommand {
         
         func run() async throws {
             let config = try await MultitoolConfig.load()
-            
             let context = try await getContext(config: config)
-            
             try await printInfo(config: config, context: context)
             
             if let context = context as? CardanoCliChainContext {

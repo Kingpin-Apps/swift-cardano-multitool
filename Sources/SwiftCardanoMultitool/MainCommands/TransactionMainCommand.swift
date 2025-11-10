@@ -11,6 +11,7 @@ enum TransactionCommands: String, CaseIterable, CustomStringConvertible {
     case calculateMinFee = "calculate-min-fee"
     case calculateMinRequiredUtxo = "calculate-min-required-utxo"
     case hashScriptData = "hash-script-data"
+    case rewardsWithdraw = "rewards-wirhdraw"
     case txid
     case view
     
@@ -25,6 +26,7 @@ enum TransactionCommands: String, CaseIterable, CustomStringConvertible {
         case .calculateMinFee: return "Calculate minimum transaction fee."
         case .calculateMinRequiredUtxo: return "Calculate minimum required UTXO."
         case .hashScriptData: return "Hash script data."
+        case .rewardsWithdraw: return "Generate a rewards withdraw transaction."
         case .txid: return "Calculate transaction ID."
         case .view: return "View transaction details."
         }
@@ -41,6 +43,7 @@ enum TransactionCommands: String, CaseIterable, CustomStringConvertible {
         case .calculateMinFee: return TransactionMainCommand.CalculateMinFee.self
         case .calculateMinRequiredUtxo: return TransactionMainCommand.CalculateMinRequiredUtxo.self
         case .hashScriptData: return TransactionMainCommand.HashScriptData.self
+        case .rewardsWithdraw: return TransactionMainCommand.RewardsWithdraw.self
         case .txid: return TransactionMainCommand.Txid.self
         case .view: return TransactionMainCommand.View.self
         }
@@ -55,7 +58,17 @@ struct TransactionMainCommand: AsyncParsableCommand {
     )
     
     func run() async throws {
-        print("Use 'transaction --help' to see available subcommands")
+        let selectedOption: TransactionCommands = noora.singleChoicePrompt(
+            title: "Select Transaction Command",
+            question: "Select the operation that you would like to perform.",
+            description: "Available commands:" ,
+        )
+        
+        print(noora.format(
+            "Running \(.command(selectedOption.rawValue)) command...\n"
+        ))
+        
+        await selectedOption.command().main([])
     }
 }
 
@@ -68,10 +81,6 @@ extension TransactionMainCommand {
         static let configuration = CommandConfiguration(abstract: "Build a raw transaction.")
         func run() async throws { print("Transaction build-raw command not yet implemented") }
     }
-    struct Sign: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Sign a transaction.")
-        func run() async throws { print("Transaction sign command not yet implemented") }
-    }
     struct Assemble: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Assemble a transaction.")
         func run() async throws { print("Transaction assemble command not yet implemented") }
@@ -79,10 +88,6 @@ extension TransactionMainCommand {
     struct Witness: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Create a transaction witness.")
         func run() async throws { print("Transaction witness command not yet implemented") }
-    }
-    struct Submit: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Submit a transaction.")
-        func run() async throws { print("Transaction submit command not yet implemented") }
     }
     struct CalculateMinFee: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Calculate minimum transaction fee.")
@@ -99,9 +104,5 @@ extension TransactionMainCommand {
     struct Txid: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Calculate transaction ID.")
         func run() async throws { print("Transaction txid command not yet implemented") }
-    }
-    struct View: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "View transaction details.")
-        func run() async throws { print("Transaction view command not yet implemented") }
     }
 }

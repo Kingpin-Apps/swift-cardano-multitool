@@ -1,6 +1,6 @@
 /// FileUtils.swift
 ///
-/// A collection of filesystem utilities used by CardanoSPO Tools.
+/// A collection of filesystem utilities.
 ///
 /// This helper centralizes common operations such as:
 /// - Existence checks for files and Unix sockets
@@ -24,12 +24,12 @@ import ArgumentParser
 ///
 /// All functions are static and designed for CLI-style workflows. Many helpers
 /// assume `FilePath` from SystemPackage and interoperate with Foundation's FileManager.
-struct FileUtils {
+public struct FileUtils {
     
     /// Verifies that a regular file exists at `path`.
     /// - Parameter path: Absolute or relative `FilePath` to check.
     /// - Throws: `SwiftCardanoMultitoolError.fileNotFound` if the file is missing or is a directory.
-    static func checkFileExists(_ path: FilePath) throws {
+    public static func checkFileExists(_ path: FilePath) throws {
         var isDir: ObjCBool = false
         if !FileManager.default.fileExists(
             atPath: path.string,
@@ -42,7 +42,7 @@ struct FileUtils {
     /// Verifies that no file exists at `path`.
     /// - Parameter path: Absolute or relative `FilePath` to check.
     /// - Throws: `SwiftCardanoMultitoolError.fileAlreadyExists` if a file or directory exists.
-    static func checkFileNotExists(_ path: FilePath) throws {
+    public static func checkFileNotExists(_ path: FilePath) throws {
         var isDir: ObjCBool = false
         if FileManager.default.fileExists(
             atPath: path.string,
@@ -57,7 +57,7 @@ struct FileUtils {
     /// If the file already exists, an alert is printed and `ExitCode.validationFailure` is thrown.
     /// - Parameter path: Target file path that must not exist.
     /// - Throws: `ExitCode.validationFailure` when the path is already taken.
-    static func checkFile(_ path: FilePath) async throws -> Void {
+    public static func checkFile(_ path: FilePath) async throws -> Void {
         do {
             try checkFileNotExists(path)
         } catch {
@@ -79,7 +79,7 @@ struct FileUtils {
     ///   - path: The file to modify.
     ///   - perms: Octal permission string.
     /// - Throws: `SwiftCardanoMultitoolError.ioError` if conversion fails or `chmod` returns an error.
-    static func chmodFile(_ path: FilePath, perms: String) throws {
+    public static func chmodFile(_ path: FilePath, perms: String) throws {
         try checkFileExists(path)
         guard let mode = UInt32(perms, radix: 8) else {
             throw SwiftCardanoMultitoolError.ioError(NSError(domain: "Invalid permission", code: 0))
@@ -92,7 +92,7 @@ struct FileUtils {
     /// Attempts to lock a file by setting permissions to 0400 (owner read-only).
     /// Emits a warning if locking fails but does not throw.
     /// - Parameter path: The file to lock.
-    static func fileLock(_ path: FilePath) async throws {
+    public static func fileLock(_ path: FilePath) async throws {
         do {
             try chmodFile(path, perms: "400")
         } catch {
@@ -103,7 +103,7 @@ struct FileUtils {
     /// Unlocks a file by setting permissions to 0600 (owner read/write).
     /// Emits a detailed error and throws `ExitCode.validationFailure` if unlocking fails.
     /// - Parameter path: The file to unlock.
-    static func fileUnlock(_ path: FilePath) async throws {
+    public static func fileUnlock(_ path: FilePath) async throws {
         if FileManager.default.fileExists(atPath: path.string) {
             do {
                 try chmodFile(path, perms: "600")
@@ -126,7 +126,7 @@ struct FileUtils {
     /// Displays progress and throws `ExitCode.failure` after attempting cleanup.
     /// - Parameter files: Files to unlock and remove.
     /// - Throws: Always throws `ExitCode.failure` after completion.
-    static func terminate(_ files: [FilePath]) async throws -> Never {
+    public static func terminate(_ files: [FilePath]) async throws -> Never {
         try await noora.progressStep(
             message: "Cleaning up files...",
             successMessage: "Files removed.",
@@ -145,7 +145,7 @@ struct FileUtils {
     /// Validates that a path exists and is a Unix domain socket on Apple platforms.
     /// - Parameter path: Path to the socket file.
     /// - Throws: `SwiftCardanoMultitoolError.fileNotFound`, `.ioError`, or `.notSocket`.
-    static func checkSocket(_ path: FilePath) throws {
+    public static func checkSocket(_ path: FilePath) throws {
         guard FileManager.default.fileExists(atPath: path.string) else {
             throw SwiftCardanoMultitoolError.fileNotFound(path)
         }
@@ -168,7 +168,7 @@ struct FileUtils {
     /// - Parameter path: File to read.
     /// - Returns: The trimmed string contents.
     /// - Throws: `SwiftCardanoMultitoolError.fileNotFound` or I/O errors from Foundation.
-    static func loadFile(_ path: FilePath) throws -> String {
+    public static func loadFile(_ path: FilePath) throws -> String {
         try checkFileExists(path)
         let s = try String(contentsOfFile: path.string, encoding: .utf8)
         return s.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -177,7 +177,7 @@ struct FileUtils {
     /// Temporarily unlocks a file, reads it as UTF-8 text, then relocks it.
     /// - Parameter path: File to read.
     /// - Returns: The trimmed string contents.
-    static func loadLockedFile(_ path: FilePath) async throws -> String {
+    public static func loadLockedFile(_ path: FilePath) async throws -> String {
         try await fileUnlock(path)
         let s = try String(contentsOfFile: path.string, encoding: .utf8)
         try await fileLock(path)
@@ -188,7 +188,7 @@ struct FileUtils {
     /// - Parameter path: JSON file to read.
     /// - Returns: A dictionary of JSON values.
     /// - Throws: `SwiftCardanoMultitoolError.fileNotFound` or `SwiftCardanoMultitoolError.jsonError` if the top-level is not a dictionary.
-    static func loadJSONFile(_ path: FilePath) throws -> [String: Any] {
+    public static func loadJSONFile(_ path: FilePath) throws -> [String: Any] {
         try checkFileExists(path)
         let data = try Data(contentsOf: URL(fileURLWithPath: path.string))
         let obj = try JSONSerialization.jsonObject(with: data, options: [])
@@ -200,14 +200,14 @@ struct FileUtils {
     
     /// Temporarily unlocks a file, loads JSON, then relocks it.
     /// - Parameter path: JSON file to read.
-    /// - Returns: A dictionary keyed by `String` with `Codable` values.
+    /// - Returns: A dictionary keyed by `String` with `Any` values.
     /// - Throws: `SwiftCardanoMultitoolError.jsonError` if the top-level is not a dictionary.
-    static func loadLockedJSONFile(_ path: FilePath) async throws -> [String: any Codable] {
+    public static func loadLockedJSONFile(_ path: FilePath) async throws -> [String: Any] {
         try await fileUnlock(path)
         let data = try Data(contentsOf: URL(fileURLWithPath: path.string))
         try await fileLock(path)
         let obj = try JSONSerialization.jsonObject(with: data, options: [])
-        guard let dict = obj as? [String: any Codable] else {
+        guard let dict = obj as? [String: Any] else {
             throw SwiftCardanoMultitoolError.jsonError("Top-level JSON is not a dictionary")
         }
         return dict
@@ -217,7 +217,7 @@ struct FileUtils {
     /// - Parameters:
     ///   - path: Destination file path.
     ///   - data: String contents to write.
-    static func dumpFile(_ path: FilePath, data: String) throws {
+    public static func dumpFile(_ path: FilePath, data: String) throws {
         let d = Data(data.utf8)
         try d.write(to: URL(fileURLWithPath: path.string), options: .atomic)
     }
@@ -226,7 +226,7 @@ struct FileUtils {
     /// - Parameters:
     ///   - path: Destination file path.
     ///   - data: String contents to write.
-    static func dumpLockedFile(_ path: FilePath, data: String) async throws {
+    public static func dumpLockedFile(_ path: FilePath, data: String) async throws {
         do {
             try await fileUnlock(path)
         } catch {
@@ -241,7 +241,7 @@ struct FileUtils {
     /// - Parameters:
     ///   - path: Destination JSON file.
     ///   - data: Dictionary to encode.
-    static func dumpJSONFile(_ path: FilePath, data: [String: Any]) throws {
+    public static func dumpJSONFile(_ path: FilePath, data: [String: Any]) throws {
         let jsonData = try JSONSerialization.data(withJSONObject: data, options: [.prettyPrinted])
         try jsonData.write(to: URL(fileURLWithPath: path.string), options: .atomic)
     }
@@ -250,7 +250,7 @@ struct FileUtils {
     /// - Parameters:
     ///   - path: Destination JSON file.
     ///   - data: Dictionary to encode.
-    static func dumpLockedJSONFile(_ path: FilePath, data: [String: Any]) async throws {
+    public static func dumpLockedJSONFile(_ path: FilePath, data: [String: Any]) async throws {
         try await  dumpLockedFile(path, data: String(data: try JSONSerialization.data(withJSONObject: data, options: [.prettyPrinted]), encoding: .utf8) ?? "{}")
     }
     
@@ -259,7 +259,7 @@ struct FileUtils {
     ///   - url: Source URL.
     ///   - path: Destination file path.
     /// - Throws: Network or I/O errors; `URLError.badServerResponse` for non-2xx HTTP codes.
-    static func downloadFile(_ url: URL, to path: FilePath) async throws {
+    public static func downloadFile(_ url: URL, to path: FilePath) async throws {
         // Download the data using URLSession's modern async API
         let (data, response) = try await URLSession.shared.data(from: url)
         
@@ -276,14 +276,14 @@ struct FileUtils {
     /// Removes a file at `path` if it exists.
     /// - Parameter path: File to delete.
     /// - Throws: Errors from `FileManager.removeItem`.
-    static func cleanupFile(_ path: FilePath) throws {
+    public static func cleanupFile(_ path: FilePath) throws {
         try FileManager.default.removeItem(atPath: path.string)
     }
     
     /// Reads a file and returns its Base64-encoded data.
     /// - Parameter path: File to encode.
     /// - Returns: Base64-encoded `Data`.
-    static func base64EncodedFile(_ path: FilePath) throws -> Data {
+    public static func base64EncodedFile(_ path: FilePath) throws -> Data {
         let data = try Data(contentsOf: URL(fileURLWithPath: path.string))
         return data.base64EncodedData()
     }
@@ -292,7 +292,7 @@ struct FileUtils {
     /// - Parameters:
     ///   - path: File to display.
     ///   - maxChars: If provided, prints only the leading prefix followed by an indicator.
-    static func displayFile(_ path: FilePath, maxChars: Int? = nil) async throws {
+    public static func displayFile(_ path: FilePath, maxChars: Int? = nil) async throws {
         do {
             if let max = maxChars {
                 let s = try await loadLockedFile(path)
@@ -307,20 +307,20 @@ struct FileUtils {
         }
     }
     
-    /// Pretty-prints a locked JSON file to the terminal using a configured `JSONEncoder`.
+    /// Pretty-prints a locked JSON file to the terminal.
     /// - Parameter path: JSON file to display.
-    static func displayJSONFile(_ path: FilePath) async throws -> Void {
+    public static func displayJSONFile(_ path: FilePath) async throws -> Void {
         do {
-            let obj = try await loadLockedJSONFile(path) as! Codable
+            let obj = try await loadLockedJSONFile(path)
             
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [
-                .prettyPrinted,
-                .sortedKeys,
-                .withoutEscapingSlashes
-            ]
+            let jsonData = try JSONSerialization.data(
+                withJSONObject: obj,
+                options: [.prettyPrinted, .withoutEscapingSlashes]
+            )
             
-            try noora.json(obj, encoder: encoder)
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                print(jsonString, terminator: "\n\n")
+            }
         } catch {
             noora.warning(.alert("Error reading JSON file: \(error)"))
         }
@@ -329,7 +329,7 @@ struct FileUtils {
     /// Searches the current directory for files matching a pattern and returns the lexicographically latest.
     /// Pattern: `"{startswith}."` prefix, contains `contains`, and suffix `".{endswith}"`.
     /// - Returns: The latest matching `FilePath`, or `nil` after emitting a warning.
-    static func searchLatestFile(startswith: String, contains: String, endswith: String) -> FilePath? {
+    public static func searchLatestFile(startswith: String, contains: String, endswith: String) -> FilePath? {
         let cwdPathString = FileManager.default.currentDirectoryPath
         let cwdPath = FilePath(cwdPathString)
         
@@ -358,7 +358,7 @@ struct FileUtils {
     
     /// Unlocks a file only if it already exists.
     /// - Parameter path: File to conditionally unlock.
-    static func unlockIfExists(_ path: FilePath) async throws -> Void {
+    public static func unlockIfExists(_ path: FilePath) async throws -> Void {
         if FileManager.default.fileExists(atPath: path.string) {
             try await fileUnlock(path)
         }
@@ -366,7 +366,7 @@ struct FileUtils {
     
     /// Returns the file size in bytes, or `nil` if unavailable.
     /// - Parameter path: File whose size is requested.
-    static func fileSize(_ path: FilePath) -> Int? {
+    public static func fileSize(_ path: FilePath) -> Int? {
         do {
             try checkFileExists(path)
             let attrs = try FileManager.default.attributesOfItem(atPath: path.string)

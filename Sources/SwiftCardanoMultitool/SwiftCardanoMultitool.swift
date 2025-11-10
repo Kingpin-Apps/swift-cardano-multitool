@@ -6,6 +6,7 @@ import Logging
 
 enum MainCommands: String, CaseIterable, CustomStringConvertible {
     case build
+    case certificates
     case check
     case config
     case convert
@@ -27,6 +28,8 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
         switch self {
             case .build:
                 return "Build operations"
+            case .certificates:
+                return "Certificates - Create and submit certificates"
             case .check:
                 return "Check operations"
             case .config:
@@ -66,6 +69,8 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
         switch self {
             case .build:
                 return BuildMainCommand.self
+            case .certificates:
+                return CertificateMainCommand.self
             case .check:
                 return CheckMainCommand.self
             case .config:

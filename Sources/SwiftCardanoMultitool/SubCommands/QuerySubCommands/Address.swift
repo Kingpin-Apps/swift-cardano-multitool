@@ -10,7 +10,7 @@ extension QueryMainCommand {
         static let configuration = CommandConfiguration(abstract: "Query UTxOs for an address.")
         
         @Option(name: .shortAndLong, help: "The address to query.")
-        var addressInfo: AddressInfo? = nil
+        var address: AddressInfo? = nil
         
         /// Wizard to interactively gather missing parameters
         mutating func wizard() async throws {
@@ -24,11 +24,11 @@ extension QueryMainCommand {
                         description: "The address must be a valid Cardano address."
                     )
                     let config = try await MultitoolConfig.load()
-                    let address = try await resolveAdahandle(
+                    let resolvedAddress = try await resolveAdahandle(
                         handle: adahandle,
                         network: config.cardano.network
                     )
-                    addressInfo = try AddressInfo(adaHandle: adahandle, address: address)
+                    address = try AddressInfo(adaHandle: adahandle, address: resolvedAddress)
                 case .address:
                     let addressString = noora.textPrompt(
                         title: "Address",
@@ -36,8 +36,9 @@ extension QueryMainCommand {
                         description: "The address must be a valid Cardano address."
                     )
                     
-                    let address = try SwiftCardanoCore.Address(from: .string(addressString))
-                    addressInfo = try AddressInfo(address: address)
+                    address = try AddressInfo(
+                        address: try SwiftCardanoCore.Address(from: .string(addressString))
+                    )
                 case .path:
                     let cwd = FilePath(FileManager.default.currentDirectoryPath)
                     let addressFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
@@ -50,19 +51,21 @@ extension QueryMainCommand {
                         description: "Available .addr files in current directory"
                     ))
                     
-                    let address = try SwiftCardanoCore.Address.load(from: addressFile.string)
-                    addressInfo = try AddressInfo(addressFile: addressFile, address: address)
+                    address = try AddressInfo(
+                        addressFile: addressFile,
+                        address: try SwiftCardanoCore.Address.load(from: addressFile.string)
+                    )
             }
         }
-
+        
         
         mutating func run() async throws {
-            if addressInfo == nil {
+            if address == nil {
                 try await wizard()
             }
             
-            guard var addressInfo = addressInfo,
-            var address = addressInfo.address else {
+            guard var addressInfo = address,
+                  let address = addressInfo.address else {
                 noora.error(
                     .alert(
                         "Address information is missing.",
@@ -108,7 +111,7 @@ extension QueryMainCommand {
                         ]
                     )
                 )
-                throw ExitCode.failure
+                throw ExitCode.validationFailure
             }
             
             guard let name = addressInfo.name else {
@@ -121,7 +124,7 @@ extension QueryMainCommand {
                         ]
                     )
                 )
-                throw ExitCode.failure
+                throw ExitCode.validationFailure
             }
             
             switch addressType {
@@ -147,155 +150,24 @@ extension QueryMainCommand {
                     
                     try await addressInfo.updateStakeAddressInfo(context: context)
                     
-                    guard !addressInfo.stakeAddressInfo.isEmpty,
-                          let stakeAddressInfo = addressInfo.stakeAddressInfo.first else {
-                        noora.error(.alert(
-                            "Stake Registration: \(.danger("✗ Not Registered"))",
-                            takeaways: [
-                                "Register the stake address before withdrawing rewards.",
-                                "Use 'generate stake-address-registration' command to register."
-                            ]
-                        ))
-                        throw ExitCode.failure
+                    addressInfo.addressTypeEra()
+                    
+                    let protocolParams = try await noora.progressStep(
+                        message: "Querying protocol parameters...",
+                        successMessage: "Successfully retrieved protocol parameters.",
+                        errorMessage: "Failed to retrieve protocol parameters.",
+                        showSpinner: true
+                    ) { updateMessage in
+                        return try await context.protocolParameters()
                     }
+                    print()
                     
-                    print(noora.format(
-                        "Staking Address is \(.success("✓ Registered")) on the chain with a deposit of \(.primary("\(String(describing: stakeAddressInfo.stakeRegistrationDeposit))")) lovelaces\n"
-                    ))
+                    try await stakeAddressInfoSummary(
+                        stakeAddressInfo: addressInfo.stakeAddressInfo,
+                        config: config,
+                        protocolParams: protocolParams
+                    )
                     
-                    if stakeAddressInfo.rewardAccountBalance == 0 {
-                        noora.warning(.alert(
-                            "Rewards Balance: \(.danger("0 lovelaces"))",
-                            takeaway: "No rewards available to withdraw. \nWait for rewards to accumulate before claiming."
-                            
-                        ))
-                    } else {
-                        print(noora.format(
-                            "Rewards Balance: \(.primary(lovelaceToAdaString(UInt64(stakeAddressInfo.rewardAccountBalance)))) \(.muted("(\(stakeAddressInfo.rewardAccountBalance) lovelaces)"))"
-                        ))
-                    }
-                    
-                    
-                    // If delegated to a pool, show the current pool ID
-                    if let poolOperator = stakeAddressInfo.stakeDelegation {
-                        print(noora.format(
-                            "Account is delegated to a Pool with ID: \(.primary(try poolOperator.id()))"
-                        ))
-                        
-                        let koiosContext = try await KoiosChainContext(
-                            apiKey: config.koiosApiKey,
-                            network: config.cardano.network
-                        )
-                        
-                        let poolInfo = try await noora.progressStep(
-                            message: "Fetching stake pool info...",
-                            successMessage: "Successfully retrieved stake pool info.",
-                            errorMessage: "Failed to retrieve stake pool info.",
-                            showSpinner: true
-                        ) { updateMessage in
-                            return try await withRetry() {
-                                try await koiosContext.poolInfo(poolIds: [poolOperator.id()])
-                            }
-                        }
-                        
-                        if let poolDetails = poolInfo.first {
-                            noora.info(.alert(
-                                "Delegated Stake Pool Details:",
-                                takeaways: [
-                                    "Name: \(poolDetails.metaJson?.name ?? "N/A")",
-                                    "Ticker: \(poolDetails.metaJson?.ticker ?? "N/A")",
-                                    "Status: \(String(describing: poolDetails.poolStatus ?? .none))",
-                                    "Pledge: \(poolDetails.pledge ?? "N/A")",
-                                    "Live Pledge: \(poolDetails.livePledge ?? "N/A")",
-                                    "Live Stake: \(poolDetails.liveStake ?? "N/A")",
-                                    "Block Count: \(poolDetails.blockCount ?? 0)"
-                                ]
-                            ))
-                        } else {
-                            noora.warning(.alert(
-                                "Failed to retrieve details for stake pool ID: \(try poolOperator.id())"
-                            ))
-                        }
-                    } else {
-                        print(noora.format(
-                            "\(.danger("Account is not delegated to a Pool."))"
-                        ))
-                    }
-                    
-                    
-                    // Show the current status of the voteDelegation
-                    if let voteDelegation = stakeAddressInfo.voteDelegation {
-                        
-                        spacedPrint(
-                            "DRep Delegation: \(.success("✓ Delegated")))"
-                        )
-                        
-                        switch voteDelegation.credential {
-                            case .alwaysNoConfidence:
-                                noora.info(.alert(
-                                    "Voting-Power of Staking Address is currently set to: \(.primary("ALWAYS NO CONFIDENCE"))"
-                                ))
-                            case .alwaysAbstain:
-                                noora.info(.alert(
-                                    "Voting-Power of Staking Address is currently set to: \(.primary("ALWAYS ABSTAIN"))"
-                                ))
-                            case .scriptHash(let scriptHash):
-                                noora.info(.alert(
-                                    "Voting-Power of Staking Address is delegated to the following DRep-Script:",
-                                    takeaways: [
-                                        "CIP129 DRep-ID: \(.primary(try voteDelegation.id((.bech32, .cip129))))",
-                                        "Legacy DRep-ID: \(.primary(try voteDelegation.id((.bech32, .cip105))))",
-                                        "DRep-HASH: \(.primary(try voteDelegation.id((.hex, .cip105))))",
-                                    ]
-                                ))
-                            case .verificationKeyHash(let vkeyHash):
-                                let drepId = try voteDelegation.id((.bech32, .cip129))
-                                noora.info(.alert(
-                                    "Voting-Power of Staking Address is delegated to the following DRep: \(.primary(drepId))",
-                                    takeaways: [
-                                        "CIP129 DRep-ID: \(.primary(try voteDelegation.id((.bech32, .cip129))))",
-                                        "Legacy DRep-ID: \(.primary(try voteDelegation.id((.bech32, .cip105))))",
-                                        "DRep-HASH: \(.primary(try voteDelegation.id((.hex, .cip105))))",
-                                    ]
-                                ))
-                        }
-                    } else {
-                        
-                        print(noora.format(
-                            "\(.danger("Voting-Power of Staking Address is not delegated to a DRep."))"
-                        ))
-                        
-                        let context = try await getContext(config: config)
-                        let protocolParams = try await noora.progressStep(
-                            message: "Querying protocol parameters...",
-                            successMessage: "Successfully retrieved protocol parameters.",
-                            errorMessage: "Failed to retrieve protocol parameters.",
-                            showSpinner: true
-                        ) { updateMessage in
-                            return try await context.protocolParameters()
-                        }
-                        
-                        if protocolParams.protocolVersion.major >= 10 {
-                            noora.error(.alert(
-                                "\(.danger("⚠️  You need to delegate your stake account to a DRep in order to claim your rewards!"))",
-                                takeaways: [
-                                    "Run the appropriate generate and register command to delegate your stake account to a DRep."
-                                ]
-                            ))
-                        }
-                    }
-                    
-                    if let govActionDeposits = stakeAddressInfo.govActionDeposits,
-                       govActionDeposits.isEmpty == false {
-                        noora.info(.alert(
-                            "👀 Staking Address is used in the following \(govActionDeposits.count) governance action(s):",
-                            takeaways: try govActionDeposits
-                                .map({ (key: String, value: UInt64) in
-                                    let govActionID = try GovActionID(from: .list([.string(key), .uint(UInt(value))]))
-                                    return "\(.primary(try govActionID.id())) -> \(.primary("\(lovelaceToAdaString(value)) deposit"))"
-                                })
-                        ))
-                    }
             }
         }
     }

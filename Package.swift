@@ -8,14 +8,18 @@ let package = Package(
     platforms: [
         .macOS(.v15)
     ],
+    products: [
+        // The executable product name is what users will type in the terminal
+        .executable(name: "scm", targets: ["SwiftCardanoMultitool"])
+    ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.2.0"),
         .package(url: "https://github.com/apple/swift-configuration", .upToNextMinor(from: "0.1.1")),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.6.3"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.2.21"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.1.39"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "0.2.0"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.1.21"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.2.22"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.1.40"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "0.2.2"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.1.22"),
         .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.1"),
         .package(url: "https://github.com/tuist/Noora", .upToNextMajor(from: "0.15.0")),

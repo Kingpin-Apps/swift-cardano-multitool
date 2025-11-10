@@ -116,6 +116,163 @@ extension Noora {
     }
 }
 
+public struct StakeAddressInfo: ExpressibleByArgument {
+    var info: AddressInfo
+    
+    public init (info: AddressInfo) {
+        self.info = info
+    }
+    
+    public init?(argument: String) {
+        let trimmed = argument.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmed.hasPrefix("$") {
+            // Case 1: $adahandle
+            guard let info = try? AddressInfo(fromAdaHandle: trimmed) else {
+                return nil
+            }
+            self.init(info: info)
+        }
+        else if trimmed.hasPrefix("stake") {
+            // Case 2: Bech32 address (starts with addr or stake)
+            guard let info = try? AddressInfo(fromAddressString: trimmed) else {
+                return nil
+            }
+            self.init(info: info)
+        } else {
+            // Case 3: File path or name (e.g., owner.stake, owner, or /full/path/to/file.addr)
+            let addressFileName = trimmed
+            let fileManager = FileManager.default
+            
+            // Try direct file first (handles both absolute and relative paths)
+            if fileManager.fileExists(atPath: addressFileName) {
+                guard let info = try? AddressInfo(fromFile: FilePath(addressFileName)) else {
+                    return nil
+                }
+                self.init(info: info)
+                return
+            }
+            
+            // If not found as-is, try relative to current directory
+            let currentDir = fileManager.currentDirectoryPath
+            let filePath = currentDir.appending(addressFileName)
+            
+            if fileManager.fileExists(atPath: filePath) {
+                guard let info = try? AddressInfo(fromFile: FilePath(filePath)) else {
+                    return nil
+                }
+                self.init(info: info)
+                return
+            }
+            
+            // Try common file name variations
+            let variations = [
+                "\(addressFileName).stake.addr",
+                "\(addressFileName).addr"
+            ]
+            
+            var foundFiles: [String] = []
+            for fileName in variations {
+                let filePath = currentDir.appending(fileName)
+                if fileManager.fileExists(atPath: filePath) {
+                    foundFiles.append(fileName)
+                }
+            }
+            
+            // Handle results
+            if !foundFiles.isEmpty, foundFiles.count == 1, let firstFile = foundFiles.first {
+                let filePath = currentDir.appending(firstFile)
+                guard let info = try? AddressInfo(fromFile: FilePath(filePath)) else {
+                    return nil
+                }
+                self.init(info: info)
+            } else {
+                return nil
+            }
+        }
+    }
+    
+}
+
+public struct PaymentAddressInfo: ExpressibleByArgument {
+    let info: AddressInfo
+    // MARK: ExpressibleByArgument
+    
+    public init (info: AddressInfo) {
+        self.info = info
+    }
+    
+    public init?(argument: String) {
+        let trimmed = argument.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmed.hasPrefix("$") {
+            // Case 1: $adahandle
+            guard let info = try? AddressInfo(fromAdaHandle: trimmed) else {
+                return nil
+            }
+            self.init(info: info)
+        }
+        else if trimmed.hasPrefix("addr") {
+            // Case 2: Bech32 address (starts with addr or stake)
+            guard let info = try? AddressInfo(fromAddressString: trimmed) else {
+                return nil
+            }
+            self.init(info: info)
+        } else {
+            // Case 3: File path or name (e.g., owner.payment, owner, or /full/path/to/file.addr)
+            let addressFileName = trimmed
+            let fileManager = FileManager.default
+            
+            // Try direct file first (handles both absolute and relative paths)
+            if fileManager.fileExists(atPath: addressFileName) {
+                guard let info = try? AddressInfo(fromFile: FilePath(addressFileName)) else {
+                    return nil
+                }
+                self.init(info: info)
+                return
+            }
+            
+            // If not found as-is, try relative to current directory
+            let currentDir = fileManager.currentDirectoryPath
+            let filePath = currentDir.appending(addressFileName)
+            
+            if fileManager.fileExists(atPath: filePath) {
+                guard let info = try? AddressInfo(fromFile: FilePath(filePath)) else {
+                    return nil
+                }
+                self.init(info: info)
+                return
+            }
+            
+            // Try common file name variations
+            let variations = [
+                "\(addressFileName).payment.addr",
+                "\(addressFileName).addr"
+            ]
+            
+            var foundFiles: [String] = []
+            for fileName in variations {
+                let filePath = currentDir.appending(fileName)
+                if fileManager.fileExists(atPath: filePath) {
+                    foundFiles.append(fileName)
+                }
+            }
+            
+            // Handle results
+            if !foundFiles.isEmpty, foundFiles.count == 1, let firstFile = foundFiles.first {
+                let filePath = currentDir.appending(firstFile)
+                guard let info = try? AddressInfo(fromFile: FilePath(filePath)) else {
+                    return nil
+                }
+                self.init(info: info)
+            } else {
+                return nil
+            }
+        }
+    }
+    
+}
+
 // MARK: - AddressInfo Struct
 
 /// Address information model for Cardano addresses
@@ -130,22 +287,44 @@ extension AddressInfo: @retroactive ExpressibleByArgument {
         
         if trimmed.hasPrefix("$") {
             // Case 1: $adahandle
-            try? self.init(fromAdaHandle: trimmed)
+            guard let info = try? AddressInfo(fromAdaHandle: trimmed) else {
+                return nil
+            }
+            self = info
         }
         else if trimmed.hasPrefix("addr") || trimmed.hasPrefix("stake") {
             // Case 2: Bech32 address (starts with addr or stake)
-            try? self.init(fromAddressString: trimmed)
+            guard let info = try? AddressInfo(fromAddressString: trimmed) else {
+                return nil
+            }
+            self = info
         } else {
-            // Case 3: File name (e.g., owner.payment or owner)
-            var addressFileName = trimmed
+            // Case 3: File path or name (e.g., owner.payment, owner, or /full/path/to/file.addr)
+            let addressFileName = trimmed
             let fileManager = FileManager.default
+            
+            // Try direct file first (handles both absolute and relative paths)
+            if fileManager.fileExists(atPath: addressFileName) {
+                guard let info = try? AddressInfo(fromFile: FilePath(addressFileName)) else {
+                    return nil
+                }
+                self = info
+                return
+            }
+            
+            // If not found as-is, try relative to current directory
             let currentDir = fileManager.currentDirectoryPath
             let filePath = currentDir.appending(addressFileName)
             
             if fileManager.fileExists(atPath: filePath) {
-                try? self.init(fromFile: FilePath(filePath))
+                guard let info = try? AddressInfo(fromFile: FilePath(filePath)) else {
+                    return nil
+                }
+                self = info
+                return
             }
             
+            // Try common file name variations
             let variations = [
                 "\(addressFileName).payment.addr",
                 "\(addressFileName).stake.addr",
@@ -163,8 +342,11 @@ extension AddressInfo: @retroactive ExpressibleByArgument {
             // Handle results
             if !foundFiles.isEmpty, foundFiles.count == 1, let firstFile = foundFiles.first {
                 let filePath = currentDir.appending(firstFile)
-                try? self.init(fromFile: FilePath(filePath))
-            } else  {
+                guard let info = try? AddressInfo(fromFile: FilePath(filePath)) else {
+                    return nil
+                }
+                self = info
+            } else {
                 return nil
             }
         }
@@ -216,5 +398,243 @@ extension AddressInfo: @retroactive ExpressibleByArgument {
             return try await context.stakeAddressInfo(address: address)
         }
     }
+    
+    public func getSigningMethod() throws -> SigningMethod {
+        let cwd = FilePath(FileManager.default.currentDirectoryPath)
+        
+        // remove .payment.addr, .stake, or .addr suffixes if present
+        let cleanedName: String
+        if let name = self.name {
+            if name.hasSuffix(".payment") {
+                cleanedName = String(name.dropLast(".payment".count))
+            } else if name.hasSuffix(".addr") {
+                cleanedName = String(name.dropLast(".addr".count))
+            } else if name.hasSuffix(".stake") {
+                cleanedName = String(name.dropLast(".stake".count))
+            } else {
+                cleanedName = name
+            }
+        } else {
+            noora.error(.alert(
+                "Address name is missing; cannot determine signing key file.",
+                takeaways: [
+                    "Ensure the address was loaded from a file with a valid name."
+                ]
+            ))
+            throw ExitCode.validationFailure
+        }
+        
+        let fm = FileManager.default
+        
+        // Build ordered candidates based on address type
+        let contextLabel: String
+        let candidates: [(FilePath, (FilePath) -> SigningMethod)]
+        switch self.type {
+        case .payment?:
+            contextLabel = "payment"
+            candidates = [
+                (cwd.appending("\(cleanedName).payment.hwsfile"), SigningMethod.hardwareWallet),
+                (cwd.appending("\(cleanedName).payment.skey"), SigningMethod.softwareKey),
+                (cwd.appending("\(cleanedName).hwsfile"), SigningMethod.hardwareWallet),
+                (cwd.appending("\(cleanedName).skey"), SigningMethod.softwareKey)
+            ]
+        case .stake?:
+            contextLabel = "stake"
+            candidates = [
+                (cwd.appending("\(cleanedName).stake.hwsfile"), SigningMethod.hardwareWallet),
+                (cwd.appending("\(cleanedName).stake.skey"), SigningMethod.softwareKey),
+                (cwd.appending("\(cleanedName).hwsfile"), SigningMethod.hardwareWallet),
+                (cwd.appending("\(cleanedName).skey"), SigningMethod.softwareKey)
+            ]
+        default:
+            contextLabel = "address"
+            candidates = [
+                (cwd.appending("\(cleanedName).hwsfile"), SigningMethod.hardwareWallet),
+                (cwd.appending("\(cleanedName).skey"), SigningMethod.softwareKey)
+            ]
+        }
+        
+        // Resolve first existing candidate
+        for (file, wrap) in candidates {
+            if fm.fileExists(atPath: file.string) {
+                return wrap(file)
+            }
+        }
+        
+        // Nothing found — report what we looked for
+        let expectedList = candidates.map { $0.0.string }.joined(separator: ", ")
+        noora.error(.alert(
+            "No signing key found for \(contextLabel) address '\(cleanedName)'",
+            takeaways: [
+                "Searched (in order): \(expectedList)"
+            ]
+        ))
+        throw ExitCode.validationFailure
+    }
+    
+    public func getVerificationKey() throws -> FilePath {
+        let cwd = FilePath(FileManager.default.currentDirectoryPath)
+        
+        // remove .payment.addr, .stake, or .addr suffixes if present
+        let cleanedName: String
+        if let name = self.name {
+            if name.hasSuffix(".payment") {
+                cleanedName = String(name.dropLast(".payment".count))
+            } else if name.hasSuffix(".addr") {
+                cleanedName = String(name.dropLast(".addr".count))
+            } else if name.hasSuffix(".stake") {
+                cleanedName = String(name.dropLast(".stake".count))
+            } else {
+                cleanedName = name
+            }
+        } else {
+            noora.error(.alert(
+                "Address name is missing; cannot determine verification key file.",
+                takeaways: [
+                    "Ensure the address was loaded from a file with a valid name."
+                ]
+            ))
+            throw ExitCode.validationFailure
+        }
+        
+        let fm = FileManager.default
+        
+        // Build ordered candidates based on address type
+        let contextLabel: String
+        let candidates: [FilePath]
+        switch self.type {
+        case .payment?:
+            contextLabel = "payment"
+            candidates = [
+                cwd.appending("\(cleanedName).payment.vkey"),
+                cwd.appending("\(cleanedName).vkey")
+            ]
+        case .stake?:
+            contextLabel = "stake"
+            candidates = [
+                cwd.appending("\(cleanedName).stake.vkey"),
+                cwd.appending("\(cleanedName).vkey")
+            ]
+        default:
+            contextLabel = "address"
+            candidates = [
+                cwd.appending("\(cleanedName).vkey")
+            ]
+        }
+        
+        // Resolve first existing candidate
+        for file in candidates {
+            if fm.fileExists(atPath: file.string) {
+                return file
+            }
+        }
+        
+        // Nothing found — report what we looked for
+        let expectedList = candidates.map { $0.string }.joined(separator: ", ")
+        noora.error(.alert(
+            "No verification key found for \(contextLabel) address '\(cleanedName)'",
+            takeaways: [
+                "Searched (in order): \(expectedList)"
+            ]
+        ))
+        throw ExitCode.validationFailure
+    }
 }
 
+extension DRep: @retroactive _SendableMetatype {}
+extension DRep: @retroactive ExpressibleByArgument {
+    public init?(argument: String) {
+        let trimmed = argument.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Try Bech32 first
+        if trimmed.hasPrefix("drep") {
+            try? self.init(from: trimmed)
+            return
+        }
+        
+        // Try hex string format (supports optional 0x prefix)
+        do {
+            let hexCandidate: String
+            if trimmed.hasPrefix("0x") || trimmed.hasPrefix("0X") {
+                hexCandidate = String(trimmed.dropFirst(2))
+            } else {
+                hexCandidate = trimmed
+            }
+            
+            let hexSet = CharacterSet(charactersIn: "0123456789abcdefABCDEF")
+            let isValidHex = !hexCandidate.isEmpty
+                && hexCandidate.count % 2 == 0
+                && hexCandidate.unicodeScalars.allSatisfy { hexSet.contains($0) }
+            
+            if isValidHex {
+                let data = hexCandidate.hexStringToData
+                if !data.isEmpty {
+                    try? self.init(from: data)
+                    return
+                }
+            }
+        }
+        
+        // Otherwise treat as file name
+        let drepFileName = trimmed
+        let fileManager = FileManager.default
+        let currentDir = fileManager.currentDirectoryPath
+        let filePath = currentDir.appending(drepFileName)
+        
+        if fileManager.fileExists(atPath: filePath) {
+            if let loaded = try? DRep.load(from: filePath) {
+                self = loaded
+                return
+            }
+        }
+        
+        let variations = [
+            "\(drepFileName).drep.id",
+            "\(drepFileName).drep"
+        ]
+        
+        var foundFiles: [String] = []
+        for fileName in variations {
+            let filePath = currentDir.appending(fileName)
+            if fileManager.fileExists(atPath: filePath) {
+                foundFiles.append(fileName)
+            }
+        }
+        
+        // Handle results
+        if !foundFiles.isEmpty, foundFiles.count == 1, let firstFile = foundFiles.first {
+            let filePath = currentDir.appending(firstFile)
+            if let loaded = try? DRep.load(from: filePath) {
+                self = loaded
+                return
+            }
+        }
+        
+        return nil
+    }
+}
+
+extension MultiAsset: @retroactive _SendableMetatype {
+    public func toAssetsOutString() -> String {
+        var assetsOutString = ""
+        
+        for (scriptHash, assetsUnderPolicy) in self.data {
+            // Convert policyId (scriptHash) to hex
+            let policyIdHex = scriptHash.payload.hexEncodedString()
+            
+            // For each asset under that policy
+            for (assetName, amount) in assetsUnderPolicy.data {
+                // Convert asset name (bytes) to hex
+                let assetNameHex = assetName.payload.hexEncodedString()
+                
+                // The asset identifier (policyId + "." + assetNameHex) or "+" if you prefer
+                let assetHashName = "\(policyIdHex).\(assetNameHex)"
+                
+                // Append in the format: +<amount> <policyId.assetNameHex>
+                assetsOutString += "+\(amount) \(assetHashName)"
+            }
+        }
+        
+        return assetsOutString
+    }
+}
