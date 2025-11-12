@@ -16,7 +16,7 @@ extension CertificateMainCommand {
         
         // MARK: - Required Arguments
         
-        @Option(name: [.short, .long], help: "Stake address base name (without .stake.addr). Example: owner → owner.staking.vkey or owner.stake.vkey")
+        @Option(name: [.short, .long], help: "Stake address file name. Example: owner → owner.stake.addr or owner.stake, or owner.addr")
         var stakeAddress: StakeAddressInfo?
         
         @Option(name: [.short, .long], help: "The delegation representative (DRep) to delegate to. Supports: bech32 (drep1...), hex hash, .drep.vkey file, 'always-abstain', or 'always-no-confidence'.")
@@ -24,55 +24,11 @@ extension CertificateMainCommand {
         
         // MARK: - CertificateCommandable Arguments
         
-        @Option(name: [.short, .long], help: "The file name to save the certificate to. If not specified, '{addressName}-{timestamp}.vote-deleg.cert' will be used.")
-        var outFile: FilePath? = nil
-        
-        @Flag(name: [.short, .long], help: "Whether to generate a transaction for the certificate")
-        var generateTransaction: Bool = false
+        @OptionGroup var certificateOptions: SharedCertificateOptions
         
         // MARK: - TransactionCommandable Arguments
         
-        @Option(name: [.short, .long], help: "Destination for rewards. Accepts: bech32 address, file base name, payment key hash, or $adahandle")
-        var toAddress: PaymentAddressInfo?
-        
-        @Option(name: [.short, .long], help: "Address to pay transaction fees from.")
-        var feePaymentAddress: PaymentAddressInfo?
-        
-        @Option(name: [.short, .long], parsing: .upToNextOption, help: "Transaction message(s). Max 64 bytes each. Can be specified multiple times.")
-        var messages: [String] = []
-        
-        @Option(name: .long, help: "Message encryption mode. Options: basic")
-        var encryption: TransactionMessage.EncryptionMode?
-        
-        @Option(name: .long, help: "Passphrase for message encryption (default: cardano)")
-        var passphrase: String = "cardano"
-        
-        @Option(name: .long, parsing: .upToNextOption, help: "Path(s) to JSON metadata file(s). Can be specified multiple times.")
-        var metadataJson: [FilePath] = []
-        
-        @Option(name: .long, parsing: .upToNextOption, help: "Path(s) to CBOR metadata file(s). Can be specified multiple times.")
-        var metadataCbor: [FilePath] = []
-        
-        @Option(name: .long, parsing: .upToNextOption, help: "Specific UTXOs to use. Format: txHash#index. Can be specified multiple times.")
-        var utxoFilter: [String] = []
-        
-        @Option(name: .long, help: "Maximum number of input UTXOs to use (positive integer)")
-        var utxoLimit: Int?
-        
-        @Option(name: .long, parsing: .upToNextOption, help: "Skip UTXOs containing these assets. Format: policyId+assetNameHex. Can be specified multiple times.")
-        var skipUtxoWithAsset: [String] = []
-        
-        @Option(name: .long, parsing: .upToNextOption, help: "Only use UTXOs containing these assets. Format: policyId+assetNameHex. Can be specified multiple times.")
-        var onlyUtxoWithAsset: [String] = []
-        
-        @Flag(help: "Use cardano-cli to build the transaction (default: use SwiftCardano)")
-        var useCardanoCLI = false
-        
-        @Flag(inversion: .prefixedNo, help: "Save built transaction to file")
-        var save = true
-        
-        @Flag(help: "Submit the transaction to the blockchain")
-        var submit = false
+        @OptionGroup var transactionOptions: SharedTransactionOptions
         
         // MARK: - Validation
         
@@ -90,7 +46,7 @@ extension CertificateMainCommand {
             
             try await self.wizardForCertificate()
             
-            if generateTransaction {
+            if certificateOptions.generateTransaction {
                 try await self.wizardForTransaction()
             }
             
@@ -142,11 +98,11 @@ extension CertificateMainCommand {
             }
             
             // Output certificate path
-            if outFile == nil {
-                outFile = cwd.appending("\(stakeVkeyFilePath.stem!)-\(timestamp).vote-deleg.cert")
+            if certificateOptions.outFile == nil {
+                certificateOptions.outFile = cwd.appending("\(stakeVkeyFilePath.stem!)-\(timestamp).vote-deleg.cert")
             }
             
-            guard let outFile else {
+            guard let outFile = certificateOptions.outFile else {
                 noora.error(.alert(
                     "Output file path is invalid.",
                     takeaways: ["Provide a valid output file path for the certificate."]
@@ -193,100 +149,104 @@ extension CertificateMainCommand {
             ))
             print()
             
-            if useCardanoCLI {
-                // Initialize CardanoCLI
-                let logger = getLogger(config: config)
-                let cli = try await CardanoCLI(
-                    configuration: config.toSwiftCardanoUtilsConfig(),
-                    logger: logger
-                )
-                
-                // Build cardano-cli arguments
-                var arguments = [
-                    "--stake-verification-key-file", stakeVkeyFilePath.string
-                ]
-                
-                // Add DRep-specific arguments
-                switch drep.credential {
-                    case .verificationKeyHash(let hash):
-                        arguments.append(contentsOf: ["--drep-key-hash", hash.payload.toHex])
-                        
-                    case .scriptHash(let hash):
-                        arguments.append(contentsOf: ["--drep-script-hash", hash.payload.toHex])
-                        
-                    case .alwaysAbstain:
-                        arguments.append("--always-abstain")
-                        
-                    case .alwaysNoConfidence:
-                        arguments.append("--always-no-confidence")
-                }
-                
-                // Add output file
-                arguments.append(contentsOf: ["--out-file", outFile.string])
-                
-                // Generate certificate
-                do {
-                    // Unlock certificate file if it exists (shouldn't, but be safe)
-                    try await FileUtils.unlockIfExists(outFile)
-                    
-                    // Execute cardano-cli command
-                    _ = try await cli.stakeAddress.voteDelegationCertificate(
-                        arguments: arguments
+            do {
+                if transactionOptions.useCardanoCLI {
+                    // Initialize CardanoCLI
+                    let logger = getLogger(config: config)
+                    let cli = try await CardanoCLI(
+                        configuration: config.toSwiftCardanoUtilsConfig(),
+                        logger: logger
                     )
                     
-                    // Lock the certificate file (set to 0400)
-                    try await FileUtils.fileLock(outFile)
+                    // Build cardano-cli arguments
+                    var arguments = [
+                        "--stake-verification-key-file", stakeVkeyFilePath.string
+                    ]
                     
-                } catch {
-                    noora.error(.alert(
-                        "Failed to generate vote delegation certificate.",
-                        takeaways: [
-                            "Error: \(error.localizedDescription)",
-                            "Ensure your cardano-cli supports Conway era governance commands.",
-                            "Verify the stake verification key file is valid.",
-                            "Verify the DRep identifier is correct.",
-                            "Check that your network is in Conway era (or later)."
-                        ]
-                    ))
-                    throw ExitCode.failure
+                    // Add DRep-specific arguments
+                    switch drep.credential {
+                        case .verificationKeyHash(let hash):
+                            arguments.append(contentsOf: ["--drep-key-hash", hash.payload.toHex])
+                            
+                        case .scriptHash(let hash):
+                            arguments.append(contentsOf: ["--drep-script-hash", hash.payload.toHex])
+                            
+                        case .alwaysAbstain:
+                            arguments.append("--always-abstain")
+                            
+                        case .alwaysNoConfidence:
+                            arguments.append("--always-no-confidence")
+                    }
+                    
+                    // Add output file
+                    arguments.append(contentsOf: ["--out-file", outFile.string])
+                    
+                    // Generate certificate
+                    do {
+                        // Unlock certificate file if it exists (shouldn't, but be safe)
+                        try await FileUtils.unlockIfExists(outFile)
+                        
+                        // Execute cardano-cli command
+                        _ = try await cli.stakeAddress.voteDelegationCertificate(
+                            arguments: arguments
+                        )
+                        
+                        // Lock the certificate file (set to 0400)
+                        try await FileUtils.fileLock(outFile)
+                        
+                    } catch {
+                        noora.error(.alert(
+                            "Failed to generate vote delegation certificate.",
+                            takeaways: [
+                                "Error: \(error.localizedDescription)",
+                                "Ensure your cardano-cli supports Conway era governance commands.",
+                                "Verify the stake verification key file is valid.",
+                                "Verify the DRep identifier is correct.",
+                                "Check that your network is in Conway era (or later)."
+                            ]
+                        ))
+                        throw ExitCode.failure
+                    }
                 }
-            } else {
-                let stakeVkey = try StakeVerificationKey.load(
-                    from: stakeVkeyFilePath.string
-                )
-                let stakeCredential = StakeCredential(
-                    credential: .verificationKeyHash(try stakeVkey.hash())
-                )
-                let voteDelegationCertificate = VoteDelegate(
-                    stakeCredential: stakeCredential,
-                    drep: drep
-                )
-                try voteDelegationCertificate
-                    .save(to: outFile.string, overwrite: true)
+                else {
+                    let stakeVkey = try StakeVerificationKey.load(
+                        from: stakeVkeyFilePath.string
+                    )
+                    let stakeCredential = StakeCredential(
+                        credential: .verificationKeyHash(try stakeVkey.hash())
+                    )
+                    let voteDelegationCertificate = VoteDelegate(
+                        stakeCredential: stakeCredential,
+                        drep: drep
+                    )
+                    try voteDelegationCertificate
+                        .save(to: outFile.string, overwrite: true)
+                }
+            } catch {
+                noora.error(.alert(
+                    "Could not write out the certificate file \(.primary("\(outFile.string)"))!",
+                    takeaways: [
+                        "\(error)"
+                    ]
+                ))
+                throw ExitCode.failure
             }
-            
-            // Display results
-            print(noora.format(
-                "\n\(.success("✓")) Vote Delegation Certificate: \(.path(try .init(validating: outFile.string)))"
-            ))
-            print()
-            
-            try await FileUtils.displayFile(outFile)
-            
-            print()
             
             // Success message
             noora.success(.alert(
-                "Vote delegation certificate created successfully.",
+                "Vote Delegation certificate created successfully.",
                 takeaways: [
                     "File: \(outFile.string)",
-                    "This certificate delegates voting power from all stake addresses",
+                    "This certificate delegates voting power from stake address \(.primary(try stakeAddress.info.address!.toBech32())) to the DRep \(try drep.id()).",
                     "Associated with \(stakeVkeyFilePath.string).",
                     "Include this certificate when building your transaction to activate the delegation."
                 ]
             ))
             
-            if generateTransaction {
+            // Display results
+            try await FileUtils.displayFile(outFile)
+            
+            if certificateOptions.generateTransaction {
                 let logger = getLogger(config: config)
                 let txBuilder = TxBuilder(context: context, logger: logger)
                 
@@ -297,7 +257,7 @@ extension CertificateMainCommand {
                     .voteDelegate(voteDelegationCertificate)
                 ]
                 
-                guard let feePaymentAddress = feePaymentAddress else {
+                guard let feePaymentAddress = transactionOptions.feePaymentAddress else {
                     noora.error(.alert(
                         "Fee payment address is required to generate the transaction.",
                         takeaways: ["Provide a valid fee payment address."]
@@ -306,7 +266,7 @@ extension CertificateMainCommand {
                 }
                 
                 spacedPrint(
-                    "\nRegister Vote-Delegation Certificate \(.primary("\(outFile.string)"))  with funds from Address \(.primary("\(feePaymentAddress.info.name!)"))"
+                    "\nRegister Vote-Delegation Certificate \(.primary("\(outFile.string)")) with funds from Address \(.primary("\(feePaymentAddress.info.name!)"))"
                 )
                 
                 let loadedDrep = voteDelegationCertificate.drep
@@ -317,16 +277,16 @@ extension CertificateMainCommand {
                         noora.info(.alert(
                             "Delegating Voting-Power of \(.primary("\(stakeAddress.info.name!)")) to DRep with Hash: \(.primary("\(drepHexId)"))",
                             takeaways: [
-                                "• CIP105 Bech-DRepID:: \(.primary("\(try loadedDrep.id((.bech32, .cip105)))"))",
-                                "• CIP129 Bech-DRepID:: \(.primary("\(try loadedDrep.id((.bech32, .cip105)))"))"
+                                "• CIP105 Bech-DRepID: \(.primary("\(try loadedDrep.id((.bech32, .cip105)))"))",
+                                "• CIP129 Bech-DRepID: \(.primary("\(try loadedDrep.id((.bech32, .cip105)))"))"
                             ]
                         ))
                     case .scriptHash(_):
                         noora.info(.alert(
                             "Delegating Voting-Power of \(.primary("\(stakeAddress.info.name!)")) to DRep with Hash: \(.primary("\(drepHexId)"))",
                             takeaways: [
-                                "• CIP105 Script-Bech-DRepID:: \(.primary("\(try loadedDrep.id((.bech32, .cip105)))"))",
-                                "• CIP129 Script-Bech-DRepID:: \(.primary("\(try loadedDrep.id((.bech32, .cip105)))"))"
+                                "• CIP105 Script-Bech-DRepID: \(.primary("\(try loadedDrep.id((.bech32, .cip105)))"))",
+                                "• CIP129 Script-Bech-DRepID: \(.primary("\(try loadedDrep.id((.bech32, .cip105)))"))"
                             ]
                         ))
                     case .alwaysAbstain:
@@ -344,7 +304,7 @@ extension CertificateMainCommand {
                     "protocol-parameters.json"
                 )
                 
-                let protocolParams = try await getProtocolParameters(
+                _ = try await getProtocolParameters(
                     context: context,
                     protocolParamsFile: protocolParamsFile
                 )
@@ -365,13 +325,13 @@ extension CertificateMainCommand {
                 )
                 
                 var args: [String] = []
-                if useCardanoCLI {
+                if transactionOptions.useCardanoCLI {
                     args.append("--use-cardano-cli")
                 }
-                if save {
+                if transactionOptions.save {
                     args.append("--save")
                 }
-                if submit {
+                if transactionOptions.submit {
                     args.append("--submit")
                 }
                 
@@ -384,7 +344,7 @@ extension CertificateMainCommand {
                     "--out-file", txSignedFile.string,
                 ] + args + signingKeys)
                 
-                if !save {
+                if !transactionOptions.save {
                     try FileManager.default.removeItem(atPath: txRawFile.string)
                     try FileManager.default.removeItem(atPath: txFile.string)
                     try FileManager.default.removeItem(atPath: txSignedFile.string)

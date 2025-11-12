@@ -13,16 +13,16 @@ let package = Package(
         .executable(name: "scm", targets: ["SwiftCardanoMultitool"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.2.0"),
-        .package(url: "https://github.com/apple/swift-configuration", .upToNextMinor(from: "0.1.1")),
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.6.2"),
+        .package(url: "https://github.com/apple/swift-configuration", .upToNextMinor(from: "0.2.0")),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.6.3"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.2.22"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.1.40"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "0.2.2"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.1.22"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.2.23"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.1.42"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "0.2.3"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.1.23"),
         .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.1"),
-        .package(url: "https://github.com/tuist/Noora", .upToNextMajor(from: "0.15.0")),
+        .package(url: "https://github.com/tuist/Noora", .upToNextMajor(from: "0.51.0")),
         .package(url: "https://github.com/wrkstrm/SwiftFigletKit.git", from: "1.3.0"),
         .package(url: "https://github.com/mxcl/Version.git", from: "2.2.0"),
         // Provides Crypto compatible APIs on Linux

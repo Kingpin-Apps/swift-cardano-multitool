@@ -20,15 +20,17 @@ enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
     case registerDRep
     case unRegisterDRep
     case updateDRep
+    case back
+    case exit
     
     var description: String {
         switch self {
             case .stakeRegistration:
-                return "Generates the registration certificate name.stake.cert to register a stake-address from the blockchain."
+                return "Stake Registration - Generates `name.stake.cert` to register a stake address on the blockchain."
             case .stakeDeregistration:
-                return "Generates the deregistration certificate name.stake.dereg-cert to deregister a stake-address from the blockchain."
+                return "Stake Deregistration - Generates  `name.stake.dereg-cert` to deregister a stake address from the blockchain."
             case .stakeDelegation:
-                return "Generates the delegation certificate name.deleg.cert to delegate stake to a stakepool."
+                return "Stake Delegation - Generates `name.deleg.cert to delegate a stake to a stakepool."
             case .poolRegistration:
                 return "Generates the certificate poolName.pool.cert to (re)register a stakepool on the blockchain."
             case .poolRetirement:
@@ -59,47 +61,55 @@ enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
                 return "Generates the DRep retirement certificate."
             case .updateDRep:
                 return "Generates the DRep update certificate."
+            case .back:
+                return "Go back to the main menu."
+            case .exit:
+                return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-                case .stakeRegistration:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .stakeDeregistration:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .stakeDelegation:
-                    return CertificateMainCommand.DelegationCertificate.self
-                case .poolRegistration:
-                    return CertificateMainCommand.StakepoolRegistrationCertificate.self
-                case .poolRetirement:
-                    return CertificateMainCommand.StakepoolDeregistrationCertificate.self
-                case .genesisKeyDelegation:        
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .moveInstantaneousRewards:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .unregister:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .voteDelegate:
-                    return CertificateMainCommand.VoteDelegation.self
-                case .stakeVoteDelegate:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .stakeRegisterDelegate:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .voteRegisterDelegate:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .stakeVoteRegisterDelegate:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .authCommitteeHot:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .resignCommitteeCold:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .registerDRep:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .unRegisterDRep:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-                case .updateDRep:
-                    return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .stakeRegistration:
+                return CertificateMainCommand.StakeRegistrationCertificate.self
+            case .stakeDeregistration:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .stakeDelegation:
+                return CertificateMainCommand.StakeDelegationCertificate.self
+            case .poolRegistration:
+                return CertificateMainCommand.StakepoolRegistrationCertificate.self
+            case .poolRetirement:
+                return CertificateMainCommand.StakepoolDeregistrationCertificate.self
+            case .genesisKeyDelegation:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .moveInstantaneousRewards:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .unregister:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .voteDelegate:
+                return CertificateMainCommand.VoteDelegation.self
+            case .stakeVoteDelegate:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .stakeRegisterDelegate:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .voteRegisterDelegate:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .stakeVoteRegisterDelegate:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .authCommitteeHot:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .resignCommitteeCold:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .registerDRep:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .unRegisterDRep:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .updateDRep:
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+            case .back:
+                return MainMenuCommand.self
+            case .exit:
+                return ExitCommand.self
         }
     }
 }
@@ -127,16 +137,6 @@ struct CertificateMainCommand: AsyncParsableCommand {
 }
 
 extension CertificateMainCommand {
-    
-    struct DelegationCertificate: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(
-            abstract: "Generates the delegation certificate name.deleg.cert to delegate stake to a stakepool."
-        )
-        
-        func run() async throws {
-            print("Generate delegation certificate command not yet implemented")
-        }
-    }
     
     struct StakeAddressRegistrationCertificate: AsyncParsableCommand {
         static let configuration = CommandConfiguration(

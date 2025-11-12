@@ -40,6 +40,8 @@ enum EnterAddressBy: String, CaseIterable, CustomStringConvertible {
 }
 
 enum EnterDRepBy: String, CaseIterable, CustomStringConvertible {
+    case alwaysAbstain
+    case alwaysNoConfidence
     case bech32
     case hex
     case path
@@ -49,6 +51,10 @@ enum EnterDRepBy: String, CaseIterable, CustomStringConvertible {
     
     var description: String {
         switch self {
+            case .alwaysAbstain:
+                return "Sets the DRep to always abstain."
+            case .alwaysNoConfidence:
+                return "Sets the DRep to always have no confidence."
             case .bech32:
                 return "The DRep in Bech32 format."
             case .hex:
@@ -61,6 +67,29 @@ enum EnterDRepBy: String, CaseIterable, CustomStringConvertible {
                 return "The path to the signing key file."
             case .mnemonics:
                 return "The mnemonics used to derive the DRep Id."
+        }
+    }
+}
+
+enum EnterPoolOperatorBy: String, CaseIterable, CustomStringConvertible {
+    case bech32
+    case hex
+    case path
+    case vkey
+    case skey
+    
+    var description: String {
+        switch self {
+            case .bech32:
+                return "The Pool Operator ID in Bech32 format."
+            case .hex:
+                return "The Pool Operator ID in Hex format."
+            case .path:
+                return "The path to the file containing the Pool Operator ID."
+            case .vkey:
+                return "The path to the verification key file."
+            case .skey:
+                return "The path to the signing key file."
         }
     }
 }

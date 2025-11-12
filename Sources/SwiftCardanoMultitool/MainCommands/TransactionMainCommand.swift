@@ -14,38 +14,44 @@ enum TransactionCommands: String, CaseIterable, CustomStringConvertible {
     case rewardsWithdraw = "rewards-wirhdraw"
     case txid
     case view
+    case back
+    case exit
     
     var description: String {
         switch self {
-        case .build: return "Build a transaction."
-        case .buildRaw: return "Build a raw transaction."
-        case .sign: return "Sign a transaction."
-        case .assemble: return "Assemble a transaction."
-        case .witness: return "Create a transaction witness."
-        case .submit: return "Submit a transaction."
-        case .calculateMinFee: return "Calculate minimum transaction fee."
-        case .calculateMinRequiredUtxo: return "Calculate minimum required UTXO."
-        case .hashScriptData: return "Hash script data."
-        case .rewardsWithdraw: return "Generate a rewards withdraw transaction."
-        case .txid: return "Calculate transaction ID."
-        case .view: return "View transaction details."
+            case .build: return "Build a transaction."
+            case .buildRaw: return "Build a raw transaction."
+            case .sign: return "Sign a transaction."
+            case .assemble: return "Assemble a transaction."
+            case .witness: return "Create a transaction witness."
+            case .submit: return "Submit a transaction."
+            case .calculateMinFee: return "Calculate minimum transaction fee."
+            case .calculateMinRequiredUtxo: return "Calculate minimum required UTXO."
+            case .hashScriptData: return "Hash script data."
+            case .rewardsWithdraw: return "Generate a rewards withdraw transaction."
+            case .txid: return "Calculate transaction ID."
+            case .view: return "View transaction details."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-        case .build: return TransactionMainCommand.Build.self
-        case .buildRaw: return TransactionMainCommand.BuildRaw.self
-        case .sign: return TransactionMainCommand.Sign.self
-        case .assemble: return TransactionMainCommand.Assemble.self
-        case .witness: return TransactionMainCommand.Witness.self
-        case .submit: return TransactionMainCommand.Submit.self
-        case .calculateMinFee: return TransactionMainCommand.CalculateMinFee.self
-        case .calculateMinRequiredUtxo: return TransactionMainCommand.CalculateMinRequiredUtxo.self
-        case .hashScriptData: return TransactionMainCommand.HashScriptData.self
-        case .rewardsWithdraw: return TransactionMainCommand.RewardsWithdraw.self
-        case .txid: return TransactionMainCommand.Txid.self
-        case .view: return TransactionMainCommand.View.self
+            case .build: return TransactionMainCommand.Build.self
+            case .buildRaw: return TransactionMainCommand.BuildRaw.self
+            case .sign: return TransactionMainCommand.Sign.self
+            case .assemble: return TransactionMainCommand.Assemble.self
+            case .witness: return TransactionMainCommand.Witness.self
+            case .submit: return TransactionMainCommand.Submit.self
+            case .calculateMinFee: return TransactionMainCommand.CalculateMinFee.self
+            case .calculateMinRequiredUtxo: return TransactionMainCommand.CalculateMinRequiredUtxo.self
+            case .hashScriptData: return TransactionMainCommand.HashScriptData.self
+            case .rewardsWithdraw: return TransactionMainCommand.RewardsWithdraw.self
+            case .txid: return TransactionMainCommand.Txid.self
+            case .view: return TransactionMainCommand.View.self
+            case .back: return MainMenuCommand.self
+            case .exit: return ExitCommand.self
         }
     }
 }

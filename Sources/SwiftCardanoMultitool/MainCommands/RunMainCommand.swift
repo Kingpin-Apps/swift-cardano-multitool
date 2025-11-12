@@ -8,26 +8,32 @@ enum RunCommands: String, CaseIterable, CustomStringConvertible {
     case submitApi = "submit-api"
     case ogmios
     case kupo
+    case back
+    case exit
     
     var description: String {
         switch self {
-        case .node: return "Run cardano-node."
-        case .dbSync: return "Run cardano-db-sync."
-        case .wallet: return "Run cardano-wallet."
-        case .submitApi: return "Run cardano-submit-api."
-        case .ogmios: return "Run Ogmios."
-        case .kupo: return "Run Kupo."
+            case .node: return "Run cardano-node."
+            case .dbSync: return "Run cardano-db-sync."
+            case .wallet: return "Run cardano-wallet."
+            case .submitApi: return "Run cardano-submit-api."
+            case .ogmios: return "Run Ogmios."
+            case .kupo: return "Run Kupo."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-        case .node: return RunMainCommand.Node.self
-        case .dbSync: return RunMainCommand.DbSync.self
-        case .wallet: return RunMainCommand.Wallet.self
-        case .submitApi: return RunMainCommand.SubmitApi.self
-        case .ogmios: return RunMainCommand.Ogmios.self
-        case .kupo: return RunMainCommand.Kupo.self
+            case .node: return RunMainCommand.Node.self
+            case .dbSync: return RunMainCommand.DbSync.self
+            case .wallet: return RunMainCommand.Wallet.self
+            case .submitApi: return RunMainCommand.SubmitApi.self
+            case .ogmios: return RunMainCommand.Ogmios.self
+            case .kupo: return RunMainCommand.Kupo.self
+            case .back: return MainMenuCommand.self
+            case .exit: return ExitCommand.self
         }
     }
 }

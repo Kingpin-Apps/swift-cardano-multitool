@@ -7,24 +7,30 @@ enum GetCommands: String, CaseIterable, CustomStringConvertible {
     case protocolParameters = "protocol-parameters"
     case leadershipSchedule = "leadership-schedule"
     case version
+    case back
+    case exit
     
     var description: String {
         switch self {
-        case .era: return "Get current era."
-        case .epoch: return "Get current epoch."
-        case .protocolParameters: return "Get protocol parameters."
-        case .leadershipSchedule: return "Get leadership schedule."
-        case .version: return "Get node version."
+            case .era: return "Get current era."
+            case .epoch: return "Get current epoch."
+            case .protocolParameters: return "Get protocol parameters."
+            case .leadershipSchedule: return "Get leadership schedule."
+            case .version: return "Get node version."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-        case .era: return GetMainCommand.Era.self
-        case .epoch: return GetMainCommand.Epoch.self
-        case .protocolParameters: return GetMainCommand.ProtocolParameters.self
-        case .leadershipSchedule: return GetMainCommand.LeadershipSchedule.self
-        case .version: return GetMainCommand.Version.self
+            case .era: return GetMainCommand.Era.self
+            case .epoch: return GetMainCommand.Epoch.self
+            case .protocolParameters: return GetMainCommand.ProtocolParameters.self
+            case .leadershipSchedule: return GetMainCommand.LeadershipSchedule.self
+            case .version: return GetMainCommand.Version.self
+            case .back: return MainMenuCommand.self
+            case .exit: return ExitCommand.self
         }
     }
 }

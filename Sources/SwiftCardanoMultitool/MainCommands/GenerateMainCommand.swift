@@ -13,58 +13,68 @@ enum GenerateCommands: String, CaseIterable, CustomStringConvertible {
     case stakeAddressRegistrationCertificate = "stake-address-registration-certificate"
     case stakepoolRegistrationCertificate = "stakepool-registration-certificate"
     case stakepoolDeregistrationCertificate = "stakepool-deregistration-certificate"
+    case back
+    case exit
     
     var description: String {
         switch self {
-        case .delegationCertificate:
-            return "Generates the delegation certificate name.deleg.cert to delegate stake to a stakepool."
-        case .nodeColdKeys:
-            return "Generate the node cold keys."
-        case .nodeKesKeys:
-            return "Generate the node cold keys."
-        case .nodeOperationalCertificate:
-            return "Generate the node operational certificate."
-        case .nodeVrfKeys:
-            return "Generate the node vrf keys."
-        case .paymentAddressOnly:
-            return "Generate a payment address only."
-        case .paymentAndStakeAddress:
-            return "Generate a payment and stake address."
-        case .keyRotation:
-            return "Rotate KES Keys and Node Operational Certificate :param name: The name of the pools :param number_of_pools: The number of pools to rotate"
-        case .stakeAddressRegistrationCertificate:
-            return "Generates the registration certificate name.stake.cert to register a stake-address from the blockchain."
-        case .stakepoolRegistrationCertificate:
-            return "Generates the certificate poolName.pool.cert to (re)register a stakepool on the blockchain."
-        case .stakepoolDeregistrationCertificate:
-            return "Generates the certificate poolName.pool.dereg-cert to retire a stakepool from the blockchain."
+            case .delegationCertificate:
+                return "Generates the delegation certificate name.deleg.cert to delegate stake to a stakepool."
+            case .nodeColdKeys:
+                return "Generate the node cold keys."
+            case .nodeKesKeys:
+                return "Generate the node cold keys."
+            case .nodeOperationalCertificate:
+                return "Generate the node operational certificate."
+            case .nodeVrfKeys:
+                return "Generate the node vrf keys."
+            case .paymentAddressOnly:
+                return "Generate a payment address only."
+            case .paymentAndStakeAddress:
+                return "Generate a payment and stake address."
+            case .keyRotation:
+                return "Rotate KES Keys and Node Operational Certificate :param name: The name of the pools :param number_of_pools: The number of pools to rotate"
+            case .stakeAddressRegistrationCertificate:
+                return "Generates the registration certificate name.stake.cert to register a stake-address from the blockchain."
+            case .stakepoolRegistrationCertificate:
+                return "Generates the certificate poolName.pool.cert to (re)register a stakepool on the blockchain."
+            case .stakepoolDeregistrationCertificate:
+                return "Generates the certificate poolName.pool.dereg-cert to retire a stakepool from the blockchain."
+            case .back: 
+                return "Go back to the main menu."
+            case .exit: 
+                return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-        case .delegationCertificate:
-            return GenerateMainCommand.DelegationCertificate.self
-        case .nodeColdKeys:
-            return GenerateMainCommand.NodeColdKeys.self
-        case .nodeKesKeys:
-            return GenerateMainCommand.NodeKesKeys.self
-        case .nodeOperationalCertificate:
-            return GenerateMainCommand.NodeOperationalCertificate.self
-        case .nodeVrfKeys:
-            return GenerateMainCommand.NodeVrfKeys.self
-        case .paymentAddressOnly:
-            return GenerateMainCommand.PaymentAddressOnly.self
-        case .paymentAndStakeAddress:
-            return GenerateMainCommand.PaymentAndStakeAddress.self
-        case .keyRotation:
-            return GenerateMainCommand.KeyRotation.self
-        case .stakeAddressRegistrationCertificate:
-            return GenerateMainCommand.StakeAddressRegistrationCertificate.self
-        case .stakepoolRegistrationCertificate:
-            return GenerateMainCommand.StakepoolRegistrationCertificate.self
-        case .stakepoolDeregistrationCertificate:
-            return GenerateMainCommand.StakepoolDeregistrationCertificate.self
+            case .delegationCertificate:
+                return GenerateMainCommand.DelegationCertificate.self
+            case .nodeColdKeys:
+                return GenerateMainCommand.NodeColdKeys.self
+            case .nodeKesKeys:
+                return GenerateMainCommand.NodeKesKeys.self
+            case .nodeOperationalCertificate:
+                return GenerateMainCommand.NodeOperationalCertificate.self
+            case .nodeVrfKeys:
+                return GenerateMainCommand.NodeVrfKeys.self
+            case .paymentAddressOnly:
+                return GenerateMainCommand.PaymentAddressOnly.self
+            case .paymentAndStakeAddress:
+                return GenerateMainCommand.PaymentAndStakeAddress.self
+            case .keyRotation:
+                return GenerateMainCommand.KeyRotation.self
+            case .stakeAddressRegistrationCertificate:
+                return GenerateMainCommand.StakeAddressRegistrationCertificate.self
+            case .stakepoolRegistrationCertificate:
+                return GenerateMainCommand.StakepoolRegistrationCertificate.self
+            case .stakepoolDeregistrationCertificate:
+                return GenerateMainCommand.StakepoolDeregistrationCertificate.self
+            case .back:
+                return MainMenuCommand.self
+            case .exit:
+                return ExitCommand.self
         }
     }
 }

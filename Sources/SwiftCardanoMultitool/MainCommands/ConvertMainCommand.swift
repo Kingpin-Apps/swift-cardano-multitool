@@ -7,24 +7,30 @@ enum ConvertCommands: String, CaseIterable, CustomStringConvertible {
     case certificate
     case metadata
     case transaction
+    case back
+    case exit
     
     var description: String {
         switch self {
-        case .keys: return "Convert keys to new format."
-        case .address: return "Convert address to new format."
-        case .certificate: return "Convert certificate to new format."
-        case .metadata: return "Convert metadata to new format."
-        case .transaction: return "Convert transaction to new format."
+            case .keys: return "Convert keys to new format."
+            case .address: return "Convert address to new format."
+            case .certificate: return "Convert certificate to new format."
+            case .metadata: return "Convert metadata to new format."
+            case .transaction: return "Convert transaction to new format."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-        case .keys: return ConvertMainCommand.Keys.self
-        case .address: return ConvertMainCommand.Address.self
-        case .certificate: return ConvertMainCommand.Certificate.self
-        case .metadata: return ConvertMainCommand.Metadata.self
-        case .transaction: return ConvertMainCommand.Transaction.self
+            case .keys: return ConvertMainCommand.Keys.self
+            case .address: return ConvertMainCommand.Address.self
+            case .certificate: return ConvertMainCommand.Certificate.self
+            case .metadata: return ConvertMainCommand.Metadata.self
+            case .transaction: return ConvertMainCommand.Transaction.self
+            case .back: return MainMenuCommand.self
+            case .exit: return ExitCommand.self
         }
     }
 }

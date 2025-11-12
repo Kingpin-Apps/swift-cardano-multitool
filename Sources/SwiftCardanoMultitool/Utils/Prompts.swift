@@ -21,6 +21,10 @@ func enterAddressBy(title: TerminalText? = nil) async throws -> EnterAddressBy {
     )
 }
 
+/// Prompt user to enter DRep by various methods.
+/// - Parameter title: Optional title for the prompt.
+/// - Returns: EnterDRepBy enum value.
+/// - Throws: ExitCode.failure if no valid input is provided.
 func enterDRepBy(title: TerminalText? = nil) async throws -> EnterDRepBy {
     return noora.singleChoicePrompt(
         title: title ?? "Enter DRep",
@@ -36,6 +40,30 @@ func enterDRepBy(title: TerminalText? = nil) async throws -> EnterDRepBy {
     )
 }
 
+/// Prompt user to enter Pool Operator by various methods.
+/// - Parameter title: Optional title for the prompt.
+/// - Returns: EnterPoolOperatorBy enum value.
+/// - Throws: ExitCode.failure if no valid input is provided.
+func enterPoolOperatorBy(title: TerminalText? = nil) async throws -> EnterPoolOperatorBy {
+    return noora.singleChoicePrompt(
+        title: title ?? "Enter Pool Operator",
+        question: "Enter Pool Operator by:",
+        description: """
+            Accepted formats:
+            \n  • Bech32: pool1... (56 chars) 
+            \n  • Hex: 56-character hex string (with or without 0x prefix)
+            \n  • File: path to .pool.id file
+            \n  • File: path to .pool.id-bech file
+            \n  • File: path to .node.vkey file
+            \n  • File: path to .node.skey file
+            """,
+    )
+}
+
+/// Prompt user to select a stake address from the current directory.
+/// - Parameter title: Optional title for the prompt.
+/// - Returns: StakeAddressInfo of the selected stake address.
+/// - Throws: ExitCode.failure if no stake address files are found.
 func getStakeAddress(title: TerminalText? = nil) async throws -> StakeAddressInfo {
     let cwd = FilePath(FileManager.default.currentDirectoryPath)
     let stakingFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
@@ -65,6 +93,10 @@ func getStakeAddress(title: TerminalText? = nil) async throws -> StakeAddressInf
     return StakeAddressInfo(info: info)
 }
 
+/// Prompt user to select a fee payment address from the current directory or by name.
+/// - Parameter title: Optional title for the prompt.
+/// - Returns: PaymentAddressInfo of the selected fee payment address.
+/// - Throws: ExitCode.failure if no payment address files are found.
 func getDestinationAddress(title: TerminalText? = nil) async throws -> PaymentAddressInfo {
     let addressBy = try await enterAddressBy(title: title)
     
@@ -134,6 +166,10 @@ func getDestinationAddress(title: TerminalText? = nil) async throws -> PaymentAd
     return PaymentAddressInfo(info: info)
 }
 
+/// Prompt user to select a fee payment address from the current directory or by name.
+/// - Parameter title: Optional title for the prompt.
+/// - Returns: PaymentAddressInfo of the selected fee payment address.
+/// - Throws: ExitCode.failure if no payment address files are found.
 func getFeePaymentAddress(title: TerminalText? = nil) async throws -> PaymentAddressInfo {
     let addressBy = try await getAddressBy(title: title)
     
@@ -186,7 +222,10 @@ func getFeePaymentAddress(title: TerminalText? = nil) async throws -> PaymentAdd
     return PaymentAddressInfo(info: info)
 }
 
-
+/// Prompt user to select a transaction file from the current directory.
+/// - Parameter title: Optional title for the prompt.
+/// - Returns: FilePath of the selected transaction file.
+/// - Throws: ExitCode.failure if no transaction files are found.
 func getTransactionFilePath(title: TerminalText? = nil) async throws -> FilePath {
     let cwd = FilePath(FileManager.default.currentDirectoryPath)
     let transactionFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
@@ -216,7 +255,10 @@ func getTransactionFilePath(title: TerminalText? = nil) async throws -> FilePath
     return FilePath(transactionFileName)
 }
 
-
+/// Prompt user to select a signing key file from the current directory.
+/// - Parameter title: Optional title for the prompt.
+/// - Returns: FilePath of the selected signing key file.
+/// - Throws: ExitCode.failure if no signing key files are found.
 func getSigningKeyFilePath(title: TerminalText? = nil) async throws -> FilePath {
     let cwd = FilePath(FileManager.default.currentDirectoryPath)
     let signingKeyFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
@@ -246,10 +288,18 @@ func getSigningKeyFilePath(title: TerminalText? = nil) async throws -> FilePath 
     return FilePath(signingKeyFileName)
 }
 
+/// Prompt user to enter DRep by various methods and return the DRep instance.
+/// - Parameter title: Optional title for the prompt.
+/// - Returns: DRep instance.
+/// - Throws: ExitCode.failure if no valid DRep ID files are found or input is invalid.
 func getDRep(title: TerminalText? = nil) async throws -> DRep {
     let enterDRepBy = try await enterDRepBy(title: title)
     
     switch enterDRepBy {
+        case .alwaysAbstain:
+            return DRep(credential: .alwaysAbstain)
+        case .alwaysNoConfidence:
+            return DRep(credential: .alwaysNoConfidence)
         case .path:
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
             let drepFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
@@ -352,5 +402,106 @@ func getDRep(title: TerminalText? = nil) async throws -> DRep {
             return DRep(credential: .verificationKeyHash(try drepVKey.hash()))
         case .mnemonics:
             throw SwiftCardanoMultitoolError.notImplemented
+    }
+}
+
+/// Prompt user to enter Pool Operator ID by various methods and return the PoolOperator instance.
+/// - Parameter title: Optional title for the prompt.
+/// - Returns: PoolOperator instance.
+/// - Throws: ExitCode.failure if no valid Pool ID files are found or input is invalid.
+func getPoolOperator(title: TerminalText? = nil) async throws -> PoolOperator {
+    let enterPoolOperatorBy = try await enterPoolOperatorBy(title: title)
+    let cwd = FilePath(FileManager.default.currentDirectoryPath)
+    
+    switch enterPoolOperatorBy {
+        case .path:
+            let poolOperatorFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+                .filter { $0.hasSuffix(".pool.id") || $0.hasSuffix(".pool.id-bech") }
+            
+            if poolOperatorFiles.isEmpty {
+                noora.error(.alert(
+                    "No Pool ID files found in current directory.",
+                    takeaways: [
+                        "Please create a pool first using the 'certificate stake-pool' command and register it.",
+                        "Or, if you already have a pool ID, you can enter it directly here."
+                    ]
+                ))
+                throw ExitCode.failure
+            }
+            
+            let poolOperatorFileName = noora.singleChoicePrompt(
+                title: "Pool ID",
+                question: "Select the Pool ID file:",
+                options: poolOperatorFiles,
+                description: "Available .pool.id and .pool.id-bech files in current directory"
+            )
+            
+            return try PoolOperator.load(from: cwd.appending(poolOperatorFileName).string)
+        case .hex:
+            let poolId = noora.textPrompt(
+                title: "Pool ID",
+                prompt: "Enter the Pool ID in hexadecimal format:",
+                collapseOnAnswer: true,
+                validationRules: [NonEmptyValidationRule(error: "Pool ID cannot be empty.")]
+            ).trimmingCharacters(in: .whitespacesAndNewlines)
+            return try PoolOperator(from: poolId.hexStringToData)
+        case .bech32:
+            let poolId = noora.textPrompt(
+                title: "Pool ID",
+                prompt: "Enter the Pool ID in Bech32 format:",
+                collapseOnAnswer: true,
+                validationRules: [NonEmptyValidationRule(error: "Pool ID cannot be empty.")]
+            ).trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            
+            return try PoolOperator(from: poolId)
+        case .vkey:
+            let poolOperatorFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+                .filter { $0.hasSuffix(".node.vkey") }
+            
+            if poolOperatorFiles.isEmpty {
+                noora.error(.alert(
+                    "No Node Verification Keys files found in current directory.",
+                    takeaways: [
+                        "Please create an address first using the 'generate node-keys' command."
+                    ]
+                ))
+                throw ExitCode.failure
+            }
+            
+            let poolOperatorFileName = noora.singleChoicePrompt(
+                title: "Pool VKey",
+                question: "Select the Node Verification Key file:",
+                options: poolOperatorFiles,
+                description: "Available .node.vkey files in current directory"
+            )
+            let poolOperatorVKey = try StakePoolVerificationKey.load(from: cwd.appending(poolOperatorFileName).string
+            )
+            return PoolOperator(poolKeyHash: try poolOperatorVKey.poolKeyHash())
+        case .skey:
+            let poolOperatorFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+                .filter { $0.hasSuffix(".node.skey") }
+            
+            if poolOperatorFiles.isEmpty {
+                noora.error(.alert(
+                    "No Node Signing Keys files found in current directory.",
+                    takeaways: [
+                        "Please create an address first using the 'generate  node-keys' command."
+                    ]
+                ))
+                throw ExitCode.failure
+            }
+            
+            let poolOperatorFileName = noora.singleChoicePrompt(
+                title: "Pool SKey",
+                question: "Select the Node Signing Key file:",
+                options: poolOperatorFiles,
+                description: "Available .node.skey files in current directory"
+            )
+            let poolOperatorSKey = try DRepSigningKey.load(
+                from: cwd.appending(poolOperatorFileName).string
+            )
+            let poolOperatorVKey: StakePoolVerificationKey = try poolOperatorSKey.toVerificationKey()
+            return PoolOperator(poolKeyHash: try poolOperatorVKey.poolKeyHash())
     }
 }

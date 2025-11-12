@@ -6,6 +6,8 @@ enum CheckCommands: String, CaseIterable, CustomStringConvertible {
     case nodeOperationalCertificate
     case stakepool
     case stakeAddress
+    case back
+    case exit
     
     var description: String {
         switch self {
@@ -15,6 +17,10 @@ enum CheckCommands: String, CaseIterable, CustomStringConvertible {
                 return "Check the stakepool information on chain."
             case .stakeAddress:
                 return "Check a stake address information on chain."
+            case .back:
+                return "Go back to the main menu."
+            case .exit:
+                return "Exit the program."
         }
     }
     
@@ -26,6 +32,10 @@ enum CheckCommands: String, CaseIterable, CustomStringConvertible {
                 return CheckMainCommand.Stakepool.self
             case .stakeAddress:
                 return CheckMainCommand.StakeAddress.self
+            case .back:
+                return MainMenuCommand.self
+            case .exit:
+                return ExitCommand.self
         }
     }
 }

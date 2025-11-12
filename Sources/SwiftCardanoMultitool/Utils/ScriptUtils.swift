@@ -121,13 +121,13 @@ public func stakeAddressInfoSummary(
     }
     
     spacedPrint(
-        "Staking Address is \(.success("✓ Registered")) on the chain with a deposit of \(.primary("\(stakeAddressInfo.stakeRegistrationDeposit ?? 0)")) lovelaces"
+        "\nStaking Address is \(.success("✓ Registered")) on the chain with a deposit of \(.primary("\(stakeAddressInfo.stakeRegistrationDeposit ?? 0)")) lovelaces"
     )
     
     if stakeAddressInfo.rewardAccountBalance == 0 {
         noora.warning(.alert(
             "Rewards Balance: \(.danger("0 lovelaces"))",
-            takeaway: "No rewards available to withdraw. \nWait for rewards to accumulate before claiming."
+            takeaway: "No rewards available to withdraw. Wait for rewards to accumulate before claiming."
             
         ))
     } else {
@@ -140,7 +140,7 @@ public func stakeAddressInfoSummary(
     // If delegated to a pool, show the current pool ID
     if let poolOperator = stakeAddressInfo.stakeDelegation {
         spacedPrint(
-            "Account is delegated to a Pool with ID: \(.primary(try poolOperator.id()))"
+            "\nAccount is delegated to a Pool with ID: \(.primary(try poolOperator.id()))"
         )
         
         let koiosContext = try await KoiosChainContext(
@@ -165,7 +165,7 @@ public func stakeAddressInfoSummary(
                 takeaways: [
                     "Name: \(poolDetails.metaJson?.name ?? "N/A")",
                     "Ticker: \(poolDetails.metaJson?.ticker ?? "N/A")",
-                    "Status: \(String(describing: poolDetails.poolStatus ?? .none))",
+                    "Status: \(poolDetails.poolStatus!)",
                     "Pledge: \(poolDetails.pledge ?? "N/A")",
                     "Live Pledge: \(poolDetails.livePledge ?? "N/A")",
                     "Live Stake: \(poolDetails.liveStake ?? "N/A")",
@@ -188,7 +188,7 @@ public func stakeAddressInfoSummary(
     if let voteDelegation = stakeAddressInfo.voteDelegation {
         
         spacedPrint(
-            "DRep Delegation: \(.success("✓ Delegated"))"
+            "\nDRep Delegation: \(.success("✓ Delegated"))"
         )
         
         switch voteDelegation.credential {

@@ -9,53 +9,39 @@ import SwiftCardanoTxBuilder
 import Path
 
 protocol TransactionCommandable: AsyncParsableCommand {
-    var toAddress: PaymentAddressInfo? { get set }
-    var feePaymentAddress: PaymentAddressInfo? { get set }
-    var messages: [String] { get set }
-    var encryption: TransactionMessage.EncryptionMode? { get set }
-    var passphrase: String  { get set }
-    var metadataJson: [FilePath] { get set }
-    var metadataCbor: [FilePath] { get set }
-    var utxoFilter: [String] { get set }
-    var utxoLimit: Int? { get set }
-    var skipUtxoWithAsset: [String] { get set }
-    var onlyUtxoWithAsset: [String] { get set }
-    var useCardanoCLI: Bool { get set }
-    var save: Bool { get set }
-    var submit: Bool { get set }
+    var transactionOptions: SharedTransactionOptions { get set }
 }
 
 extension TransactionCommandable {
-    
     var isSame: Bool {
-        return feePaymentAddress?.info.address == toAddress?.info.address
+        return transactionOptions.feePaymentAddress?.info.address == transactionOptions.toAddress?.info.address
     }
     
     // MARK: - Validation
     
     mutating func validateForTransaction() throws {
         // Validate messages length (64 bytes max)
-        for msg in messages {
+        for msg in transactionOptions.messages {
             guard msg.utf8.count <= 64 else {
                 throw ValidationError("Message exceeds 64 bytes: '\(msg)' is \(msg.utf8.count) bytes")
             }
         }
         
         // Validate metadata files exist
-        for jsonPath in metadataJson {
+        for jsonPath in transactionOptions.metadataJson {
             guard FileManager.default.fileExists(atPath: jsonPath.string) else {
                 throw ValidationError("Metadata JSON file not found: \(jsonPath)")
             }
         }
         
-        for cborPath in metadataCbor {
+        for cborPath in transactionOptions.metadataCbor {
             guard FileManager.default.fileExists(atPath: cborPath.string) else {
                 throw ValidationError("Metadata CBOR file not found: \(cborPath)")
             }
         }
         
         // Validate UTXO filter format: 64 hex chars + # + digits
-        for utxo in utxoFilter {
+        for utxo in transactionOptions.utxoFilter {
             let pattern = "^[0-9a-fA-F]{64}#[0-9]+$"
             guard utxo.range(of: pattern, options: .regularExpression) != nil else {
                 throw ValidationError("Invalid UTXO filter format '\(utxo)'. Expected: txHash#index")
@@ -63,14 +49,14 @@ extension TransactionCommandable {
         }
         
         // Validate UTXO limit
-        if let limit = utxoLimit {
+        if let limit = transactionOptions.utxoLimit {
             guard limit > 0 else {
                 throw ValidationError("UTXO limit must be a positive integer, got: \(limit)")
             }
         }
         
         // Validate asset filter format: 56 hex chars (policyId) + assetNameHex
-        for asset in skipUtxoWithAsset + onlyUtxoWithAsset {
+        for asset in transactionOptions.skipUtxoWithAsset + transactionOptions.onlyUtxoWithAsset {
             let pattern = "^[0-9a-fA-F]{56}\\+[0-9a-fA-F]+$"
             guard asset.range(of: pattern, options: .regularExpression) != nil else {
                 throw ValidationError("Invalid asset filter format '\(asset)'. Expected: policyId+assetNameHex (hex format)")
@@ -81,8 +67,8 @@ extension TransactionCommandable {
     // MARK: - Wizard
     
     mutating func wizardForTransaction() async throws {
-        if feePaymentAddress == nil {
-            feePaymentAddress = try await getFeePaymentAddress(
+        if transactionOptions.feePaymentAddress == nil {
+            transactionOptions.feePaymentAddress = try await getFeePaymentAddress(
                 title: "Fee Payment Address"
             )
         }
@@ -99,7 +85,7 @@ extension TransactionCommandable {
             var addMore = true
             while addMore {
                 let msg = noora.textPrompt(
-                    title: "Message \(messages.count + 1)",
+                    title: "Message \(transactionOptions.messages.count + 1)",
                     prompt: "Enter message:",
                     description: "Max 64 bytes. Leave empty to skip.",
                     collapseOnAnswer: true
@@ -109,7 +95,7 @@ extension TransactionCommandable {
                     if msg.utf8.count > 64 {
                         noora.warning(.alert("Message too long (\(msg.utf8.count) bytes). Skipped."))
                     } else {
-                        messages.append(msg)
+                        transactionOptions.messages.append(msg)
                     }
                     
                     addMore = noora.yesOrNoChoicePrompt(
@@ -123,7 +109,7 @@ extension TransactionCommandable {
             }
             
             // Encryption (if messages present)
-            if !messages.isEmpty {
+            if !transactionOptions.messages.isEmpty {
                 let encryptMessages = noora.yesOrNoChoicePrompt(
                     title: "Message Encryption",
                     question: "Encrypt messages?",
@@ -132,7 +118,7 @@ extension TransactionCommandable {
                 )
                 
                 if encryptMessages {
-                    encryption = TransactionMessage.EncryptionMode.basic
+                    transactionOptions.encryption = TransactionMessage.EncryptionMode.basic
                     
                     let customPassphrase = noora.yesOrNoChoicePrompt(
                         title: "Custom Passphrase",
@@ -143,12 +129,12 @@ extension TransactionCommandable {
                     
                     if customPassphrase {
                         let promptText: TerminalText = "Enter passphrase for message encryption"
-                        passphrase = try await PasswordUtils.getConfirmedPassword(
+                        transactionOptions.passphrase = try await PasswordUtils.getConfirmedPassword(
                             prompt: promptText
                         )
                     }
                 } else {
-                    encryption = TransactionMessage.EncryptionMode.none
+                    transactionOptions.encryption = TransactionMessage.EncryptionMode.none
                 }
             }
         }
@@ -165,7 +151,7 @@ extension TransactionCommandable {
             var addMore = true
             while addMore {
                 let path = FilePath(noora.textPrompt(
-                    title: "JSON Metadata File \(metadataJson.count + 1)",
+                    title: "JSON Metadata File \(transactionOptions.metadataJson.count + 1)",
                     prompt: "Enter path to JSON metadata file:",
                     description: "Relative or absolute path. Leave empty to skip.",
                     collapseOnAnswer: true
@@ -173,7 +159,7 @@ extension TransactionCommandable {
                 
                 if !path.isEmpty {
                     if FileManager.default.fileExists(atPath: path.string) {
-                        metadataJson.append(path)
+                        transactionOptions.metadataJson.append(path)
                         addMore = noora.yesOrNoChoicePrompt(
                             title: "Add Another JSON File",
                             question: "Add another JSON metadata file?",
@@ -204,7 +190,7 @@ extension TransactionCommandable {
             var addMore = true
             while addMore {
                 let path = FilePath(noora.textPrompt(
-                    title: "CBOR Metadata File \(metadataCbor.count + 1)",
+                    title: "CBOR Metadata File \(transactionOptions.metadataCbor.count + 1)",
                     prompt: "Enter path to CBOR metadata file:",
                     description: "Relative or absolute path. Leave empty to skip.",
                     collapseOnAnswer: true
@@ -212,7 +198,7 @@ extension TransactionCommandable {
                 
                 if !path.isEmpty {
                     if FileManager.default.fileExists(atPath: path.string) {
-                        metadataCbor.append(path)
+                        transactionOptions.metadataCbor.append(path)
                         addMore = noora.yesOrNoChoicePrompt(
                             title: "Add Another CBOR File",
                             question: "Add another CBOR metadata file?",
@@ -252,7 +238,7 @@ extension TransactionCommandable {
                 var addMore = true
                 while addMore {
                     let utxo = noora.textPrompt(
-                        title: "UTXO \(utxoFilter.count + 1)",
+                        title: "UTXO \(transactionOptions.utxoFilter.count + 1)",
                         prompt: "Enter UTXO (format: txHash#index):",
                         description: "Example: a1b2c3...#0. Leave empty to finish.",
                         collapseOnAnswer: true
@@ -262,7 +248,7 @@ extension TransactionCommandable {
                         // Validate format
                         let pattern = "^[0-9a-fA-F]{64}#[0-9]+$"
                         if utxo.range(of: pattern, options: .regularExpression) != nil {
-                            utxoFilter.append(utxo)
+                            transactionOptions.utxoFilter.append(utxo)
                             addMore = noora.yesOrNoChoicePrompt(
                                 title: "Add Another UTXO",
                                 question: "Add another UTXO?",
@@ -300,7 +286,7 @@ extension TransactionCommandable {
                 ).trimmingCharacters(in: .whitespacesAndNewlines)
                 
                 if let limit = Int(limitStr), limit > 0 {
-                    utxoLimit = limit
+                    transactionOptions.utxoLimit = limit
                 } else {
                     noora.warning(.alert("Invalid UTXO limit. Must be a positive integer. Skipped."))
                 }
@@ -326,7 +312,7 @@ extension TransactionCommandable {
                     var addMore = true
                     while addMore {
                         let asset = noora.textPrompt(
-                            title: "Skip Asset \(skipUtxoWithAsset.count + 1)",
+                            title: "Skip Asset \(transactionOptions.skipUtxoWithAsset.count + 1)",
                             prompt: "Enter asset to skip (format: policyId+assetNameHex):",
                             description: "Example: abc123...+48656c6c6f. Leave empty to finish.",
                             collapseOnAnswer: true
@@ -335,7 +321,7 @@ extension TransactionCommandable {
                         if !asset.isEmpty {
                             let pattern = "^[0-9a-fA-F]{56}\\+[0-9a-fA-F]+$"
                             if asset.range(of: pattern, options: .regularExpression) != nil {
-                                skipUtxoWithAsset.append(asset)
+                                transactionOptions.skipUtxoWithAsset.append(asset)
                                 addMore = noora.yesOrNoChoicePrompt(
                                     title: "Add Another Asset to Skip",
                                     question: "Add another asset to skip?",
@@ -359,7 +345,7 @@ extension TransactionCommandable {
                     var addMore = true
                     while addMore {
                         let asset = noora.textPrompt(
-                            title: "Required Asset \(onlyUtxoWithAsset.count + 1)",
+                            title: "Required Asset \(transactionOptions.onlyUtxoWithAsset.count + 1)",
                             prompt: "Enter asset to require (format: policyId+assetNameHex):",
                             description: "Example: abc123...+48656c6c6f. Leave empty to finish.",
                             collapseOnAnswer: true
@@ -368,7 +354,7 @@ extension TransactionCommandable {
                         if !asset.isEmpty {
                             let pattern = "^[0-9a-fA-F]{56}\\+[0-9a-fA-F]+$"
                             if asset.range(of: pattern, options: .regularExpression) != nil {
-                                onlyUtxoWithAsset.append(asset)
+                                transactionOptions.onlyUtxoWithAsset.append(asset)
                                 addMore = noora.yesOrNoChoicePrompt(
                                     title: "Add Another Required Asset",
                                     question: "Add another required asset?",
@@ -390,21 +376,21 @@ extension TransactionCommandable {
             }
         }
         
-        useCardanoCLI = noora.yesOrNoChoicePrompt(
+        transactionOptions.useCardanoCLI = noora.yesOrNoChoicePrompt(
             title: "Build Method",
             question: "Use cardano-cli to build transaction?",
             defaultAnswer: false,
             description: "Default: SwiftCardano. Alternative: cardano-cli"
         )
         
-        save = noora.yesOrNoChoicePrompt(
+        transactionOptions.save = noora.yesOrNoChoicePrompt(
             title: "Save Transaction",
             question: "Save built transaction to file?",
             defaultAnswer: true,
             description: "You can submit it later if desired."
         )
         
-        submit = noora.yesOrNoChoicePrompt(
+        transactionOptions.submit = noora.yesOrNoChoicePrompt(
             title: "Submit Transaction",
             question: "Submit the transaction to the blockchain?",
             defaultAnswer: false,
@@ -428,7 +414,6 @@ extension TransactionCommandable {
             "\n\(.primary("━━━ Stake Address Info ━━━"))\n"
         )
         
-//        var addrInfo = stakeAddress.info
         try await stakeAddress.info.updateStakeAddressInfo(context: context)
         
         stakeAddress.info.addressTypeEra()
@@ -485,21 +470,21 @@ extension TransactionCommandable {
         var filteredUtxos = allUtxos
         
         // Filter 1: Specific UTXOs
-        if !utxoFilter.isEmpty {
+        if !transactionOptions.utxoFilter.isEmpty {
             filteredUtxos = filteredUtxos.filter { utxo in
-                utxoFilter.contains(utxo.input.description)
+                transactionOptions.utxoFilter.contains(utxo.input.description)
             }
             print(noora.format("After specific UTXO filter: \(.primary("\(filteredUtxos.count)")) UTXOs"))
         }
         
         // Filter 2: Skip UTXOs with specific assets
-        if !skipUtxoWithAsset.isEmpty {
+        if !transactionOptions.skipUtxoWithAsset.isEmpty {
             filteredUtxos = filteredUtxos.filter { utxo in
                 !utxo.output.amount.multiAsset.data.keys.contains(where: { (scriptHash: ScriptHash) in
                     // For each policy (script hash), see if any asset under it matches a skip filter
                     guard let assetsUnderPolicy = utxo.output.amount.multiAsset.data[scriptHash] else { return false }
                     // Iterate all skip filters and check if any matches this policy+asset name
-                    return skipUtxoWithAsset.contains(where: { filter in
+                    return transactionOptions.skipUtxoWithAsset.contains(where: { filter in
                         let parts = filter.split(separator: "+")
                         guard parts.count == 2 else { return false }
                         let policyIdHex = String(parts[0])
@@ -517,10 +502,10 @@ extension TransactionCommandable {
         }
         
         // Filter 3: Only UTXOs with specific assets
-        if !onlyUtxoWithAsset.isEmpty {
+        if !transactionOptions.onlyUtxoWithAsset.isEmpty {
             filteredUtxos = try filteredUtxos.filter { utxo in
                 // All required assets must be present in the UTXO
-                return try onlyUtxoWithAsset.allSatisfy { filter in
+                return try transactionOptions.onlyUtxoWithAsset.allSatisfy { filter in
                     let parts = filter.split(separator: "+")
                     guard parts.count == 2 else { return false }
                     let policyIdHex = String(parts[0])
@@ -541,7 +526,7 @@ extension TransactionCommandable {
         }
         
         // Filter 4: UTXO limit
-        if let limit = utxoLimit, filteredUtxos.count > limit {
+        if let limit = transactionOptions.utxoLimit, filteredUtxos.count > limit {
             // Sort by value (descending) and take top N
             filteredUtxos = Array(filteredUtxos.sorted(by: { (lhs: UTxO, rhs: UTxO) in
                 lhs.output.amount > rhs.output.amount
@@ -576,7 +561,7 @@ extension TransactionCommandable {
         txSignedFile: FilePath
     ) async throws {
         
-        guard let feePaymentAddress = feePaymentAddress else {
+        guard let feePaymentAddress = transactionOptions.feePaymentAddress else {
             throw ValidationError("Fee payment address is not set.")
         }
         
@@ -591,10 +576,10 @@ extension TransactionCommandable {
         
         let auxilliaryData = try TransactionMessage
             .buildAuxiliaryData(
-                messages: self.messages,
-                encryption: self.encryption ?? .none,
-                metadataJson: self.metadataJson,
-                metadataCbor: self.metadataCbor
+                messages: transactionOptions.messages,
+                encryption: transactionOptions.encryption ?? .none,
+                metadataJson: transactionOptions.metadataJson,
+                metadataCbor: transactionOptions.metadataCbor
             )
         if auxilliaryData != nil {
             try auxilliaryData?.saveJSON(to: metadataFile.string, overwrite: true)
@@ -625,25 +610,25 @@ extension TransactionCommandable {
         
         try await utxoSummary(utxos: utxosToUse, config: config)
         
-        if !metadataJson.isEmpty {
+        if !transactionOptions.metadataJson.isEmpty {
             spacedPrint(
                 "Include Metadata-File(s): "
             )
-            for file in metadataJson {
+            for file in transactionOptions.metadataJson {
                 print(noora.format("• \(.primary("\(file)"))"))
             }
         }
         
-        if !messages.isEmpty {
-            if encryption == .basic {
+        if !transactionOptions.messages.isEmpty {
+            if transactionOptions.encryption == .basic {
                 spacedPrint(
                     "Original Transaction-Message(s): "
                 )
-                for message in messages {
+                for message in transactionOptions.messages {
                     print(noora.format("• \(.primary("\(message)"))"))
                 }
                 spacedPrint(
-                    "Encrypted Transaction-Message mode \(.primary("\(encryption!.rawValue)")) with Passphrase \(.accent("\(passphrase)"))"
+                    "Encrypted Transaction-Message mode \(.primary("\(transactionOptions.encryption!.rawValue)")) with Passphrase \(.accent("\(transactionOptions.passphrase)"))"
                 )
             }
             if auxilliaryData != nil {
@@ -672,9 +657,9 @@ extension TransactionCommandable {
         txBuilder.ttl = ttl
         txBuilder.auxiliaryData = auxilliaryData
         
-        if useCardanoCLI {
+        if transactionOptions.useCardanoCLI {
             try await buildTransactionWithCardanoCLI(
-                toAddress: toAddress,
+                toAddress: transactionOptions.toAddress,
                 feePaymentAddress: feePaymentAddress,
                 config: config,
                 utxos: utxosToUse,
@@ -688,14 +673,14 @@ extension TransactionCommandable {
                 buildArgs: buildArgs,
                 certificates: txBuilder.certificates,
                 withdrawals: txBuilder.withdrawals,
-                messages: messages,
+                messages: transactionOptions.messages,
                 metadataFile: metadataFile,
-                metadataJson: metadataJson,
-                metadataCbor: metadataCbor
+                metadataJson: transactionOptions.metadataJson,
+                metadataCbor: transactionOptions.metadataCbor
             )
         } else {
             try await buildTransactionWithSwiftCardano(
-                toAddress: toAddress,
+                toAddress: transactionOptions.toAddress,
                 feePaymentAddress: feePaymentAddress,
                 txBuilder: txBuilder,
                 utxos: utxosToUse,

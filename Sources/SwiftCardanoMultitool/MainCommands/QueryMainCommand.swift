@@ -2,38 +2,47 @@ import Foundation
 import ArgumentParser
 
 enum QueryCommands: String, CaseIterable, CustomStringConvertible {
-    case tip
     case address
-    case utxo
-    case protocolParameters = "protocol-parameters"
-    case stakePool = "stake-pool"
-    case stakeDistribution = "stake-distribution"
-    case leadershipSchedule = "leadership-schedule"
+    case epoch
+    case era
     case kesPeriodInfo = "kes-period-info"
+    case leadershipSchedule = "leadership-schedule"
+    case protocolParameters = "protocol-parameters"
+    case stakeDistribution = "stake-distribution"
+    case stakePool = "stake-pool"
+    case tip
+    case back
+    case exit
     
     var description: String {
         switch self {
-        case .tip: return "Tip - Query the tip of the blockchain."
-        case .address: return "Address - Query an address."
-        case .utxo: return "Query UTXOs of an address."
-        case .protocolParameters: return "Query protocol parameters."
-        case .stakePool: return "Query stake pool information."
-        case .stakeDistribution: return "Query stake distribution."
-        case .leadershipSchedule: return "Query leadership schedule."
-        case .kesPeriodInfo: return "Query KES period information."
+            case .address: return "Address - Query an address."
+            case .epoch: return "Epoch - Query information about a specific epoch."
+            case .era: return "Era - Query information about a specific era."
+            case .kesPeriodInfo: return "KES Period Info - Check a node opcert KES period information."
+            case .leadershipSchedule: return "Leadership Schedule - Query leadership schedule."
+            case .protocolParameters: return "Protocol Parameters - Query protocol parameters."
+            case .stakeDistribution: return "Query stake distribution."
+            case .stakePool: return "Query stake pool information."
+            case .tip: return "Tip - Query the tip of the blockchain."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-        case .tip: return QueryMainCommand.Tip.self
-        case .address: return QueryMainCommand.Address.self
-        case .utxo: return QueryMainCommand.Utxo.self
-        case .protocolParameters: return QueryMainCommand.ProtocolParameters.self
-        case .stakePool: return QueryMainCommand.StakePool.self
-        case .stakeDistribution: return QueryMainCommand.StakeDistribution.self
-        case .leadershipSchedule: return QueryMainCommand.LeadershipSchedule.self
-        case .kesPeriodInfo: return QueryMainCommand.KesPeriodInfo.self
+            case .address: return QueryMainCommand.Address.self
+            case .epoch: return QueryMainCommand.Epoch.self
+            case .era: return QueryMainCommand.Era.self
+            case .kesPeriodInfo: return QueryMainCommand.KesPeriodInfo.self
+            case .leadershipSchedule: return QueryMainCommand.LeadershipSchedule.self
+            case .protocolParameters: return QueryMainCommand.ProtocolParameters.self
+            case .stakeDistribution: return QueryMainCommand.StakeDistribution.self
+            case .stakePool: return QueryMainCommand.StakePool.self
+            case .tip: return QueryMainCommand.Tip.self
+            case .back: return MainMenuCommand.self
+            case .exit: return ExitCommand.self
         }
     }
 }
@@ -61,11 +70,6 @@ struct QueryMainCommand: AsyncParsableCommand {
 }
 
 extension QueryMainCommand {
-    struct Utxo: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Query UTXOs of an address.")
-        func run() async throws { print("Query utxo command not yet implemented") }
-    }
-    
     struct StakePool: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Query stake pool information.")
         func run() async throws { print("Query stake pool command not yet implemented") }

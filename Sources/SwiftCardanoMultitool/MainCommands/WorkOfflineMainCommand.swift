@@ -9,28 +9,34 @@ enum WorkOfflineCommands: String, CaseIterable, CustomStringConvertible {
     case verify
     case exportData = "export-data"
     case importData = "import-data"
+    case back
+    case exit
     
     var description: String {
         switch self {
-        case .sync: return "Sync offline data."
-        case .buildTx: return "Build transaction offline."
-        case .signTx: return "Sign transaction offline."
-        case .calculateFee: return "Calculate fee offline."
-        case .verify: return "Verify transaction offline."
-        case .exportData: return "Export offline data."
-        case .importData: return "Import offline data."
+            case .sync: return "Sync offline data."
+            case .buildTx: return "Build transaction offline."
+            case .signTx: return "Sign transaction offline."
+            case .calculateFee: return "Calculate fee offline."
+            case .verify: return "Verify transaction offline."
+            case .exportData: return "Export offline data."
+            case .importData: return "Import offline data."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-        case .sync: return WorkOfflineMainCommand.Sync.self
-        case .buildTx: return WorkOfflineMainCommand.BuildTx.self
-        case .signTx: return WorkOfflineMainCommand.SignTx.self
-        case .calculateFee: return WorkOfflineMainCommand.CalculateFee.self
-        case .verify: return WorkOfflineMainCommand.Verify.self
-        case .exportData: return WorkOfflineMainCommand.ExportData.self
-        case .importData: return WorkOfflineMainCommand.ImportData.self
+            case .sync: return WorkOfflineMainCommand.Sync.self
+            case .buildTx: return WorkOfflineMainCommand.BuildTx.self
+            case .signTx: return WorkOfflineMainCommand.SignTx.self
+            case .calculateFee: return WorkOfflineMainCommand.CalculateFee.self
+            case .verify: return WorkOfflineMainCommand.Verify.self
+            case .exportData: return WorkOfflineMainCommand.ExportData.self
+            case .importData: return WorkOfflineMainCommand.ImportData.self
+            case .back: return MainMenuCommand.self
+            case .exit: return ExitCommand.self
         }
     }
 }

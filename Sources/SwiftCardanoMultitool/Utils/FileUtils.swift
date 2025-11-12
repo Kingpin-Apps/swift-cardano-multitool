@@ -297,10 +297,10 @@ public struct FileUtils {
             if let max = maxChars {
                 let s = try await loadLockedFile(path)
                 let prefix = String(s.prefix(max))
-                spacedPrint("\(prefix) ... (cropped)\n")
+                spacedPrint("\n\(prefix) ... (cropped)\n")
             } else {
                 let s = try await loadLockedFile(path)
-                spacedPrint("\(s)")
+                spacedPrint("\n\(s)")
             }
         } catch {
             noora.warning(.alert("Error reading file: \(error)"))

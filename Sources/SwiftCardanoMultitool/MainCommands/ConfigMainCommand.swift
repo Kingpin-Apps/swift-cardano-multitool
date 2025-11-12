@@ -8,38 +8,48 @@ enum ConfigCommands: String, CaseIterable, CustomStringConvertible {
     case network
     case node
     case paths
+    case back
+    case exit
     
     var description: String {
         switch self {
-        case .`init`:
-            return "Initialize a new configuration file."
-        case .show:
-            return "Show current configuration."
-        case .select:
-            return "Select configuration values."
-        case .network:
-            return "Configure network settings."
-        case .node:
-            return "Configure node settings."
-        case .paths:
-            return "Configure file paths."
+            case .`init`:
+                return "Initialize a new configuration file."
+            case .show:
+                return "Show current configuration."
+            case .select:
+                return "Select configuration values."
+            case .network:
+                return "Configure network settings."
+            case .node:
+                return "Configure node settings."
+            case .paths:
+                return "Configure file paths."
+            case .back: 
+                return "Go back to the main menu."
+            case .exit:
+                return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-        case .`init`:
-            return ConfigMainCommand.Init.self
-        case .show:
-            return ConfigMainCommand.Show.self
-        case .select:
-            return ConfigMainCommand.Select.self
-        case .network:
-            return ConfigMainCommand.Network.self
-        case .node:
-            return ConfigMainCommand.Node.self
-        case .paths:
-            return ConfigMainCommand.Paths.self
+            case .`init`:
+                return ConfigMainCommand.Init.self
+            case .show:
+                return ConfigMainCommand.Show.self
+            case .select:
+                return ConfigMainCommand.Select.self
+            case .network:
+                return ConfigMainCommand.Network.self
+            case .node:
+                return ConfigMainCommand.Node.self
+            case .paths:
+                return ConfigMainCommand.Paths.self
+            case .back:
+                return MainMenuCommand.self
+            case .exit:
+                return ExitCommand.self
         }
     }
 }

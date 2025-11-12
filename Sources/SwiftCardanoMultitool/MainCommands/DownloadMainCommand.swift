@@ -4,18 +4,24 @@ import ArgumentParser
 enum DownloadCommands: String, CaseIterable, CustomStringConvertible {
     case nodeConfigs
     case snapshot
+    case back
+    case exit
     
     var description: String {
         switch self {
-        case .nodeConfigs: return "Download node configurations."
-        case .snapshot: return "Download blockchain snapshot."
+            case .nodeConfigs: return "Download node configurations."
+            case .snapshot: return "Download blockchain snapshot."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-        case .nodeConfigs: return DownloadMainCommand.NodeConfigs.self
-        case .snapshot: return DownloadMainCommand.Snapshot.self
+            case .nodeConfigs: return DownloadMainCommand.NodeConfigs.self
+            case .snapshot: return DownloadMainCommand.Snapshot.self
+            case .back: return MainMenuCommand.self
+            case .exit: return ExitCommand.self
         }
     }
 }

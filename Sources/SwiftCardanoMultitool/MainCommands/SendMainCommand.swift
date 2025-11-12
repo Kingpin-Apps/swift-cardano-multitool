@@ -5,12 +5,16 @@ enum SendCommands: String, CaseIterable, CustomStringConvertible {
     case ada
     case assets
     case all
+    case back
+    case exit
     
     var description: String {
         switch self {
             case .ada: return "Send ADA."
             case .assets: return "Send native assets."
             case .all: return "Send all assets from address."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Exit the program."
         }
     }
     
@@ -19,6 +23,8 @@ enum SendCommands: String, CaseIterable, CustomStringConvertible {
             case .ada: return SendMainCommand.Ada.self
             case .assets: return SendMainCommand.Assets.self
             case .all: return SendMainCommand.All.self
+            case .back: return MainMenuCommand.self
+            case .exit: return ExitCommand.self
         }
     }
 }

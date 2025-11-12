@@ -4,8 +4,7 @@ import SystemPackage
 import Noora
 
 protocol CertificateCommandable: TransactionCommandable {
-    var outFile: FilePath? { get set }
-    var generateTransaction: Bool { get set }
+    var certificateOptions: SharedCertificateOptions { get set }
 }
 
 
@@ -21,12 +20,12 @@ extension CertificateCommandable {
         ).trimmingCharacters(in: .whitespacesAndNewlines)
         
         if outputFile.isEmpty {
-            outFile = nil
+            certificateOptions.outFile = nil
         } else {
-            outFile = FilePath(outputFile)
+            certificateOptions.outFile = FilePath(outputFile)
         }
         
-        generateTransaction = noora.yesOrNoChoicePrompt(
+        certificateOptions.generateTransaction = noora.yesOrNoChoicePrompt(
             title: "Generate Transaction",
             question: "Generate a transaction to submit the certificate?",
             defaultAnswer: false,

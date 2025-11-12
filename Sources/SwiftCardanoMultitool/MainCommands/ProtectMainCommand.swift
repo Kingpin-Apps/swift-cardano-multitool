@@ -10,27 +10,19 @@ enum ProtectCommands: String, CaseIterable, CustomStringConvertible {
     
     var description: String {
         switch self {
-            case .encrypt:
-                return "Encrypt a file with a password."
-            case .decrypt:
-                return "Decrypt a file with a password."
-            case .back:
-                return "Go back to the main menu."
-            case .exit:
-                return "Exit the program."
+            case .encrypt: return "Encrypt a file with a password."
+            case .decrypt: return "Decrypt a file with a password."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-            case .encrypt:
-                return ProtectMainCommand.Encrypt.self
-            case .decrypt:
-                return ProtectMainCommand.Decrypt.self
-            case .back:
-                return MainMenuCommand.self
-            case .exit:
-                return ExitCommand.self
+            case .encrypt: return ProtectMainCommand.Encrypt.self
+            case .decrypt: return ProtectMainCommand.Decrypt.self
+            case .back: return MainMenuCommand.self
+            case .exit: return ExitCommand.self
         }
     }
 }

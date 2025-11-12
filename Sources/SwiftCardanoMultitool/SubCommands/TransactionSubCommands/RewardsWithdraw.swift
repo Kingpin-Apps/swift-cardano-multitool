@@ -43,53 +43,14 @@ extension TransactionMainCommand {
         @Option(name: [.short, .long], help: "Staking address file base name (without .stake.addr). Example: owner → owner.stake.addr")
         var stakeAddress: StakeAddressInfo?
         
+        // MARK: - CertificateCommandable Arguments
+        
+        @OptionGroup var certificateOptions: SharedCertificateOptions
+        
         // MARK: - TransactionCommandable Arguments
         
-        @Option(name: [.short, .long], help: "Destination for rewards. Accepts: bech32 address, file base name, payment key hash, or $adahandle")
-        var toAddress: PaymentAddressInfo?
+        @OptionGroup var transactionOptions: SharedTransactionOptions
         
-        @Option(name: [.short, .long], help: "Address to pay transaction fees from.")
-        var feePaymentAddress: PaymentAddressInfo?
-        
-        @Option(name: [.short, .long], parsing: .upToNextOption, help: "Transaction message(s). Max 64 bytes each. Can be specified multiple times.")
-        var messages: [String] = []
-        
-        @Option(name: .long, help: "Message encryption mode. Options: basic")
-        var encryption: TransactionMessage.EncryptionMode?
-        
-        @Option(name: .long, help: "Passphrase for message encryption (default: cardano)")
-        var passphrase: String = "cardano"
-        
-        @Option(name: .long, parsing: .upToNextOption, help: "Path(s) to JSON metadata file(s). Can be specified multiple times.")
-        var metadataJson: [FilePath] = []
-        
-        @Option(name: .long, parsing: .upToNextOption, help: "Path(s) to CBOR metadata file(s). Can be specified multiple times.")
-        var metadataCbor: [FilePath] = []
-        
-        @Option(name: .long, parsing: .upToNextOption, help: "Specific UTXOs to use. Format: txHash#index. Can be specified multiple times.")
-        var utxoFilter: [String] = []
-        
-        @Option(name: .long, help: "Maximum number of input UTXOs to use (positive integer)")
-        var utxoLimit: Int?
-        
-        @Option(name: .long, parsing: .upToNextOption, help: "Skip UTXOs containing these assets. Format: policyId+assetNameHex. Can be specified multiple times.")
-        var skipUtxoWithAsset: [String] = []
-        
-        @Option(name: .long, parsing: .upToNextOption, help: "Only use UTXOs containing these assets. Format: policyId+assetNameHex. Can be specified multiple times.")
-        var onlyUtxoWithAsset: [String] = []
-        
-        @Flag(help: "Use cardano-cli to build the transaction (default: use SwiftCardano)")
-        var useCardanoCLI = false
-        
-        @Flag(inversion: .prefixedNo, help: "Save built transaction to file")
-        var save = true
-        
-        @Flag(help: "Submit the transaction to the blockchain")
-        var submit = false
-        
-        var isSame: Bool {
-            return feePaymentAddress!.info.address == toAddress!.info.address
-        }
         
         // MARK: - Validation
         
@@ -121,15 +82,15 @@ extension TransactionMainCommand {
                 
                 try FileUtils.checkFileExists(paymentFile)
                 
-                toAddress = PaymentAddressInfo(
+                transactionOptions.toAddress = PaymentAddressInfo(
                     info: try AddressInfo(
                         fromFile: paymentFile,
                         name: paymentFileName
                     )
                 )
-                feePaymentAddress = toAddress
+                transactionOptions.feePaymentAddress = transactionOptions.toAddress
             } else {
-                toAddress = try await getDestinationAddress(title: "Destination Address for Rewards Withdrawal")
+                transactionOptions.toAddress = try await getDestinationAddress(title: "Destination Address for Rewards Withdrawal")
                 
                 let useSameAddress = noora.yesOrNoChoicePrompt(
                     title: "Fee Payment",
@@ -139,11 +100,11 @@ extension TransactionMainCommand {
                 )
                 
                 if !useSameAddress {
-                    feePaymentAddress = try await getFeePaymentAddress(
+                    transactionOptions.feePaymentAddress = try await getFeePaymentAddress(
                         title: "Fee Payment Address"
                     )
                 } else {
-                    feePaymentAddress = toAddress
+                    transactionOptions.feePaymentAddress = transactionOptions.toAddress
                 }
             }
             
@@ -156,12 +117,12 @@ extension TransactionMainCommand {
         
         mutating func run() async throws {
             // If no arguments provided, run wizard
-            if stakeAddress == nil && feePaymentAddress == nil {
+            if stakeAddress == nil && transactionOptions.feePaymentAddress == nil {
                 try await self.wizard()
             }
             
-            if toAddress == nil {
-                toAddress = feePaymentAddress
+            if transactionOptions.toAddress == nil {
+                transactionOptions.toAddress = transactionOptions.feePaymentAddress
             }
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
@@ -172,8 +133,8 @@ extension TransactionMainCommand {
             
             // Ensure required arguments are present
             guard var stakeAddress = stakeAddress,
-                    let toAddress = toAddress,
-                    let feePaymentAddress = feePaymentAddress else {
+                  let toAddress = transactionOptions.toAddress,
+                  let feePaymentAddress = transactionOptions.feePaymentAddress else {
                 throw ValidationError("Required arguments missing. Use --stake-address and --fee-payment-address or run without arguments for wizard mode.")
             }
             
@@ -239,10 +200,6 @@ extension TransactionMainCommand {
                 config: config
             )
             
-            let totalLovelaces = utxos.reduce(0) {
-                $0 + $1.output.lovelace
-            }
-            
             var assetsOutString = ""
             var assetsOut: MultiAsset = MultiAsset([:])
             
@@ -291,13 +248,13 @@ extension TransactionMainCommand {
             )
             
             var args: [String] = []
-            if useCardanoCLI {
+            if transactionOptions.useCardanoCLI {
                 args.append("--use-cardano-cli")
             }
-            if save {
+            if transactionOptions.save {
                 args.append("--save")
             }
-            if submit {
+            if transactionOptions.submit {
                 args.append("--submit")
             }
             let signingKeys: [String] = [
@@ -309,7 +266,7 @@ extension TransactionMainCommand {
                 "--out-file", txSignedFile.string,
             ] + args + signingKeys)
             
-            if !save {
+            if !transactionOptions.save {
                 try FileManager.default.removeItem(atPath: txRawFile.string)
                 try FileManager.default.removeItem(atPath: txFile.string)
                 try FileManager.default.removeItem(atPath: txSignedFile.string)

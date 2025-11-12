@@ -9,10 +9,24 @@ extension BuildMainCommand {
     
     struct PaymentAddress: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Build a Cardano payment address from the address key files."
+            abstract: "Build a Cardano payment address from the address key files.",
+            usage: """
+            scm build payment-address ---address-name test
+            """,
+            discussion: """
+            Build a Cardano payment address from the address key files. 
+            You can provide either the address name (preferred) or the paths 
+            to the payment and stake verification key files. If using the 
+            address name, the corresponding key files must exist in the 
+            current working directory in the format 'address_name.payment.vkey' 
+            and 'address_name.stake.vkey'.
+            """
         )
         
-        @Option(name: .shortAndLong, help: "The name of the address. Address key files must exist in the current working directory and are in the format 'address_name.stake.vkey' and 'address_name.payment.vkey'.")
+        @Option(
+            name: .shortAndLong,
+            help: "The name of the address. Address key files must exist in the current working directory and are in the format 'address_name.stake.vkey' and 'address_name.payment.vkey'."
+        )
         var addressName: String? = nil
         
         @Option(name: .shortAndLong, help: "The path to the staking verification key file.")

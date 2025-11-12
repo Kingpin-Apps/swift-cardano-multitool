@@ -365,7 +365,7 @@ public struct MultitoolConfig: Codable, Sendable {
         }
         
         spacedPrint(
-            "Using config from: \(.path(try .init(validating: configPath.string)))"
+            "\nUsing config from: \(.path(try .init(validating: configPath.string)))"
         )
         
         return try await load(from: configPath)

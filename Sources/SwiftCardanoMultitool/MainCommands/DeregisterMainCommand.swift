@@ -5,20 +5,26 @@ enum DeregisterCommands: String, CaseIterable, CustomStringConvertible {
     case stakePool = "stake-pool"
     case stakeAddress = "stake-address"
     case drep
+    case back
+    case exit
     
     var description: String {
         switch self {
-        case .stakePool: return "De-register a stake pool."
-        case .stakeAddress: return "De-register a stake address."
-        case .drep: return "De-register a DRep."
+            case .stakePool: return "De-register a stake pool."
+            case .stakeAddress: return "De-register a stake address."
+            case .drep: return "De-register a DRep."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Exit the program."
         }
     }
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-        case .stakePool: return DeregisterMainCommand.StakePool.self
-        case .stakeAddress: return DeregisterMainCommand.StakeAddress.self
-        case .drep: return DeregisterMainCommand.Drep.self
+            case .stakePool: return DeregisterMainCommand.StakePool.self
+            case .stakeAddress: return DeregisterMainCommand.StakeAddress.self
+            case .drep: return DeregisterMainCommand.Drep.self
+            case .back: return MainMenuCommand.self
+            case .exit: return ExitCommand.self
         }
     }
 }
