@@ -17,8 +17,8 @@ extension BuildMainCommand {
         @Option(name: .shortAndLong, help: "The path to the staking verification key file.")
         var stakeVkey: FilePath? = nil
         
-        @Flag(help: "Whether to use the cardano-cli to generate the address.")
-        var useCardanoCLI = false
+        @Option(name: .shortAndLong, help: "Whether to use the cardano-cli or SwiftCardano to build the payment addresses.")
+        var tool: Tool? = nil
         
         /// Wizard to interactively gather missing parameters
         mutating func wizard() async throws {
@@ -48,12 +48,7 @@ extension BuildMainCommand {
                     )
             }
             
-            useCardanoCLI = noora.yesOrNoChoicePrompt(
-                title: "Which Tools",
-                question: "Use cardano-cli to build the address?",
-                defaultAnswer: false,
-                description: "Choose whether to use cardano-cli or SwiftCardano to build the address.",
-            )
+            tool = try await getToolToUse()
         }
         
         mutating func run() async throws {
@@ -119,37 +114,41 @@ extension BuildMainCommand {
             let config = try await MultitoolConfig.load()
             
             let address: Address
-            if useCardanoCLI {
-                print(noora.format(
-                    "Using \(.primary("cardano-cli")) to build the address")
-                )
-                let cli = try await CardanoCLI(
-                    configuration: config.toSwiftCardanoUtilsConfig()
-                )
-                
-                _ = try await cli
-                    .address
-                    .build(
-                        arguments: [
-                            "--stake-verification-key-file", stakeVkey!.string,
-                            "--out-file", stakeAddress.string
-                        ]
+            switch tool {
+
+                case .cardanoCLI:
+                    print(noora.format(
+                        "Using \(.primary("cardano-cli")) to build the address")
                     )
-                address = try Address.load(from: stakeAddress.string)
-            } else {
-                print(noora.format(
-                    "Using \(.primary("SwiftCardano")) to build the address")
-                )
-                
-                let stakeVerificationKey = try StakeVerificationKey.load(
-                    from: stakeVkey!.string
-                )
-                
-                address = try Address(
-                    paymentPart: nil,
-                    stakingPart: .verificationKeyHash(try stakeVerificationKey.hash()),
-                    network: config.cardano.network.networkId
-                )
+                    let cli = try await CardanoCLI(
+                        configuration: config.toSwiftCardanoUtilsConfig()
+                    )
+                    
+                    _ = try await cli
+                        .address
+                        .build(
+                            arguments: [
+                                "--stake-verification-key-file", stakeVkey!.string,
+                                "--out-file", stakeAddress.string
+                            ]
+                        )
+                    address = try Address.load(from: stakeAddress.string)
+
+                default:
+                    print(noora.format(
+                        "Using \(.primary("SwiftCardano")) to build the address")
+                    )
+                    
+                    let stakeVerificationKey = try StakeVerificationKey.load(
+                        from: stakeVkey!.string
+                    )
+                    
+                    address = try Address(
+                        paymentPart: nil,
+                        stakingPart: .verificationKeyHash(try stakeVerificationKey.hash()),
+                        network: config.cardano.network.networkId
+                    )
+
             }
             
             print(
