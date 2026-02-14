@@ -21,7 +21,7 @@ extension GenerateMainCommand {
         @Option(name: .shortAndLong, help: "Generates node cold keys using Ledger/Trezor HW-Keys with Index at this number. Default is 0.")
         var coldKeyIndex: Int? = nil
         
-        @Option(name: .shortAndLong, help: "Whether to use the cardano-cli or SwiftCardano to generate the address.")
+        @Option(name: .shortAndLong, help: "Whether to use the cardano-cli or SwiftCardano to generate the node cold keys.")
         var tool: Tool? = nil
         
         mutating func validate() throws {
