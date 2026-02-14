@@ -18,8 +18,8 @@ extension GenerateMainCommand {
         @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli or enc")
         var keyGenMethod: KeyGenMethod? = nil
         
-        @Flag(help: "Whether to use the cardano-cli to generate the node VRF keys.")
-        var useCardanoCLI = false
+        @Option(name: .shortAndLong, help: "Whether to use the cardano-cli or SwiftCardano to generate the node cold keys.")
+        var tool: Tool? = nil
         
         mutating func validate() throws {
             switch keyGenMethod {
@@ -50,12 +50,7 @@ extension GenerateMainCommand {
                 description: "Choose the method to generate the node cold keys. Options are:\n- cli: Use cardano-cli to generate the keys.\n- enc: Generate unencrypted keys and encrypt the signing key with a password."
             )
             
-            useCardanoCLI = noora.yesOrNoChoicePrompt(
-                title: "Which Tools",
-                question: "Use cardano-cli to generate the keys?",
-                defaultAnswer: false,
-                description: "Choose whether to use cardano-cli or SwiftCardano to generate the keys.",
-            )
+            tool = try await getToolToUse()
             
             try self.validate()
         }
@@ -93,62 +88,68 @@ extension GenerateMainCommand {
             }
             
             if keyGenMethod == .cli {
-                if useCardanoCLI{
-                    print(noora.format(
-                        "Using \(.primary("cardano-cli")) to generate VRF keys")
-                    )
-                    let cli = try await CardanoCLI(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
-                    
-                    _ = try await cli.node.keyGenVRF(
-                        verificationKeyFile: vrfVKey.string,
-                        signingKeyFile: vrfSKey.string
-                    )
-                }
-                else {
-                    print(noora.format(
-                        "Using \(.primary("SwiftCardano")) to generate VRF keys")
-                    )
-                    let vrfKeyPair = try VRFKeyPair.generate()
-                    try vrfKeyPair.verificationKey.save(to: vrfVKey.string)
-                    try vrfKeyPair.signingKey.save(to: vrfSKey.string)
+
+                switch tool {
+
+                    case .cardanoCLI:
+                        print(noora.format(
+                            "Using \(.primary("cardano-cli")) to generate VRF keys")
+                        )
+                        let cli = try await CardanoCLI(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
+                        
+                        _ = try await cli.node.keyGenVRF(
+                            verificationKeyFile: vrfVKey.string,
+                            signingKeyFile: vrfSKey.string
+                        )
+
+                    default:
+                        print(noora.format(
+                            "Using \(.primary("SwiftCardano")) to generate VRF keys")
+                        )
+                        let vrfKeyPair = try VRFKeyPair.generate()
+                        try vrfKeyPair.verificationKey.save(to: vrfVKey.string)
+                        try vrfKeyPair.signingKey.save(to: vrfSKey.string)
+
                 }
                 
                 try await lockAndPrintKeys()
             }
             else if keyGenMethod == .enc {
                 var skey: TextEnvelope
-                
-                if useCardanoCLI{
-                    print(noora.format(
-                        "Using \(.primary("cardano-cli")) to generate VRF keys")
-                    )
-                    let cli = try await CardanoCLI(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
-                    
-                    let skeyJSON = try await cli.node.keyGenVRF(
-                        verificationKeyFile: vrfVKey.string,
-                        signingKeyFile: "/dev/stdout"
-                    )
-                    
-                    skey = try JSONDecoder().decode(
-                        TextEnvelope.self,
-                        from: skeyJSON.toData
-                    )
-                }
-                else {
-                    print(noora.format(
-                        "Using \(.primary("SwiftCardano")) to generate VRF keys")
-                    )
-                    
-                    let vrfKeyPair = try VRFKeyPair.generate()
-                    try vrfKeyPair.verificationKey.save(to: vrfVKey.string)
-                    
-                    skey = try TextEnvelope.load(
-                        from: try vrfKeyPair.signingKey.toTextEnvelope()!
-                    )
+
+                switch tool {
+
+                    case .cardanoCLI:
+                        print(noora.format(
+                            "Using \(.primary("cardano-cli")) to generate VRF keys")
+                        )
+                        let cli = try await CardanoCLI(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
+                        
+                        let skeyJSON = try await cli.node.keyGenVRF(
+                            verificationKeyFile: vrfVKey.string,
+                            signingKeyFile: "/dev/stdout"
+                        )
+                        
+                        skey = try JSONDecoder().decode(
+                            TextEnvelope.self,
+                            from: skeyJSON.toData
+                        )
+
+                    default:
+                        print(noora.format(
+                            "Using \(.primary("SwiftCardano")) to generate VRF keys")
+                        )
+                        
+                        let vrfKeyPair = try VRFKeyPair.generate()
+                        try vrfKeyPair.verificationKey.save(to: vrfVKey.string)
+                        
+                        skey = try TextEnvelope.load(
+                            from: try vrfKeyPair.signingKey.toTextEnvelope()!
+                        )
                 }
                 
                 let password = try await PasswordUtils.getConfirmedPassword(

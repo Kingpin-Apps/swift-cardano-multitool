@@ -37,7 +37,7 @@ extension GenerateMainCommand {
         )
         var wordCount: WordCount = .twentyFour
         
-        @Option(name: .shortAndLong, help: "Whether to use the cardano-cli or SwiftCardano to generate the address.")
+        @Option(name: .shortAndLong, help: "Whether to use the cardano-cli or SwiftCardano to generate the payment and stake addresses.")
         var tool: Tool? = nil
         
         mutating func validate() throws {
