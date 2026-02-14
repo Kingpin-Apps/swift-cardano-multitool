@@ -21,8 +21,8 @@ extension GenerateMainCommand {
         @Option(name: .shortAndLong, help: "Generates node cold keys using Ledger/Trezor HW-Keys with Index at this number. Default is 0.")
         var coldKeyIndex: Int? = nil
         
-        @Flag(help: "Whether to use the cardano-cli to generate the node cold keys.")
-        var useCardanoCLI = false
+        @Option(name: .shortAndLong, help: "Whether to use the cardano-cli or SwiftCardano to generate the address.")
+        var tool: Tool? = nil
         
         mutating func validate() throws {
             switch keyGenMethod {
@@ -80,12 +80,7 @@ extension GenerateMainCommand {
                     break
             }
             
-            useCardanoCLI = noora.yesOrNoChoicePrompt(
-                title: "Which Tools",
-                question: "Use cardano-cli to generate the keys?",
-                defaultAnswer: false,
-                description: "Choose whether to use cardano-cli or SwiftCardano to generate the keys.",
-            )
+            tool = try await getToolToUse()
             
             try self.validate()
         }
@@ -133,72 +128,77 @@ extension GenerateMainCommand {
             }
             
             if keyGenMethod == .cli {
-                if useCardanoCLI{
-                    print(noora.format(
-                        "Using \(.primary("cardano-cli")) to generate cold keys")
-                    )
-                    let cli = try await CardanoCLI(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
-                    
-                    _ = try await cli.node.keyGen(
-                        verificationKeyFile: poolVKey.string,
-                        signingKeyFile: poolSKey.string,
-                        operationalCertificateIssueCounterFile: poolCounter.string
-                    )
-                }
-                else {
-                    print(noora.format(
-                        "Using \(.primary("SwiftCardano")) to generate cold keys")
-                    )
-                    let poolKeyPair = try StakePoolKeyPair.generate()
-                    try poolKeyPair.verificationKey.save(to: poolVKey.string)
-                    try poolKeyPair.signingKey.save(to: poolSKey.string)
-                    
-                    let counter = try OperationalCertificateIssueCounter
-                        .createNewCounter(coldVerificationKey: poolKeyPair.verificationKey)
-                    try counter.save(to: poolCounter.string)
+
+                switch tool {
+
+                    case .cardanoCLI:
+                        print(noora.format(
+                            "Using \(.primary("cardano-cli")) to generate cold keys")
+                        )
+                        let cli = try await CardanoCLI(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
+                        
+                        _ = try await cli.node.keyGen(
+                            verificationKeyFile: poolVKey.string,
+                            signingKeyFile: poolSKey.string,
+                            operationalCertificateIssueCounterFile: poolCounter.string
+                        )
+
+                    default:
+                        print(noora.format(
+                            "Using \(.primary("SwiftCardano")) to generate cold keys")
+                        )
+                        let poolKeyPair = try StakePoolKeyPair.generate()
+                        try poolKeyPair.verificationKey.save(to: poolVKey.string)
+                        try poolKeyPair.signingKey.save(to: poolSKey.string)
+                        
+                        let counter = try OperationalCertificateIssueCounter
+                            .createNewCounter(coldVerificationKey: poolKeyPair.verificationKey)
+                        try counter.save(to: poolCounter.string)
                 }
                 
                 try await lockAndPrintKeys()
             }
             else if keyGenMethod == .enc {
                 var skey: TextEnvelope
-                
-                if useCardanoCLI{
-                    print(noora.format(
-                        "Using \(.primary("cardano-cli")) to generate cold keys")
-                    )
-                    let cli = try await CardanoCLI(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
-                    
-                    let skeyJSON = try await cli.node.keyGen(
-                        verificationKeyFile: poolVKey.string,
-                        signingKeyFile: "/dev/stdout",
-                        operationalCertificateIssueCounterFile: poolCounter.string
-                    )
-                    
-                    skey = try JSONDecoder().decode(
-                        TextEnvelope.self,
-                        from: skeyJSON.toData
-                    )
-                }
-                else {
-                    print(noora.format(
-                        "Using \(.primary("SwiftCardano")) to generate cold keys")
-                    )
-                    
-                    let poolKeyPair = try StakePoolKeyPair.generate()
-                    try poolKeyPair.verificationKey.save(to: poolVKey.string)
-                    
-                    let counter = try OperationalCertificateIssueCounter
-                        .createNewCounter(coldVerificationKey: poolKeyPair.verificationKey)
-                    try counter.save(to: poolCounter.string)
-                    
-                    skey = try TextEnvelope.load(
-                        from: try poolKeyPair.signingKey.toTextEnvelope()!
-                    )
+
+                switch tool {
+
+                    case .cardanoCLI:
+                        print(noora.format(
+                            "Using \(.primary("cardano-cli")) to generate cold keys")
+                        )
+                        let cli = try await CardanoCLI(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
+                        
+                        let skeyJSON = try await cli.node.keyGen(
+                            verificationKeyFile: poolVKey.string,
+                            signingKeyFile: "/dev/stdout",
+                            operationalCertificateIssueCounterFile: poolCounter.string
+                        )
+                        
+                        skey = try JSONDecoder().decode(
+                            TextEnvelope.self,
+                            from: skeyJSON.toData
+                        )
+
+                    default:
+                        print(noora.format(
+                            "Using \(.primary("SwiftCardano")) to generate cold keys")
+                        )
+                        
+                        let poolKeyPair = try StakePoolKeyPair.generate()
+                        try poolKeyPair.verificationKey.save(to: poolVKey.string)
+                        
+                        let counter = try OperationalCertificateIssueCounter
+                            .createNewCounter(coldVerificationKey: poolKeyPair.verificationKey)
+                        try counter.save(to: poolCounter.string)
+                        
+                        skey = try TextEnvelope.load(
+                            from: try poolKeyPair.signingKey.toTextEnvelope()!
+                        )
                 }
                 
                 let password = try await PasswordUtils.getConfirmedPassword(

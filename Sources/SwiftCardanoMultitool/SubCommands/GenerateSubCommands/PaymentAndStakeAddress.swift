@@ -40,9 +40,6 @@ extension GenerateMainCommand {
         @Option(name: .shortAndLong, help: "Whether to use the cardano-cli or SwiftCardano to generate the address.")
         var tool: Tool? = nil
         
-        @Flag(help: "Whether to use the cardano-cli to generate the address.")
-        var useCardanoCLI = false
-        
         mutating func validate() throws {
             switch keyGenMethod {
                 case .hw, .hwMulti, .hybrid, .hybridMulti, .hybridEnc, .hybridMultiEnc:
@@ -146,12 +143,7 @@ extension GenerateMainCommand {
                     break
             }
             
-            useCardanoCLI = noora.yesOrNoChoicePrompt(
-                title: "Which Tools",
-                question: "Use cardano-cli to build the address?",
-                defaultAnswer: false,
-                description: "Choose whether to use cardano-cli or SwiftCardano to build the address.",
-            )
+            tool = try await getToolToUse()
             
             try self.validate()
         }
@@ -252,27 +244,31 @@ extension GenerateMainCommand {
             
             // Generate Payment Address Keys
             if keyGenMethod == .cli {
-                if useCardanoCLI{
-                    print(noora.format(
-                        "Using \(.primary("cardano-cli")) to generate payment address keys")
-                    )
-                    let cli = try await CardanoCLI(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
-                    
-                    _ = try await cli.address.keyGen(
-                        arguments: [
-                            "--verification-key-file", paymentVKey.string,
-                            "--signing-key-file", paymentSKey.string
-                        ]
-                    )
-                } else {
-                    print(noora.format(
-                        "Using \(.primary("SwiftCardano")) to generate payment address keys")
-                    )
-                    let paymentKeyPair = try PaymentKeyPair.generate()
-                    try paymentKeyPair.verificationKey.save(to: paymentVKey.string)
-                    try paymentKeyPair.signingKey.save(to: paymentSKey.string)
+
+                switch tool {
+
+                    case .cardanoCLI:
+                        print(noora.format(
+                            "Using \(.primary("cardano-cli")) to generate payment address keys")
+                        )
+                        let cli = try await CardanoCLI(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
+                        
+                        _ = try await cli.address.keyGen(
+                            arguments: [
+                                "--verification-key-file", paymentVKey.string,
+                                "--signing-key-file", paymentSKey.string
+                            ]
+                        )
+
+                    default:
+                        print(noora.format(
+                            "Using \(.primary("SwiftCardano")) to generate payment address keys")
+                        )
+                        let paymentKeyPair = try PaymentKeyPair.generate()
+                        try paymentKeyPair.verificationKey.save(to: paymentVKey.string)
+                        try paymentKeyPair.signingKey.save(to: paymentSKey.string)
                 }
                 
                 try await lockAndPrintPaymentKeys()
@@ -285,243 +281,243 @@ extension GenerateMainCommand {
                 print(noora.format(
                     "Generating CLI Payment-Keys via Derivation-Path: \(.primary("\(hwRootPath)H/1815H/\(subAccount!)H/0/\(index!)"))")
                 )
-                
-                if useCardanoCLI{
-                    print(noora.format(
-                        "Using \(.primary("cardano-signer")) to generate address keys from mnemonics."
-                    ))
-                    let signer = try await CardanoSigner(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
-                    
-                    let signerResponse: [String: Any]
-                    
-                    if let mnemonics = mnemonics, mnemonics.isEmpty == false {
-                        
+
+                switch tool {
+
+                    case .cardanoCLI:
                         print(noora.format(
-                            "Using Mnemonics: \(.primary(mnemonics))"
+                            "Using \(.primary("cardano-signer")) to generate address keys from mnemonics."
                         ))
-                        
-                        let responseJSON = try await signer.keygen(
-                            path: "\(hwRootPath)H/1815H/\(subAccount!)H/0/\(index!)",
-                            mnemonics: .words(mnemonics),
-                            withChainCode: true,
-                            outputFormat: .jsonExtended,
-                            outSkey: paymentSKey
-                        )
-                        signerResponse = try JSONSerialization.jsonObject(
-                            with: responseJSON.toData,
-                            options: []
-                        ) as! [String: Any]
-                        
-                        print(noora.format(
-                            "Keys generated successfully from provided mnemonics."
-                        ))
-                    }
-                    else {
-                        print(noora.format(
-                            "Using \(.primary("cardano-signer")) to generate new mnemonics."
-                        ))
-                        // Generate new mnemonics
-                        let responseJSON = try await signer.keygen(
-                            path: "\(hwRootPath)H/1815H/\(subAccount!)H/0/\(index!)",
-                            withChainCode: true,
-                            outputFormat: .jsonExtended,
-                            outSkey: paymentSKey,
+                        let signer = try await CardanoSigner(
+                            configuration: config.toSwiftCardanoUtilsConfig()
                         )
                         
-                        do {
-                            signerResponse = try (JSONSerialization.jsonObject(
+                        let signerResponse: [String: Any]
+                        
+                        if let mnemonics = mnemonics, mnemonics.isEmpty == false {
+                            
+                            print(noora.format(
+                                "Using Mnemonics: \(.primary(mnemonics))"
+                            ))
+                            
+                            let responseJSON = try await signer.keygen(
+                                path: "\(hwRootPath)H/1815H/\(subAccount!)H/0/\(index!)",
+                                mnemonics: .words(mnemonics),
+                                withChainCode: true,
+                                outputFormat: .jsonExtended,
+                                outSkey: paymentSKey
+                            )
+                            signerResponse = try JSONSerialization.jsonObject(
                                 with: responseJSON.toData,
                                 options: []
-                            ) as? [String: Any])!
+                            ) as! [String: Any]
                             
-                            if let mnemonicsFromSigner = signerResponse["mnemonic"] as? String {
-                                mnemonics = mnemonicsFromSigner
+                            print(noora.format(
+                                "Keys generated successfully from provided mnemonics."
+                            ))
+                        }
+                        else {
+                            print(noora.format(
+                                "Using \(.primary("cardano-signer")) to generate new mnemonics."
+                            ))
+                            // Generate new mnemonics
+                            let responseJSON = try await signer.keygen(
+                                path: "\(hwRootPath)H/1815H/\(subAccount!)H/0/\(index!)",
+                                withChainCode: true,
+                                outputFormat: .jsonExtended,
+                                outSkey: paymentSKey,
+                            )
+                            
+                            do {
+                                signerResponse = try (JSONSerialization.jsonObject(
+                                    with: responseJSON.toData,
+                                    options: []
+                                ) as? [String: Any])!
                                 
-                                print(noora.format(
-                                    "Created Mnemonics: \(.primary(mnemonicsFromSigner))"
-                                ))
-                                
+                                if let mnemonicsFromSigner = signerResponse["mnemonic"] as? String {
+                                    mnemonics = mnemonicsFromSigner
+                                    
+                                    print(noora.format(
+                                        "Created Mnemonics: \(.primary(mnemonicsFromSigner))"
+                                    ))
+                                    
+                                }
+                                else {
+                                    noora.error(.alert(
+                                        "Failed to generate mnemonics from the response from the signer",
+                                        takeaways: [
+                                            "Make sure the response from the signer is in the correct format",
+                                            "\(responseJSON)"
+                                        ]
+                                    ))
+                                    throw ExitCode.failure
+                                }
                             }
-                            else {
-                                noora.error(.alert(
-                                    "Failed to generate mnemonics from the response from the signer",
-                                    takeaways: [
-                                        "Make sure the response from the signer is in the correct format",
-                                        "\(responseJSON)"
-                                    ]
-                                ))
+                            catch let error as NSError {
+                                noora.error(
+                                    .alert(
+                                        "Failed to load: \(error.localizedDescription)",
+                                        takeaways: [
+                                            "Make sure the response from the signer is in the correct format",
+                                            "\(responseJSON)"
+                                        ]
+                                    )
+                                )
                                 throw ExitCode.failure
                             }
                         }
-                        catch let error as NSError {
+                        
+                        // save memnonics
+                        try saveMnemonics(mnemonics!, to: paymentMnemonics)
+                        
+                        let extendedVKeyJSON = (signerResponse["output"] as! [String: Any])["vkey"] as! [String: String]
+                        let extendedVKeyData = try JSONEncoder().encode(extendedVKeyJSON)
+                        
+                        // Save Extended VKEY to tmp directory
+                        let tmpDir = FilePath(FileManager.default.temporaryDirectory.path)
+                        let tmpVKey = tmpDir.appending("temp.extended.vkey")
+                        try extendedVKeyData.write(
+                            to: URL(fileURLWithPath: tmpVKey.string),
+                            options: .atomic
+                        )
+                        
+                        let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
+                        let vkeyJSON = try await cli.key.nonExtendedKey(
+                            arguments: [
+                                "--extended-verification-key-file", tmpVKey.string,
+                                "--verification-key-file", "/dev/stdout"
+                            ]
+                        )
+                        
+                        var vkey = try JSONSerialization.jsonObject(
+                            with: vkeyJSON.toData,
+                            options: []
+                        ) as! [String: String]
+                        vkey["description"] = "Payment Verification Key"
+                        let vkeyData = try JSONEncoder().encode(vkey)
+                        
+                        do {
+                            try vkeyData.write(
+                                to: URL(fileURLWithPath: paymentVKey.string),
+                                options: .atomic
+                            )
+                        }
+                        catch {
                             noora.error(
                                 .alert(
-                                    "Failed to load: \(error.localizedDescription)",
+                                    "Could not write file: \(paymentVKey.string). \(error)",
                                     takeaways: [
-                                        "Make sure the response from the signer is in the correct format",
-                                        "\(responseJSON)"
+                                        "Make sure you have write permissions to the file path"
                                     ]
                                 )
                             )
                             throw ExitCode.failure
                         }
-                    }
-                    
-                    // save memnonics
-                    try saveMnemonics(mnemonics!, to: paymentMnemonics)
-                    
-                    let extendedVKeyJSON = (signerResponse["output"] as! [String: Any])["vkey"] as! [String: String]
-                    let extendedVKeyData = try JSONEncoder().encode(extendedVKeyJSON)
-                    
-                    // Save Extended VKEY to tmp directory
-                    let tmpDir = FilePath(FileManager.default.temporaryDirectory.path)
-                    let tmpVKey = tmpDir.appending("temp.extended.vkey")
-                    try extendedVKeyData.write(
-                        to: URL(fileURLWithPath: tmpVKey.string),
-                        options: .atomic
-                    )
-                    
-                    let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
-                    let vkeyJSON = try await cli.key.nonExtendedKey(
-                        arguments: [
-                            "--extended-verification-key-file", tmpVKey.string,
-                            "--verification-key-file", "/dev/stdout"
-                        ]
-                    )
-                    
-                    var vkey = try JSONSerialization.jsonObject(
-                        with: vkeyJSON.toData,
-                        options: []
-                    ) as! [String: String]
-                    vkey["description"] = "Payment Verification Key"
-                    let vkeyData = try JSONEncoder().encode(vkey)
-                    
-                    do {
-                        try vkeyData.write(
-                            to: URL(fileURLWithPath: paymentVKey.string),
-                            options: .atomic
-                        )
-                    }
-                    catch {
-                        noora.error(
-                            .alert(
-                                "Could not write file: \(paymentVKey.string). \(error)",
-                                takeaways: [
-                                    "Make sure you have write permissions to the file path"
-                                ]
-                            )
-                        )
-                        throw ExitCode.failure
-                    }
-                    
-                    try await FileUtils.fileLock(paymentMnemonics)
-                    try await lockAndPrintPaymentKeys()
-                }
-                else {
-                    print(noora.format(
-                        "Using \(.primary("SwiftCardano")) to generate address keys from mnemonics.")
-                    )
-                    
-                    if let mnemonics = mnemonics, mnemonics.isEmpty == false {
+
+                    default:
                         print(noora.format(
+                            "Using \(.primary("SwiftCardano")) to generate address keys from mnemonics.")
+                        )
+                        
+                        if let mnemonics = mnemonics, mnemonics.isEmpty == false {
+                            print(noora.format(
                             "Using Mnemonics: \(.primary(mnemonics))"
-                        ))
-                        
-                        let hdWallet = try HDWallet.fromMnemonic(
-                            mnemonic: mnemonics
-                        )
-                        
-                        let hdWalletPayment = try hdWallet.derive(
-                            fromPath: "m/\(hwRootPath)'/1815'/\(subAccount!)'/0/\(index!)"
-                        )
-                        
-                        let paymentExtendedSkey = try ExtendedSigningKey.fromHDWallet(
-                            hdWalletPayment
-                        )
-                        let paymentExtendedVKey: PaymentExtendedVerificationKey = try paymentExtendedSkey.toVerificationKey()
-                        let _paymentVKey: PaymentVerificationKey = try paymentExtendedVKey.toNonExtended()
-                        
-                        try paymentExtendedSkey.save(to: paymentSKey.string)
-                        try _paymentVKey.save(to: paymentVKey.string)
-                        
-                        print(noora.format(
-                            "Keys generated successfully from provided mnemonics."
-                        ))
-                    }
-                    else {
-                        print(noora.format(
-                            "Using \(.primary("cardano-signer")) to generate new mnemonics."
-                        ))
-                        
-                        mnemonics = try HDWallet.generateMnemonic(
-                            language: language,
-                            wordCount: wordCount
-                        ).joined(separator: " ")
-                        
-                        
-                        print(noora.format(
-                            "Created Mnemonics: \(.primary(mnemonics!))"
-                        ))
-                        let hdWallet = try HDWallet.fromMnemonic(
-                            mnemonic: mnemonics!
-                        )
-                        
-                        let hdWalletPayment = try hdWallet.derive(
-                            fromPath: "m/\(hwRootPath)'/1815'/\(subAccount!)'/0/\(index!)"
-                        )
-                        
-                        let paymentExtendedSkey = try ExtendedSigningKey.fromHDWallet(
-                            hdWalletPayment
-                        )
-                        let paymentExtendedVKey: PaymentExtendedVerificationKey = try paymentExtendedSkey.toVerificationKey()
-                        let _paymentVKey: PaymentVerificationKey = try paymentExtendedVKey.toNonExtended()
-                        
-                        try paymentExtendedSkey.save(to: paymentSKey.string)
-                        try _paymentVKey.save(to: paymentVKey.string)
-                    }
+                            ))
+                            
+                            let hdWallet = try HDWallet.fromMnemonic(
+                                mnemonic: mnemonics
+                            )
+                            
+                            let hdWalletPayment = try hdWallet.derive(
+                                fromPath: "m/\(hwRootPath)'/1815'/\(subAccount!)'/0/\(index!)"
+                            )
+                            
+                            let paymentExtendedSkey = try ExtendedSigningKey.fromHDWallet(
+                                hdWalletPayment
+                            )
+                            let paymentExtendedVKey: PaymentExtendedVerificationKey = try paymentExtendedSkey.toVerificationKey()
+                            let _paymentVKey: PaymentVerificationKey = try paymentExtendedVKey.toNonExtended()
+                            
+                            try paymentExtendedSkey.save(to: paymentSKey.string)
+                            try _paymentVKey.save(to: paymentVKey.string)
+                            
+                            print(noora.format(
+                                "Keys generated successfully from provided mnemonics."
+                            ))
+                        }
+                        else {
+                            print(noora.format(
+                                "Using \(.primary("cardano-signer")) to generate new mnemonics."
+                            ))
+                            
+                            mnemonics = try HDWallet.generateMnemonic(
+                                language: language,
+                                wordCount: wordCount
+                            ).joined(separator: " ")
+                            
+                            
+                            print(noora.format(
+                                "Created Mnemonics: \(.primary(mnemonics!))"
+                            ))
+                            let hdWallet = try HDWallet.fromMnemonic(
+                                mnemonic: mnemonics!
+                            )
+                            
+                            let hdWalletPayment = try hdWallet.derive(
+                                fromPath: "m/\(hwRootPath)'/1815'/\(subAccount!)'/0/\(index!)"
+                            )
+                            
+                            let paymentExtendedSkey = try ExtendedSigningKey.fromHDWallet(
+                                hdWalletPayment
+                            )
+                            let paymentExtendedVKey: PaymentExtendedVerificationKey = try paymentExtendedSkey.toVerificationKey()
+                            let _paymentVKey: PaymentVerificationKey = try paymentExtendedVKey.toNonExtended()
+                            
+                            try paymentExtendedSkey.save(to: paymentSKey.string)
+                            try _paymentVKey.save(to: paymentVKey.string)
+                        }
                     
-                    // save memnonics
-                    try saveMnemonics(mnemonics!, to: paymentMnemonics)
+                        // save memnonics
+                        try saveMnemonics(mnemonics!, to: paymentMnemonics)
                     
                     try await FileUtils.fileLock(paymentMnemonics)
                     try await lockAndPrintPaymentKeys()
                 }
-                
             }
             else if keyGenMethod == .enc {
                 var skey: TextEnvelope
-                
-                if useCardanoCLI{
-                    print(noora.format(
-                        "\nUsing \(.primary("cardano-cli")) to generate address keys...\n")
-                    )
-                    let cli = try await CardanoCLI(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
+
+                switch tool {
+                    case .cardanoCLI:
+                        print(noora.format(
+                            "\nUsing \(.primary("cardano-cli")) to generate address keys...\n")
+                        )
+                        let cli = try await CardanoCLI(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
+                        
+                        let skeyJSON = try await cli.address.keyGen(
+                            arguments: [
+                                "--verification-key-file", paymentVKey.string,
+                                "--signing-key-file", "/dev/stdout"
+                            ]
+                        )
+                        
+                        skey = try JSONDecoder().decode(
+                            TextEnvelope.self,
+                            from: skeyJSON.toData
+                        )
                     
-                    let skeyJSON = try await cli.address.keyGen(
-                        arguments: [
-                            "--verification-key-file", paymentVKey.string,
-                            "--signing-key-file", "/dev/stdout"
-                        ]
-                    )
-                    
-                    skey = try JSONDecoder().decode(
-                        TextEnvelope.self,
-                        from: skeyJSON.toData
-                    )
-                } else {
-                    print(noora.format(
-                        "\nUsing \(.primary("SwiftCardano")) to generate address keys...\n")
-                    )
-                    let paymentKeyPair = try PaymentKeyPair.generate()
-                    try paymentKeyPair.verificationKey.save(to: paymentVKey.string)
-                    
-                    skey = try TextEnvelope.load(
-                        from: try paymentKeyPair.signingKey.toTextEnvelope()!
-                    )
+                    default:
+                        print(noora.format(
+                            "\nUsing \(.primary("SwiftCardano")) to generate address keys...\n")
+                        )
+                        let paymentKeyPair = try PaymentKeyPair.generate()
+                        try paymentKeyPair.verificationKey.save(to: paymentVKey.string)
+                        
+                        skey = try TextEnvelope.load(
+                            from: try paymentKeyPair.signingKey.toTextEnvelope()!
+                        )
                 }
                 
                 let password = try await PasswordUtils.getConfirmedPassword(
@@ -609,27 +605,30 @@ extension GenerateMainCommand {
             
             // Generate Stake Address Keys
             if keyGenMethod == .cli || keyGenMethod == .hybrid || keyGenMethod == .hybridMulti {
-                if useCardanoCLI{
-                    print(noora.format(
-                        "\nUsing \(.primary("cardano-cli")) to generate stake address keys...\n")
-                    )
-                    let cli = try await CardanoCLI(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
+                switch tool {
+                    case .cardanoCLI:
+                        print(noora.format(
+                            "\nUsing \(.primary("cardano-cli")) to generate stake address keys...\n")
+                        )
+                        let cli = try await CardanoCLI(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
+                        
+                        _ = try await cli.stakeAddress.keyGen(
+                            arguments: [
+                                "--verification-key-file", stakeVKey.string,
+                                "--signing-key-file", stakeSKey.string
+                            ]
+                        )
                     
-                    _ = try await cli.stakeAddress.keyGen(
-                        arguments: [
-                            "--verification-key-file", stakeVKey.string,
-                            "--signing-key-file", stakeSKey.string
-                        ]
-                    )
-                } else {
-                    print(noora.format(
-                        "\nUsing \(.primary("SwiftCardano")) to generate stake address keys...\n")
-                    )
-                    let stakeKeyPair = try StakeKeyPair.generate()
-                    try stakeKeyPair.verificationKey.save(to: stakeVKey.string)
-                    try stakeKeyPair.signingKey.save(to: stakeSKey.string)
+                    default:
+                        print(noora.format(
+                            "\nUsing \(.primary("SwiftCardano")) to generate stake address keys...\n")
+                        )
+                        let stakeKeyPair = try StakeKeyPair.generate()
+                        try stakeKeyPair.verificationKey.save(to: stakeVKey.string)
+                        try stakeKeyPair.signingKey.save(to: stakeSKey.string)
+
                 }
                 
                 try await lockAndPrintStakeKeys()
@@ -638,133 +637,136 @@ extension GenerateMainCommand {
                 print(noora.format(
                     "\nGenerating CLI Stake-Keys via Derivation-Path: \(.primary("\(hwRootPath)H/1815H/\(subAccount!)H/2/\(index!)"))\n")
                 )
-                
-                if useCardanoCLI {
-                    print(noora.format(
-                        "\nUsing \(.primary("cardano-signer")) to generate stake address keys from mnemonics...\n"
-                    ))
-                    let signer = try await CardanoSigner(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
-                    
-                    let responseJSON = try await signer.keygen(
-                        path: "\(hwRootPath)H/1815H/\(subAccount!)H/2/\(index!)",
-                        mnemonics: .words(mnemonics!),
-                        withChainCode: true,
-                        outputFormat: .jsonExtended,
-                        outSkey: stakeSKey
-                    )
-                    let signerResponse = try JSONSerialization.jsonObject(
-                        with: responseJSON.toData,
-                        options: []
-                    ) as! [String: Any]
-                    
-                    let extendedVKeyJSON = (signerResponse["output"] as! [String: Any])["vkey"] as! [String: String]
-                    let extendedVKeyData = try JSONEncoder().encode(extendedVKeyJSON)
-                    
-                    // Save Extended VKEY to tmp directory
-                    let tmpDir = FilePath(FileManager.default.temporaryDirectory.path)
-                    let tmpVKey = tmpDir.appending("temp.extended.vkey")
-                    try extendedVKeyData.write(
-                        to: URL(fileURLWithPath: tmpVKey.string),
-                        options: .atomic
-                    )
-                    
-                    let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
-                    let vkeyJSON = try await cli.key.nonExtendedKey(
-                        arguments: [
-                            "--extended-verification-key-file", tmpVKey.string,
-                            "--verification-key-file", "/dev/stdout"
-                        ]
-                    )
-                    
-                    var vkey = try JSONSerialization.jsonObject(
-                        with: vkeyJSON.toData,
-                        options: []
-                    ) as! [String: String]
-                    vkey["description"] = "Stake Verification Key"
-                    let vkeyData = try JSONEncoder().encode(vkey)
-                    
-                    do {
-                        try vkeyData.write(
-                            to: URL(fileURLWithPath: stakeVKey.string),
+
+                switch tool {
+                    case .cardanoCLI:
+                        print(noora.format(
+                            "\nUsing \(.primary("cardano-signer")) to generate stake address keys from mnemonics...\n"
+                        ))
+                        let signer = try await CardanoSigner(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
+                        
+                        let responseJSON = try await signer.keygen(
+                            path: "\(hwRootPath)H/1815H/\(subAccount!)H/2/\(index!)",
+                            mnemonics: .words(mnemonics!),
+                            withChainCode: true,
+                            outputFormat: .jsonExtended,
+                            outSkey: stakeSKey
+                        )
+                        let signerResponse = try JSONSerialization.jsonObject(
+                            with: responseJSON.toData,
+                            options: []
+                        ) as! [String: Any]
+                        
+                        let extendedVKeyJSON = (signerResponse["output"] as! [String: Any])["vkey"] as! [String: String]
+                        let extendedVKeyData = try JSONEncoder().encode(extendedVKeyJSON)
+                        
+                        // Save Extended VKEY to tmp directory
+                        let tmpDir = FilePath(FileManager.default.temporaryDirectory.path)
+                        let tmpVKey = tmpDir.appending("temp.extended.vkey")
+                        try extendedVKeyData.write(
+                            to: URL(fileURLWithPath: tmpVKey.string),
                             options: .atomic
                         )
-                    }
-                    catch {
-                        noora.error(
-                            .alert(
-                                "Could not write file: \(stakeVKey.string). \(error)",
-                                takeaways: [
-                                    "Make sure you have write permissions to the file path"
-                                ]
-                            )
+                        
+                        let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
+                        let vkeyJSON = try await cli.key.nonExtendedKey(
+                            arguments: [
+                                "--extended-verification-key-file", tmpVKey.string,
+                                "--verification-key-file", "/dev/stdout"
+                            ]
                         )
-                        throw ExitCode.failure
-                    }
-                }
-                else {
-                    print(noora.format(
-                        "\nUsing \(.primary("SwiftCardano")) to generate stake address keys from mnemonics...\n")
-                    )
-                    
-                    let hdWallet = try HDWallet.fromMnemonic(
-                        mnemonic: mnemonics!
-                    )
-                    
-                    let hdWalletStake = try hdWallet.derive(
-                        fromPath: "m/\(hwRootPath)'/1815'/\(subAccount!)'/2/\(index!)"
-                    )
-                    
-                    let stakeExtendedSkey = try StakeExtendedSigningKey.fromHDWallet(hdWalletStake)
-                    let stakeExtendedVKey: StakeExtendedVerificationKey = try stakeExtendedSkey.toVerificationKey()
-                    let _stakeVKey: StakeVerificationKey = try stakeExtendedVKey.toNonExtended()
-                    
-                    try stakeExtendedSkey.save(to: stakeSKey.string)
-                    try _stakeVKey.save(to: stakeVKey.string)
-                    
-                    print(noora.format(
-                        "\nKeys generated successfully from provided mnemonics.\n"
-                    ))
+                        
+                        var vkey = try JSONSerialization.jsonObject(
+                            with: vkeyJSON.toData,
+                            options: []
+                        ) as! [String: String]
+                        vkey["description"] = "Stake Verification Key"
+                        let vkeyData = try JSONEncoder().encode(vkey)
+                        
+                        do {
+                            try vkeyData.write(
+                                to: URL(fileURLWithPath: stakeVKey.string),
+                                options: .atomic
+                            )
+                        }
+                        catch {
+                            noora.error(
+                                .alert(
+                                    "Could not write file: \(stakeVKey.string). \(error)",
+                                    takeaways: [
+                                        "Make sure you have write permissions to the file path"
+                                    ]
+                                )
+                            )
+                            throw ExitCode.failure
+                        }
+
+                    default:
+                        print(noora.format(
+                            "\nUsing \(.primary("SwiftCardano")) to generate stake address keys from mnemonics...\n")
+                        )
+                        
+                        let hdWallet = try HDWallet.fromMnemonic(
+                            mnemonic: mnemonics!
+                        )
+                        
+                        let hdWalletStake = try hdWallet.derive(
+                            fromPath: "m/\(hwRootPath)'/1815'/\(subAccount!)'/2/\(index!)"
+                        )
+                        
+                        let stakeExtendedSkey = try StakeExtendedSigningKey.fromHDWallet(hdWalletStake)
+                        let stakeExtendedVKey: StakeExtendedVerificationKey = try stakeExtendedSkey.toVerificationKey()
+                        let _stakeVKey: StakeVerificationKey = try stakeExtendedVKey.toNonExtended()
+                        
+                        try stakeExtendedSkey.save(to: stakeSKey.string)
+                        try _stakeVKey.save(to: stakeVKey.string)
+                        
+                        print(noora.format(
+                            "\nKeys generated successfully from provided mnemonics.\n"
+                        ))
                 }
                 
                 try await lockAndPrintStakeKeys()
             }
             else if keyGenMethod == .enc || keyGenMethod == .hybridEnc || keyGenMethod == .hybridMultiEnc {
                 var skey: TextEnvelope
-                
-                if useCardanoCLI{
-                    print(noora.format(
-                        "\nUsing \(.primary("cardano-cli")) to generate stake address keys...\n")
-                    )
-                    let cli = try await CardanoCLI(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
+
+
+                switch tool {
+                    case .cardanoCLI:
+                        print(noora.format(
+                            "\nUsing \(.primary("cardano-cli")) to generate stake address keys...\n")
+                        )
+                        let cli = try await CardanoCLI(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
+                        
+                        let skeyJSON = try await cli.stakeAddress.keyGen(
+                            arguments: [
+                                "--verification-key-file", stakeVKey.string,
+                                "--signing-key-file", "/dev/stdout"
+                            ]
+                        )
+                        
+                        skey = try JSONDecoder().decode(
+                            TextEnvelope.self,
+                            from: skeyJSON.toData
+                        )
                     
-                    let skeyJSON = try await cli.stakeAddress.keyGen(
-                        arguments: [
-                            "--verification-key-file", stakeVKey.string,
-                            "--signing-key-file", "/dev/stdout"
-                        ]
-                    )
-                    
-                    skey = try JSONDecoder().decode(
-                        TextEnvelope.self,
-                        from: skeyJSON.toData
-                    )
-                }
-                else {
-                    print(noora.format(
-                        "\nUsing \(.primary("SwiftCardano")) to generate stake address keys...\n")
-                    )
-                    let stakeKeyPair = try StakeKeyPair.generate()
-                    try stakeKeyPair.verificationKey.save(to: stakeVKey.string)
-                    try stakeKeyPair.signingKey.save(to: stakeSKey.string)
-                    
-                    skey = try JSONDecoder().decode(
-                        TextEnvelope.self,
-                        from: stakeKeyPair.signingKey.toJSON()!.toData
-                    )
+                    default:
+                        print(noora.format(
+                            "\nUsing \(.primary("SwiftCardano")) to generate stake address keys...\n")
+                        )
+                        let stakeKeyPair = try StakeKeyPair.generate()
+                        try stakeKeyPair.verificationKey.save(to: stakeVKey.string)
+                        try stakeKeyPair.signingKey.save(to: stakeSKey.string)
+                        
+                        skey = try JSONDecoder().decode(
+                            TextEnvelope.self,
+                            from: stakeKeyPair.signingKey.toJSON()!.toData
+                        )
                 }
                 
                 let password = try await PasswordUtils.getConfirmedPassword(
@@ -827,44 +829,45 @@ extension GenerateMainCommand {
             noora.success(
                 .alert("\nStake address keys generated successfully...\n")
             )
-            
-            if useCardanoCLI {
-                let cli = try await CardanoCLI(
-                    configuration: config.toSwiftCardanoUtilsConfig()
-                )
+
+            switch tool {
+                case .cardanoCLI:
+                    let cli = try await CardanoCLI(
+                        configuration: config.toSwiftCardanoUtilsConfig()
+                    )
+                    
+                    let _ = try await cli.address.build(
+                        arguments: [
+                            "--payment-verification-key-file", paymentVKey.string,
+                            "--stake-verification-key-file", stakeVKey.string,
+                            "--out-file", paymentAddress.string,
+                        ]
+                    )
+                    
+                    let _ = try await cli.stakeAddress.build(
+                        arguments: [
+                            "--payment-verification-key-file", paymentVKey.string,
+                            "--stake-verification-key-file", stakeVKey.string,
+                            "--out-file", stakeAddress.string,
+                        ]
+                    )
                 
-                let _ = try await cli.address.build(
-                    arguments: [
-                        "--payment-verification-key-file", paymentVKey.string,
-                        "--stake-verification-key-file", stakeVKey.string,
-                        "--out-file", paymentAddress.string,
-                    ]
-                )
-                
-                let _ = try await cli.stakeAddress.build(
-                    arguments: [
-                        "--payment-verification-key-file", paymentVKey.string,
-                        "--stake-verification-key-file", stakeVKey.string,
-                        "--out-file", stakeAddress.string,
-                    ]
-                )
-            }
-            else {
-                let _paymentVKey = try PaymentVerificationKey.load(from: paymentVKey.string)
-                let _stakeVKey = try StakeVerificationKey.load(from: stakeVKey.string)
-                
-                let paymentAddr = try Address(
-                    paymentPart: .verificationKeyHash(_paymentVKey.hash()),
-                    stakingPart: .verificationKeyHash(_stakeVKey.hash()),
-                    network: config.cardano.network.networkId
-                )
-                try paymentAddr.save(to: paymentAddress.string)
-                
-                let stakeAddr = try Address(
-                    stakingPart: .verificationKeyHash(_stakeVKey.hash()),
-                    network: config.cardano.network.networkId
-                )
-                try stakeAddr.save(to: stakeAddress.string)
+                default:
+                    let _paymentVKey = try PaymentVerificationKey.load(from: paymentVKey.string)
+                    let _stakeVKey = try StakeVerificationKey.load(from: stakeVKey.string)
+                    
+                    let paymentAddr = try Address(
+                        paymentPart: .verificationKeyHash(_paymentVKey.hash()),
+                        stakingPart: .verificationKeyHash(_stakeVKey.hash()),
+                        network: config.cardano.network.networkId
+                    )
+                    try paymentAddr.save(to: paymentAddress.string)
+                    
+                    let stakeAddr = try Address(
+                        stakingPart: .verificationKeyHash(_stakeVKey.hash()),
+                        network: config.cardano.network.networkId
+                    )
+                    try stakeAddr.save(to: stakeAddress.string)
             }
             
             try await FileUtils.fileLock(paymentAddress)
