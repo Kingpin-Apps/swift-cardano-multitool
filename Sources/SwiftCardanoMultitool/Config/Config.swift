@@ -364,8 +364,10 @@ public struct MultitoolConfig: Codable, Sendable {
             throw ExitCode.failure
         }
         
+        let absolute = FileManager.default.currentDirectoryPath + "/" + configPath.string
+
         spacedPrint(
-            "\nUsing config from: \(.path(try .init(validating: configPath.string)))"
+            "\nUsing config from: \(.path(try .init(validating: absolute)))"
         )
         
         return try await load(from: configPath)

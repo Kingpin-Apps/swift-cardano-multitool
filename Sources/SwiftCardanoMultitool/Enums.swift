@@ -200,3 +200,28 @@ public enum SigningMethod {
 }
 
 
+public enum Tool: CaseIterable, CustomStringConvertible, ExpressibleByArgument, Sendable, Codable, Hashable {
+    case swiftCardano
+    case cardanoCLI
+    
+    public var description: String {
+        switch self {
+            case .swiftCardano:
+                return "SwiftCardano"
+            case .cardanoCLI:
+                return "Cardano CLI"
+        }
+    }
+    
+    public init?(argument: String) {
+        let trimmed = argument.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch trimmed {
+            case "swiftcardano", "swift-cardano", "swift_cardano":
+                self = .swiftCardano
+            case "cardanocli", "cardano-cli", "cardano_cli":
+                self = .cardanoCLI
+            default:
+                return nil
+        }
+    }
+}

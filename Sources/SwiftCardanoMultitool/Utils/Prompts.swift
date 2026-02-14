@@ -401,7 +401,7 @@ func getDRep(title: TerminalText? = nil) async throws -> DRep {
             let drepVKey: DRepVerificationKey = try drepSKey.toVerificationKey()
             return DRep(credential: .verificationKeyHash(try drepVKey.hash()))
         case .mnemonics:
-            throw SwiftCardanoMultitoolError.notImplemented
+            throw SwiftCardanoMultitoolError.notImplemented("Mnemonic-based DRep entry is not yet implemented.")
     }
 }
 
@@ -503,5 +503,27 @@ func getPoolOperator(title: TerminalText? = nil) async throws -> PoolOperator {
             )
             let poolOperatorVKey: StakePoolVerificationKey = try poolOperatorSKey.toVerificationKey()
             return PoolOperator(poolKeyHash: try poolOperatorVKey.poolKeyHash())
+    }
+}
+
+/// Prompt user to select which tool to use for generating keys (cardano-cli or SwiftCardano).
+/// - Returns: Tool enum value indicating the selected tool.
+func getToolToUse() async throws -> Tool {
+    if Environment.getBool(Environment.useCardanoCLI) {
+        return .cardanoCLI
+    }
+    else if Environment.getBool(Environment.useSwiftCardano) {
+        return .swiftCardano
+    } else {
+        return noora.singleChoicePrompt(
+            title: "Which Tool",
+            question: "Use cardano-cli or SwiftCardano?",
+            options: Tool.allCases,
+            description: """
+                Options are:
+                \n- • swiftCardano: Use the SwiftCardano package.
+                \n- • cardanoCLI: Use the cardano-cli.
+                """
+        )
     }
 }

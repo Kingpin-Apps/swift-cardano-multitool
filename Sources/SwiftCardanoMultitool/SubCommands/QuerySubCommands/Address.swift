@@ -127,6 +127,10 @@ extension QueryMainCommand {
                 throw ExitCode.validationFailure
             }
             
+            let blockchainExplorer = config.blockchainExplorer.explorer(
+                network: config.cardano.network
+            )
+            
             switch addressType {
                 case .payment:
                     
@@ -142,6 +146,11 @@ extension QueryMainCommand {
                         utxos: addressInfo.utxos,
                         config: config
                     )
+                    
+                    let addressURL = try blockchainExplorer.viewAddress(address: address)
+                    
+                    spacedPrint("\(.link(title:addressURL.absoluteString, href: addressURL.absoluteString))")
+                    
                 case .stake:
                     
                     spacedPrint(
@@ -160,13 +169,19 @@ extension QueryMainCommand {
                     ) { updateMessage in
                         return try await context.protocolParameters()
                     }
-                    print()
                     
                     try await stakeAddressInfoSummary(
                         stakeAddressInfo: addressInfo.stakeAddressInfo,
                         config: config,
                         protocolParams: protocolParams
                     )
+                    
+                    let addressURL = try blockchainExplorer.viewAccount(
+                        address: address
+                    )
+                    
+                    
+                    spacedPrint("\(.link(title:addressURL.absoluteString, href: addressURL.absoluteString))")
                     
             }
         }

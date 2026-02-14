@@ -37,6 +37,9 @@ extension GenerateMainCommand {
         )
         var wordCount: WordCount = .twentyFour
         
+        @Option(name: .shortAndLong, help: "Whether to use the cardano-cli or SwiftCardano to generate the address.")
+        var tool: Tool? = nil
+        
         @Flag(help: "Whether to use the cardano-cli to generate the address.")
         var useCardanoCLI = false
         
@@ -515,11 +518,9 @@ extension GenerateMainCommand {
                     )
                     let paymentKeyPair = try PaymentKeyPair.generate()
                     try paymentKeyPair.verificationKey.save(to: paymentVKey.string)
-                    try paymentKeyPair.signingKey.save(to: paymentSKey.string)
                     
-                    skey = try JSONDecoder().decode(
-                        TextEnvelope.self,
-                        from: paymentKeyPair.signingKey.toJSON()!.toData
+                    skey = try TextEnvelope.load(
+                        from: try paymentKeyPair.signingKey.toTextEnvelope()!
                     )
                 }
                 

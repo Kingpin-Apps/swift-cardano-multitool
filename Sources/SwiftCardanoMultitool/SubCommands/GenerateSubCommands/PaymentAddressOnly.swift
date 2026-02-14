@@ -24,8 +24,8 @@ extension GenerateMainCommand {
         @Option(name: .shortAndLong, help: "Generates Payment keys using Ledger/Trezor HW-Keys with Index at this number. To be used together with --sub-account.")
         var index: Int? = nil
         
-        @Flag(help: "Whether to use the cardano-cli to generate the address.")
-        var useCardanoCLI = false
+        @Option(name: .shortAndLong, help: "Whether to use the cardano-cli or SwiftCardano to generate the address.")
+        var tool: Tool? = nil
         
         mutating func validate() throws {
             switch keyGenMethod {
@@ -102,12 +102,7 @@ extension GenerateMainCommand {
                     break
             }
             
-            useCardanoCLI = noora.yesOrNoChoicePrompt(
-                title: "Which Tools",
-                question: "Use cardano-cli to build the address?",
-                defaultAnswer: false,
-                description: "Choose whether to use cardano-cli or SwiftCardano to build the address.",
-            )
+            tool = try await getToolToUse()
             
             try self.validate()
         }
@@ -131,7 +126,7 @@ extension GenerateMainCommand {
             try await FileUtils.checkFile(paymentVKey)
             try await FileUtils.checkFile(paymentSKey)
             
-            func lockAndPrintPaymentKeys(extraDescription: String = "") async throws {
+            func lockAndPrintKeys(extraDescription: String = "") async throws {
                 try await FileUtils.fileLock(paymentVKey)
                 try await FileUtils.fileLock(paymentSKey)
                 
@@ -149,67 +144,68 @@ extension GenerateMainCommand {
             }
             
             if keyGenMethod == .cli {
-                if useCardanoCLI{
-                    print(noora.format(
-                        "Using \(.primary("cardano-cli")) to generate address keys")
-                    )
-                    let cli = try await CardanoCLI(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
-                    
-                    _ = try await cli.address.keyGen(
-                        arguments: [
-                            "--verification-key-file", paymentVKey.string,
-                            "--signing-key-file", paymentSKey.string
-                        ]
-                    )
-                } else {
-                    print(noora.format(
-                        "Using \(.primary("SwiftCardano")) to generate address keys")
-                    )
-                    let paymentKeyPair = try PaymentKeyPair.generate()
-                    try paymentKeyPair.verificationKey.save(to: paymentVKey.string)
-                    try paymentKeyPair.signingKey.save(to: paymentSKey.string)
+                switch tool {
+                    case .cardanoCLI:
+                        print(noora.format(
+                            "Using \(.primary("cardano-cli")) to generate address keys")
+                        )
+                        let cli = try await CardanoCLI(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
+                        
+                        _ = try await cli.address.keyGen(
+                            arguments: [
+                                "--verification-key-file", paymentVKey.string,
+                                "--signing-key-file", paymentSKey.string
+                            ]
+                        )
+                        
+                    default:
+                        print(noora.format(
+                            "Using \(.primary("SwiftCardano")) to generate address keys")
+                        )
+                        let paymentKeyPair = try PaymentKeyPair.generate()
+                        try paymentKeyPair.verificationKey.save(to: paymentVKey.string)
+                        try paymentKeyPair.signingKey.save(to: paymentSKey.string)
                 }
                 
-                try await lockAndPrintPaymentKeys()
+                try await lockAndPrintKeys()
                 
             }
             else if keyGenMethod == .enc {
                 var skey: TextEnvelope
                 
-                if useCardanoCLI{
-                    print(noora.format(
-                        "Using \(.primary("cardano-cli")) to generate address keys")
-                    )
-                    let cli = try await CardanoCLI(
-                        configuration: config.toSwiftCardanoUtilsConfig()
-                    )
-                    
-                    let skeyJSON = try await cli.address.keyGen(
-                        arguments: [
-                            "--verification-key-file", paymentVKey.string,
-                            "--signing-key-file", "/dev/stdout"
-                        ]
-                    )
-                    
-                    skey = try JSONDecoder().decode(
-                        TextEnvelope.self,
-                        from: skeyJSON.toData
-                    )
-                } else {
-                    print(noora.format(
-                        "Using \(.primary("SwiftCardano")) to generate address keys")
-                    )
-                    
-                    let paymentKeyPair = try PaymentKeyPair.generate()
-                    try paymentKeyPair.verificationKey.save(to: paymentVKey.string)
-                    try paymentKeyPair.signingKey.save(to: paymentSKey.string)
-                    
-                    skey = try JSONDecoder().decode(
-                        TextEnvelope.self,
-                        from: paymentKeyPair.signingKey.toJSON()!.toData
-                    )
+                switch tool {
+                    case .cardanoCLI:
+                        print(noora.format(
+                            "Using \(.primary("cardano-cli")) to generate address keys")
+                        )
+                        let cli = try await CardanoCLI(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
+                        
+                        let skeyJSON = try await cli.address.keyGen(
+                            arguments: [
+                                "--verification-key-file", paymentVKey.string,
+                                "--signing-key-file", "/dev/stdout"
+                            ]
+                        )
+                        
+                        skey = try JSONDecoder().decode(
+                            TextEnvelope.self,
+                            from: skeyJSON.toData
+                        )
+                    default:
+                        print(noora.format(
+                            "Using \(.primary("SwiftCardano")) to generate address keys")
+                        )
+                        
+                        let paymentKeyPair = try PaymentKeyPair.generate()
+                        try paymentKeyPair.verificationKey.save(to: paymentVKey.string)
+                        
+                        skey = try TextEnvelope.load(
+                            from: try paymentKeyPair.signingKey.toTextEnvelope()!
+                        )
                 }
                 
                 let password = try await PasswordUtils.getConfirmedPassword(
@@ -229,7 +225,7 @@ extension GenerateMainCommand {
                 
                 try skey.save(to: paymentSKey.string)
                 
-                try await lockAndPrintPaymentKeys()
+                try await lockAndPrintKeys()
                 
             }
             else if keyGenMethod == .hw {
@@ -252,7 +248,7 @@ extension GenerateMainCommand {
                 
                 let extraDescription = " (Account# \(subAccount!), Index# \(index!))"
                 
-                try await lockAndPrintPaymentKeys(extraDescription: extraDescription)
+                try await lockAndPrintKeys(extraDescription: extraDescription)
             }
             else if keyGenMethod == .hwMulti {
                 let hwcli = try await CardanoHWCLI(
@@ -274,7 +270,7 @@ extension GenerateMainCommand {
                 
                 let extraDescription = " (MultisSig Account# \(subAccount!), Index# \(index!))"
                 
-                try await lockAndPrintPaymentKeys(extraDescription: extraDescription)
+                try await lockAndPrintKeys(extraDescription: extraDescription)
                 
             }
             else {

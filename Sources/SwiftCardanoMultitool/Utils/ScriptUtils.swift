@@ -57,6 +57,7 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
                         takeaway: "Falling back to \(.primary("Lite")) mode."
                     )
                 )
+                print()
                 
                 return try await getLiteContext(config: config)
             }
@@ -65,7 +66,7 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
         case .lite:
             return try await getLiteContext(config: config)
         case .offline:
-            throw SwiftCardanoMultitoolError.notImplemented
+            throw SwiftCardanoMultitoolError.notImplemented("Offline mode is not yet implemented.")
             
     }
 }
@@ -179,7 +180,7 @@ public func stakeAddressInfoSummary(
         }
     } else {
         spacedPrint(
-            "\(.danger("Account is not delegated to a Pool."))"
+            "\n\(.danger("Account is not delegated to a Pool."))"
         )
     }
     
@@ -245,6 +246,7 @@ public func stakeAddressInfoSummary(
                 })
         ))
     }
+    print()
     
 }
 
@@ -423,11 +425,12 @@ public func utxoSummary(
         
         // Build transaction explorer URL
         let explorerUrl: String
-        let explorer = config.blockchainExplorer.explorer()
+        let explorer = config.blockchainExplorer.explorer(
+            network: config.cardano.network
+        )
         do {
             let url = try explorer.viewTransaction(
-                txHash: txHash,
-                network: config.cardano.network
+                transactionId: utxo.input.transactionId
             )
             explorerUrl = url.absoluteString
         } catch {

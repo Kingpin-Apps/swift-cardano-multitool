@@ -67,10 +67,11 @@ extension TransactionMainCommand {
                     "\n\(.success("━━━ Transaction Submitted Successfully ━━━"))\n"
                 ))
                 
-                let explorer = config.blockchainExplorer.explorer()
-                let trackingURL = try explorer.viewTransaction(
-                    txHash: txId,
+                let explorer = config.blockchainExplorer.explorer(
                     network: config.cardano.network
+                )
+                let trackingURL = try explorer.viewTransaction(
+                    transactionId: tx.transactionBody.id
                 )
                 
                 spacedPrint("Tracking: \(.link(title:trackingURL.absoluteString, href: trackingURL.absoluteString))")

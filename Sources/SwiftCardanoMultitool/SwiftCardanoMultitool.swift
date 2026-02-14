@@ -1,7 +1,6 @@
 import ArgumentParser
 import Noora
 import Foundation
-import SwiftFigletKit
 import Logging
 
 enum MainCommands: String, CaseIterable, CustomStringConvertible {
@@ -87,14 +86,16 @@ struct SwiftCardanoMultitool: AsyncParsableCommand {
     )
     
     func run() async throws {
-        let greeting = SFKRenderer.render(
-            text: "Swift Cardano Multitool",
-            font: .named("ANSI Shadow"),
-            color: .gradient(palette: [.blue, .white, .black]),
-            options: .init(newline: true)
-        )
-        
-        print(greeting)
+        let banner = """
+        ███████╗ ██████╗███╗   ███╗
+        ██╔════╝██╔════╝████╗ ████║
+        ███████╗██║     ██╔████╔██║
+        ╚════██║██║     ██║╚██╔╝██║
+        ███████║╚██████╗██║ ╚═╝ ██║
+        ╚══════╝ ╚═════╝╚═╝     ╚═╝
+        Swift Cardano Multitool
+        """
+        print(banner)
         
         // Bootstrap Logging
         LoggingSystem.bootstrap { label in

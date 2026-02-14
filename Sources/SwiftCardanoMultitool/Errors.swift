@@ -11,10 +11,12 @@ public enum SwiftCardanoMultitoolError: Error, LocalizedError {
     case jsonError(String)
     case operationError(String)
     case gpgNotFound
-    case notImplemented
+    case notImplemented(String?)
     case gpgFailed(String)
     case invalidHex(String)
     case invalidConfiguration(String)
+    case invalidAddress(String)
+    case invalidPool(String)
     case fileMissing(FilePath)
     case jsonDecodeError(String)
     case missingField(String)
@@ -28,6 +30,7 @@ public enum SwiftCardanoMultitoolError: Error, LocalizedError {
     case adahandleAssetNotOnAddress(String, String)
     case adahandleAPIError(String, Int?)
     case adahandleAddressMismatch(String, String)
+    case valueError(String)
     
     public var errorDescription: String? {
         switch self {
@@ -49,6 +52,10 @@ public enum SwiftCardanoMultitoolError: Error, LocalizedError {
                 return "GPG binary not found in system PATH"
             case .gpgFailed(let message):
                 return "GPG operation failed: \(message)"
+            case .invalidAddress(let message):
+                return "Invalid Address: \(message)"
+            case .invalidPool(let message):
+                return "Invalid Pool: \(message)"
             case .invalidConfiguration(let config):
                 return "Invalid configuration: \(config)"
             case .invalidHex(let hex):
@@ -63,8 +70,8 @@ public enum SwiftCardanoMultitoolError: Error, LocalizedError {
                 return "Encryption Error: \(message)"
             case .decryptionError(let message):
                 return "Decryption Error: \(message)"
-            case .notImplemented:
-                return "This feature is not yet implemented"
+            case .notImplemented(let message):
+                return message ?? "This feature is not yet implemented"
             case .adahandleOfflineMode:
                 return "AdaHandles are only supported in online or lite mode"
             case .adahandleNetworkNotSupported(let network):
@@ -86,6 +93,8 @@ public enum SwiftCardanoMultitoolError: Error, LocalizedError {
                 return "AdaHandle address mismatch - API: \(address1), Datum: \(address2)"
             case .operationError(let message):
                 return "Operation Error: \(message)"
+            case .valueError(let message):
+                return "Value Error: \(message)"
         }
     }
 }

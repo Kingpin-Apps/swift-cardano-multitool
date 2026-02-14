@@ -23,7 +23,7 @@ enum GenerateCommands: String, CaseIterable, CustomStringConvertible {
             case .nodeColdKeys:
                 return "Generate the node cold keys."
             case .nodeKesKeys:
-                return "Generate the node cold keys."
+                return "Generate the node KES keys."
             case .nodeOperationalCertificate:
                 return "Generate the node operational certificate."
             case .nodeVrfKeys:
@@ -58,7 +58,7 @@ enum GenerateCommands: String, CaseIterable, CustomStringConvertible {
             case .nodeOperationalCertificate:
                 return GenerateMainCommand.NodeOperationalCertificate.self
             case .nodeVrfKeys:
-                return GenerateMainCommand.NodeVrfKeys.self
+                return GenerateMainCommand.NodeVRFKeys.self
             case .paymentAddressOnly:
                 return GenerateMainCommand.PaymentAddressOnly.self
             case .paymentAndStakeAddress:
@@ -113,16 +113,6 @@ extension GenerateMainCommand {
         }
     }
     
-    struct NodeColdKeys: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(
-            abstract: "Generate the node cold keys."
-        )
-        
-        func run() async throws {
-            print("Generate node cold keys command not yet implemented")
-        }
-    }
-    
     struct NodeKesKeys: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Generate the node KES keys."
@@ -140,16 +130,6 @@ extension GenerateMainCommand {
         
         func run() async throws {
             print("Generate node operational certificate command not yet implemented")
-        }
-    }
-    
-    struct NodeVrfKeys: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(
-            abstract: "Generate the node VRF keys."
-        )
-        
-        func run() async throws {
-            print("Generate node VRF keys command not yet implemented")
         }
     }
     
