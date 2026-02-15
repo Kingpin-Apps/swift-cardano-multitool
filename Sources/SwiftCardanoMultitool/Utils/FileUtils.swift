@@ -297,10 +297,14 @@ public struct FileUtils {
             if let max = maxChars {
                 let s = try await loadLockedFile(path)
                 let prefix = String(s.prefix(max))
-                spacedPrint("\n\(prefix) ... (cropped)\n")
+                printDivider("─")
+                spacedPrint("\(prefix) ... (cropped)")
+                printDivider("─")
             } else {
                 let s = try await loadLockedFile(path)
-                spacedPrint("\n\(s)")
+                printDivider("─")
+                spacedPrint("\(s)")
+                printDivider("─")
             }
         } catch {
             noora.warning(.alert("Error reading file: \(error)"))
@@ -319,7 +323,9 @@ public struct FileUtils {
             )
             
             if let jsonString = String(data: jsonData, encoding: .utf8) {
-                print(jsonString, terminator: "\n\n")
+                printDivider("─")
+                print(jsonString)
+                printDivider("─")
             }
         } catch {
             noora.warning(.alert("Error reading JSON file: \(error)"))

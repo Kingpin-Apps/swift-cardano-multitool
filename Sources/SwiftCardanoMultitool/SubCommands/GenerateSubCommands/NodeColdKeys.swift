@@ -244,7 +244,7 @@ extension GenerateMainCommand {
                             "Aborting",
                             takeaway: "User chose to abort due to non-default ColdKeyIndex."
                         ))
-                        throw ExitCode.validationFailure
+                        throw CleanExit.message("Aborted.")
                     }
                 }
                 

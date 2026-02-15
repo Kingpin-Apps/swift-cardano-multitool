@@ -7,6 +7,18 @@ import Noora
 import ArgumentParser
 import SystemPackage
 
+func printDivider(_ char: Character = "-") {
+    
+    func terminalWidth() -> Int {
+        var size = winsize()
+        if ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == 0 {
+            return Int(size.ws_col)
+        }
+        return 80  // fallback
+    }
+    let divider = String(repeating: char, count: terminalWidth())
+    spacedPrint("\(divider)")
+}
 
 /// Get the appropriate chain context based on the multitool configuration
 /// - Parameter config: The multitool configuration

@@ -47,7 +47,7 @@ extension GenerateMainCommand {
                     .filter {
                         [.cli, .enc].contains($0)
                     },
-                description: "Choose the method to generate the node cold keys. Options are:\n- cli: Use cardano-cli to generate the keys.\n- enc: Generate unencrypted keys and encrypt the signing key with a password."
+                description: "Choose the method to generate the node VRF keys. Options are:\n- cli: Use cardano-cli or SwiftCardano to generate the keys.\n- enc: Generate unencrypted keys and encrypt the signing key with a password."
             )
             
             tool = try await getToolToUse()

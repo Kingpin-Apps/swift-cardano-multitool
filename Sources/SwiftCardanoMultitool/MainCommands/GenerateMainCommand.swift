@@ -54,7 +54,7 @@ enum GenerateCommands: String, CaseIterable, CustomStringConvertible {
             case .nodeColdKeys:
                 return GenerateMainCommand.NodeColdKeys.self
             case .nodeKesKeys:
-                return GenerateMainCommand.NodeKesKeys.self
+                return GenerateMainCommand.NodeKESKeys.self
             case .nodeOperationalCertificate:
                 return GenerateMainCommand.NodeOperationalCertificate.self
             case .nodeVrfKeys:
@@ -110,16 +110,6 @@ extension GenerateMainCommand {
         
         func run() async throws {
             print("Generate delegation certificate command not yet implemented")
-        }
-    }
-    
-    struct NodeKesKeys: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(
-            abstract: "Generate the node KES keys."
-        )
-        
-        func run() async throws {
-            print("Generate node KES keys command not yet implemented")
         }
     }
     
