@@ -28,7 +28,7 @@ enum GenerateCommands: String, CaseIterable, CustomStringConvertible {
             case .paymentAndStakeAddress:
                 return "Generate a payment and stake address."
             case .keyRotation:
-                return "Rotate KES Keys and Node Operational Certificate :param name: The name of the pools :param number_of_pools: The number of pools to rotate"
+                return "Key Rotation - Rotate KES keys and generate a new operational certificate."
             case .poolJSON:
                 return "Pool.json - Generate a new pool.json file."
             case .back:
