@@ -11,6 +11,10 @@ func spacedPrint(_ text: TerminalText) {
     )
 }
 
+func formatPrint(_ text: TerminalText) {
+    print(noora.format(text))
+}
+
 public func lovelaceToAda(_ lovelace: UInt64) -> Double {
     return Double(lovelace) / 1_000_000.0
 }
@@ -144,4 +148,13 @@ public func formatNumber(_ value: Any?, numDecimals: Int = 2) -> String {
     }
     
     return result
+}
+
+func convertSeconds(_ seconds: Int) -> String {
+    let days = seconds / 86400
+    let hours = (seconds % 86400) / 3600
+    let minutes = (seconds % 3600) / 60
+    let secs = seconds % 60
+    
+    return String(format: "%02d days %02d:%02d:%02d", days, hours, minutes, secs)
 }

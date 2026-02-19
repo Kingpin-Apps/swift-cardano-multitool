@@ -10,7 +10,7 @@ extension QueryMainCommand {
         func run() async throws {
             let config = try await MultitoolConfig.load()
             let context = try await getContext(config: config)
-            try await printInfo(config: config, context: context)
+            try await printContextInfo(config: config, context: context)
             
             let epoch = try await noora.progressStep(
                 message: "Querying current epoch...",

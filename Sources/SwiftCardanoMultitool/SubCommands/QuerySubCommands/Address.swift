@@ -24,9 +24,12 @@ extension QueryMainCommand {
                         description: "The address must be a valid Cardano address."
                     )
                     let config = try await MultitoolConfig.load()
+                    
+                    let cardanoConfig = try getCardanoConfig(config: config)
+                    
                     let resolvedAddress = try await resolveAdahandle(
                         handle: adahandle,
-                        network: config.cardano.network
+                        network: cardanoConfig.network
                     )
                     address = try AddressInfo(adaHandle: adahandle, address: resolvedAddress)
                 case .address:
@@ -82,11 +85,13 @@ extension QueryMainCommand {
             
             let context = try await getContext(config: config)
             
-            try await printInfo(config: config, context: context)
+            try await printContextInfo(config: config, context: context)
+            
+            let cardanoConfig = try getCardanoConfig(config: config)
             
             if addressInfo.adaHandle != nil, addressInfo.address == nil {
                 do {
-                    try await addressInfo.checkAdaHandle(network: config.cardano.network)
+                    try await addressInfo.checkAdaHandle(network: cardanoConfig.network)
                 } catch {
                     noora.error(
                         .alert(
@@ -128,7 +133,7 @@ extension QueryMainCommand {
             }
             
             let blockchainExplorer = config.blockchainExplorer.explorer(
-                network: config.cardano.network
+                network: cardanoConfig.network
             )
             
             switch addressType {

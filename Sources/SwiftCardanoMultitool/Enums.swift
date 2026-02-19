@@ -225,3 +225,31 @@ public enum Tool: CaseIterable, CustomStringConvertible, ExpressibleByArgument, 
         }
     }
 }
+
+
+
+public enum WhichPeriod: CaseIterable, CustomStringConvertible, ExpressibleByArgument, Sendable, Codable, Hashable {
+    case current
+    case next
+    
+    public var description: String {
+        switch self {
+            case .current:
+                return "Current"
+            case .next:
+                return "Next"
+        }
+    }
+    
+    public init?(argument: String) {
+        let trimmed = argument.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch trimmed {
+            case "current":
+                self = .current
+            case "next":
+                self = .next
+            default:
+                return nil
+        }
+    }
+}

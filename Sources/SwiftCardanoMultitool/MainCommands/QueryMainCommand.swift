@@ -84,9 +84,4 @@ extension QueryMainCommand {
         static let configuration = CommandConfiguration(abstract: "Query leadership schedule.")
         func run() async throws { print("Query leadership schedule command not yet implemented") }
     }
-    
-    struct KesPeriodInfo: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Query KES period information.")
-        func run() async throws { print("Query KES period info command not yet implemented") }
-    }
 }

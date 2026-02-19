@@ -80,7 +80,7 @@ extension CertificateMainCommand {
             
             let config = try await MultitoolConfig.load()
             let context = try await getContext(config: config)
-            try await printInfo(config: config, context: context)
+            try await printContextInfo(config: config, context: context)
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
             let timestamp = DateUtils.getCurrentTimestamp()
@@ -250,13 +250,17 @@ extension CertificateMainCommand {
                     ]
                 ))
                 
+                let cardanoConfig = try getCardanoConfig(config: config)
+                
                 let poolInfo: Components.Schemas.PoolInfo?
                 if [.online, .auto, .lite].contains(config.mode),
                     let koiosApiKey = config.koiosApiKey {
                     let koiosContext = try await KoiosChainContext(
                         apiKey: koiosApiKey,
-                        network: config.cardano.network
+                        network: cardanoConfig.network
                     )
+                    
+//                    let context = try getContext(config: config)
                     
                     poolInfo = try await noora.progressStep(
                         message: "Fetching stake pool info...",

@@ -1,4 +1,5 @@
 import Foundation
+import Version
 import SwiftCardanoChain
 import SwiftCardanoUtils
 import SwiftCardanoCore
@@ -7,6 +8,8 @@ import Noora
 import ArgumentParser
 import SystemPackage
 
+/// Print a divider line in the terminal, with optional character customization- defaults to "-"
+/// - Parameter char: The character to use for the divider line (default is "-")
 func printDivider(_ char: Character = "-") {
     
     func terminalWidth() -> Int {
@@ -37,19 +40,22 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
     }
     
     func getLiteContext(config: MultitoolConfig) async throws -> any ChainContext {
+        
+        let cardanoConfig = try getCardanoConfig(config: config)
+        
         if let blockfrostProjectId = config.blockfrostProjectId {
             return try await BlockFrostChainContext(
                 projectId: blockfrostProjectId,
-                network: config.cardano.network
+                network: cardanoConfig.network
             )
         } else if let koiosApiKey = config.koiosApiKey {
             return try await KoiosChainContext(
                 apiKey: koiosApiKey,
-                network: config.cardano.network
+                network: cardanoConfig.network
             )
         } else {
             return try await KoiosChainContext(
-                network: config.cardano.network
+                network: cardanoConfig.network
             )
         }
     }
@@ -156,9 +162,11 @@ public func stakeAddressInfoSummary(
             "\nAccount is delegated to a Pool with ID: \(.primary(try poolOperator.id()))"
         )
         
+        let cardanoConfig = try getCardanoConfig(config: config)
+        
         let koiosContext = try await KoiosChainContext(
             apiKey: config.koiosApiKey,
-            network: config.cardano.network
+            network: cardanoConfig.network
         )
         
         let poolInfo = try await noora.progressStep(
@@ -329,6 +337,8 @@ public func utxoSummary(
     
     var utxoRows: [StyledTableRow] = []
     
+    let cardanoConfig = try getCardanoConfig(config: config)
+    
     for utxo in utxos {
         let output = utxo.output
         let txHash = utxo.input.transactionId.description
@@ -366,7 +376,7 @@ public func utxoSummary(
                     var displayText = ""
                     
                     if let adaHandlePolicyId = config.adaHandlePolicy.forNetwork(
-                        config.cardano.network
+                        cardanoConfig.network
                     ),
                        policyIdHex == adaHandlePolicyId {
                         
@@ -438,7 +448,7 @@ public func utxoSummary(
         // Build transaction explorer URL
         let explorerUrl: String
         let explorer = config.blockchainExplorer.explorer(
-            network: config.cardano.network
+            network: cardanoConfig.network
         )
         do {
             let url = try explorer.viewTransaction(
@@ -527,22 +537,23 @@ public func utxoSummary(
     }
 }
 
-/// Display version and network info
-/// - Parameter config: The multitool configuration
-public func printInfo(
-    config: MultitoolConfig,
-    context: any ChainContext
-) async throws -> Void {
+/// Get the multitool version and formatted network info text for display
+/// - Parameter config: The multitool configuration - used to determine network info
+/// - Returns: A tuple containing the version and formatted network info text
+/// - Throws: An error if the version cannot be retrieved or if the configuration is invalid
+public func getVersionAndInfoText(config: MultitoolConfig) async throws -> (Version, TerminalText) {
     let infoString: TerminalText
-    if config.cardano.network == .mainnet {
-        infoString = "\(.success("\(config.cardano.network.description.capitalized)"))"
+    
+    let cardanoConfig = try getCardanoConfig(config: config)
+    if cardanoConfig.network == .mainnet {
+        infoString = "\(.success("\(cardanoConfig.network.description.capitalized)"))"
     } else {
-        guard let testnetMagic = config.cardano.network.testnetMagic else {
+        guard let testnetMagic = cardanoConfig.network.testnetMagic else {
             throw SwiftCardanoMultitoolError.invalidConfiguration(
                 "Testnet magic number is required for testnet networks."
             )
         }
-        infoString = "\(.danger("Testnet: \(config.cardano.network.description.capitalized)")) \(.danger("(magic \(testnetMagic))"))"
+        infoString = "\(.danger("Testnet: \(cardanoConfig.network.description.capitalized)")) \(.danger("(magic \(testnetMagic))"))"
     }
     
     guard let version = SwiftCardanoMultitool.version else {
@@ -550,6 +561,63 @@ public func printInfo(
             "Unable to retrieve SwiftCardanoMultitool version."
         )
     }
+    
+    return (version, infoString)
+}
+
+/// Display version and network info
+/// - Parameter config: The multitool configuration
+public func printToolInfo(
+    config: MultitoolConfig,
+    tool: Tool
+) async throws -> Void {
+    let (version, infoString) = try await getVersionAndInfoText(config: config)
+    
+    var takeaways: [TerminalText]  = [
+        "Scripts-Mode: \(.accent("\(config.mode.rawValue.capitalized)"))",
+        "Platform: \(.info(ProcessInfo.processInfo.operatingSystemVersionString))",
+        infoString
+    ]
+    
+    switch tool {
+        case .cardanoCLI:
+            let cli = try await CardanoCLI(
+                configuration: config.toSwiftCardanoUtilsConfig()
+            )
+            
+            let cliVersion = try await cli.version()
+            
+            takeaways.insert("Cardano-CLI: \(.primary(cliVersion))", at: 0)
+            
+        case .swiftCardano:
+            let swiftCardanoVersion = SwiftCardanoCore.version!
+            
+            takeaways
+                .insert(
+                    "SwiftCardanoCore: \(.primary(swiftCardanoVersion.description))",
+                    at: 0
+                )
+    }
+    
+    noora.info(
+        .alert(
+            "SwiftCardanoMultitool v\(version)",
+            takeaways: takeaways
+        )
+    )
+    spacedPrint("")
+}
+
+/// Display context and environment info to the user
+/// - Parameters:
+///  - config: The multitool configuration
+///  - context: The chain context to query for info
+/// - Throws: An error if the version cannot be retrieved or if the configuration is invalid
+public func printContextInfo(
+    config: MultitoolConfig,
+    context: any ChainContext
+) async throws -> Void {
+    let (version, infoString) = try await getVersionAndInfoText(config: config)
     
     var takeaways: [TerminalText] = [
         "Chain Context: \(.primary("\(context.name)"))",
@@ -574,7 +642,6 @@ public func printInfo(
         takeaways.append("Cardano-CLI: \(.primary(cliVersion))")
         takeaways.append("Cardano-Node: \(.primary(nodeVersion))")
     }
-        
     
     noora.info(
         .alert(
@@ -638,7 +705,9 @@ public func queryChainState(
         return try await context.lastBlockSlot()
     }
     
-    let ttl = tip + config.cardano.ttlBuffer
+    let cardanoConfig = try getCardanoConfig(config: config)
+    
+    let ttl = tip + cardanoConfig.ttlBuffer
     
     return (tip, ttl)
 }
@@ -695,4 +764,20 @@ public func checkTransactionSize(
             "\nTransaction size: \(.primary("\(txSize) bytes")) (within the limit of \(maxTxSize) bytes)"
         )
     }
+}
+
+public func getCardanoConfig(config: MultitoolConfig) throws -> CardanoConfig {
+    guard let cardanoConfig = config.cardano else {
+        noora.error(
+            .alert(
+                "Cardano configuration not found in multitool config.",
+                takeaways: [
+                    "Make sure your config file includes a [cardano] section with the necessary network information."
+                ]
+            )
+        )
+        throw ExitCode.failure
+    }
+    
+    return cardanoConfig
 }

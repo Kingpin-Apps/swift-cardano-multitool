@@ -94,6 +94,7 @@ struct SwiftCardanoMultitool: AsyncParsableCommand {
         ███████║╚██████╗██║ ╚═╝ ██║
         ╚══════╝ ╚═════╝╚═╝     ╚═╝
         Swift Cardano Multitool
+        
         """
         print(banner)
         

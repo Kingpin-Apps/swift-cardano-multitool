@@ -155,6 +155,8 @@ extension GenerateMainCommand {
             
             let config = try await MultitoolConfig.load()
             
+            try await printToolInfo(config: config, tool: tool!)
+            
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
             let paymentAddress = cwd.appending("\(addressName!).payment.addr")
@@ -856,16 +858,18 @@ extension GenerateMainCommand {
                     let _paymentVKey = try PaymentVerificationKey.load(from: paymentVKey.string)
                     let _stakeVKey = try StakeVerificationKey.load(from: stakeVKey.string)
                     
+                    let cardanoConfig = try getCardanoConfig(config: config)
+                    
                     let paymentAddr = try Address(
                         paymentPart: .verificationKeyHash(_paymentVKey.hash()),
                         stakingPart: .verificationKeyHash(_stakeVKey.hash()),
-                        network: config.cardano.network.networkId
+                        network: cardanoConfig.network.networkId
                     )
                     try paymentAddr.save(to: paymentAddress.string)
                     
                     let stakeAddr = try Address(
                         stakingPart: .verificationKeyHash(_stakeVKey.hash()),
-                        network: config.cardano.network.networkId
+                        network: cardanoConfig.network.networkId
                     )
                     try stakeAddr.save(to: stakeAddress.string)
             }

@@ -232,8 +232,7 @@ public struct FileUtils {
         } catch {
             // ignore if file didn't exist
         }
-        let d = Data(data.utf8)
-        try d.write(to: URL(fileURLWithPath: path.string), options: .atomic)
+        try dumpFile(path, data: data)
         try await fileLock(path)
     }
     
@@ -335,7 +334,7 @@ public struct FileUtils {
     /// Searches the current directory for files matching a pattern and returns the lexicographically latest.
     /// Pattern: `"{startswith}."` prefix, contains `contains`, and suffix `".{endswith}"`.
     /// - Returns: The latest matching `FilePath`, or `nil` after emitting a warning.
-    public static func searchLatestFile(startswith: String, contains: String, endswith: String) -> FilePath? {
+    public static func searchLatestFile(startswith: String, contains: String, endswith: String) throws -> FilePath? {
         let cwdPathString = FileManager.default.currentDirectoryPath
         let cwdPath = FilePath(cwdPathString)
         
@@ -359,6 +358,8 @@ public struct FileUtils {
             noora.warning(.alert("Could not find \(startswith).\(contains)-*.\(endswith) in \(cwdPathString)"))
             return nil
         }
+        
+        try checkFileExists(latest)
         return latest
     }
     

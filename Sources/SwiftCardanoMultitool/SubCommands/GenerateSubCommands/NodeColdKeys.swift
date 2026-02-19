@@ -92,6 +92,8 @@ extension GenerateMainCommand {
             
             let config = try await MultitoolConfig.load()
             
+            try await printToolInfo(config: config, tool: tool!)
+            
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
             let poolCounter = cwd.appending("\(poolName!).cold.counter")

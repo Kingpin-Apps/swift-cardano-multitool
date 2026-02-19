@@ -113,6 +113,8 @@ extension BuildMainCommand {
             
             let config = try await MultitoolConfig.load()
             
+            try await printToolInfo(config: config, tool: tool!)
+            
             let address: Address
             switch tool {
 
@@ -143,10 +145,12 @@ extension BuildMainCommand {
                         from: stakeVkey!.string
                     )
                     
+                    let cardanoConfig = try getCardanoConfig(config: config)
+                    
                     address = try Address(
                         paymentPart: nil,
                         stakingPart: .verificationKeyHash(try stakeVerificationKey.hash()),
-                        network: config.cardano.network.networkId
+                        network: cardanoConfig.network.networkId
                     )
 
             }

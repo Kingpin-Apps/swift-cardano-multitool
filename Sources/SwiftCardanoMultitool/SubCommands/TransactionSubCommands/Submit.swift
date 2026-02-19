@@ -43,7 +43,7 @@ extension TransactionMainCommand {
             
             let config = try await MultitoolConfig.load()
             let context = try await getContext(config: config)
-            try await printInfo(config: config, context: context)
+            try await printContextInfo(config: config, context: context)
             
             let confirm = noora.yesOrNoChoicePrompt(
                 title: "Confim Submission",
@@ -67,8 +67,10 @@ extension TransactionMainCommand {
                     "\n\(.success("━━━ Transaction Submitted Successfully ━━━"))\n"
                 ))
                 
+                let cardanoConfig = try getCardanoConfig(config: config)
+                
                 let explorer = config.blockchainExplorer.explorer(
-                    network: config.cardano.network
+                    network: cardanoConfig.network
                 )
                 let trackingURL = try explorer.viewTransaction(
                     transactionId: tx.transactionBody.id

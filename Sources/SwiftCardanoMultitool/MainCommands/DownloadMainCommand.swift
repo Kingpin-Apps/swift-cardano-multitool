@@ -47,10 +47,3 @@ struct DownloadMainCommand: AsyncParsableCommand {
         await selectedOption.command().main([])
     }
 }
-
-extension DownloadMainCommand {    
-    struct Snapshot: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Download blockchain snapshot.")
-        func run() async throws { print("Download snapshot command not yet implemented") }
-    }
-}

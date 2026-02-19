@@ -120,7 +120,10 @@ public struct MultitoolConfig: Codable, Sendable {
     public var koiosApiKey: String?
     
     /// Cardano node and CLI configuration
-    public var cardano: CardanoConfig
+    public var cardano: CardanoConfig?
+    
+    /// Mithril ClientI configuration
+    public var mithril: MithrilConfig?
     
     /// Ogmios configuration
     public var ogmios: OgmiosConfig?
@@ -162,9 +165,36 @@ public struct MultitoolConfig: Codable, Sendable {
     /// Base delay for exponential backoff (milliseconds)
     public var baseRetryDelay: UInt64?
     
+    /// The number of Byron Epochs before the Chain forks to Shelley-Era
+    private var _byronToShelleyEpoch: UInt64?
+    public var byronToShelleyEpoch: UInt64 {
+        get throws {
+            if let cardano = self.cardano {
+                switch cardano.network {
+                    case .mainnet:
+                        return 208
+                    case .preprod:
+                        return 4
+                    case .preview:
+                        return 0
+                    case .guildnet:
+                        return 2
+                    default:
+                        return _byronToShelleyEpoch ?? 0
+                }
+            }
+            return _byronToShelleyEpoch ?? 0
+        }
+//        set {
+//            _byronToShelleyEpoch = newValue
+//        }
+    }
+    
     private enum CodingKeys: String, CodingKey {
         case blockfrostProjectId = "blockfrost_project_id"
+        case koiosApiKey = "koios_api_key"
         case cardano
+        case mithril
         case ogmios
         case kupo
         case mode
@@ -178,11 +208,59 @@ public struct MultitoolConfig: Codable, Sendable {
         case cropTxOutput = "crop_tx_output"
         case maxRetryAttempts = "max_retry_attempts"
         case baseRetryDelay = "base_retry_delay"
+        case byronToShelleyEpoch = "byron_to_shelley_epoch"
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.blockfrostProjectId = try container.decodeIfPresent(String.self, forKey: .blockfrostProjectId)
+        self.koiosApiKey = try container.decodeIfPresent(String.self, forKey: .koiosApiKey)
+        self.cardano = try container.decodeIfPresent(CardanoConfig.self, forKey: .cardano)
+        self.mithril = try container.decodeIfPresent(MithrilConfig.self, forKey: .mithril)
+        self.ogmios = try container.decodeIfPresent(OgmiosConfig.self, forKey: .ogmios)
+        self.kupo = try container.decodeIfPresent(KupoConfig.self, forKey: .kupo)
+        self.mode = try container.decodeIfPresent(Mode.self, forKey: .mode) ?? .auto
+        self.offlineFile = try container.decodeIfPresent(FilePath.self, forKey: .offlineFile)
+        self.tokenMetaServer = try container.decode(TokenMetaServerURLs.self, forKey: .tokenMetaServer)
+        self.blockchainExplorer = try container.decodeIfPresent(BlockchainExplorer.self, forKey: .blockchainExplorer) ?? .cexplorer
+        self.adaHandlePolicy = try container.decode(AdaHandlePolicyIds.self, forKey: .adaHandlePolicy)
+        self.logLevel = try container.decodeIfPresent(Logger.Level.self, forKey: .logLevel)
+        self.showVersionInfo = try container.decodeIfPresent(Bool.self, forKey: .showVersionInfo)
+        self.queryTokenRegistry = try container.decodeIfPresent(Bool.self, forKey: .queryTokenRegistry)
+        self.cropTxOutput = try container.decodeIfPresent(Bool.self, forKey: .cropTxOutput)
+        self.maxRetryAttempts = try container.decodeIfPresent(Int.self, forKey: .maxRetryAttempts)
+        self.baseRetryDelay = try container.decodeIfPresent(UInt64.self, forKey: .baseRetryDelay)
+        // Decode the optional stored epoch into the private backing store
+        self._byronToShelleyEpoch = try container.decodeIfPresent(UInt64.self, forKey: .byronToShelleyEpoch)
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(blockfrostProjectId, forKey: .blockfrostProjectId)
+        try container.encodeIfPresent(koiosApiKey, forKey: .koiosApiKey)
+        try container.encodeIfPresent(cardano, forKey: .cardano)
+        try container.encodeIfPresent(mithril, forKey: .mithril)
+        try container.encodeIfPresent(ogmios, forKey: .ogmios)
+        try container.encodeIfPresent(kupo, forKey: .kupo)
+        try container.encode(mode, forKey: .mode)
+        try container.encodeIfPresent(offlineFile, forKey: .offlineFile)
+        try container.encode(tokenMetaServer, forKey: .tokenMetaServer)
+        try container.encode(blockchainExplorer, forKey: .blockchainExplorer)
+        try container.encode(adaHandlePolicy, forKey: .adaHandlePolicy)
+        try container.encodeIfPresent(logLevel, forKey: .logLevel)
+        try container.encodeIfPresent(showVersionInfo, forKey: .showVersionInfo)
+        try container.encodeIfPresent(queryTokenRegistry, forKey: .queryTokenRegistry)
+        try container.encodeIfPresent(cropTxOutput, forKey: .cropTxOutput)
+        try container.encodeIfPresent(maxRetryAttempts, forKey: .maxRetryAttempts)
+        try container.encodeIfPresent(baseRetryDelay, forKey: .baseRetryDelay)
+        // Only encode the explicit override for byron->shelley epoch if it was provided
+        try container.encodeIfPresent(_byronToShelleyEpoch, forKey: .byronToShelleyEpoch)
     }
     
     public init(
         blockfrostProjectId: String? = nil,
-        cardano: CardanoConfig,
+        cardano: CardanoConfig? = nil,
+        mithril: MithrilConfig? = nil,
         ogmios: OgmiosConfig? = nil,
         kupo: KupoConfig? = nil,
         mode: Mode = .auto,
@@ -195,10 +273,12 @@ public struct MultitoolConfig: Codable, Sendable {
         queryTokenRegistry: Bool? = true,
         cropTxOutput: Bool? = true,
         maxRetryAttempts: Int? = 5,
-        baseRetryDelay: UInt64? = 200
+        baseRetryDelay: UInt64? = 200,
+        byronToShelleyEpoch: UInt64? = 208
     ) {
         self.blockfrostProjectId = blockfrostProjectId
         self.cardano = cardano
+        self.mithril = mithril
         self.ogmios = ogmios
         self.kupo = kupo
         self.mode = mode
@@ -212,6 +292,7 @@ public struct MultitoolConfig: Codable, Sendable {
         self.cropTxOutput = cropTxOutput
         self.maxRetryAttempts = maxRetryAttempts
         self.baseRetryDelay = baseRetryDelay
+        self._byronToShelleyEpoch = byronToShelleyEpoch ?? 208
     }
     
     /// Creates a new MultitoolConfig using values from the provided reader.
@@ -223,7 +304,12 @@ public struct MultitoolConfig: Codable, Sendable {
             forKey: CodingKeys.blockfrostProjectId.rawValue
         )
         
-        self.cardano = CardanoConfig(config: config)
+        self.koiosApiKey = config.string(
+            forKey: CodingKeys.koiosApiKey.rawValue
+        )
+        
+        self.cardano = try? CardanoConfig(config: config)
+        self.mithril = try? MithrilConfig(config: config)
         self.ogmios = try? OgmiosConfig(config: config)
         self.kupo = try? KupoConfig(config: config)
         
@@ -307,6 +393,11 @@ public struct MultitoolConfig: Codable, Sendable {
             forKey: CodingKeys.baseRetryDelay.rawValue,
             default: 200
         ))
+        
+        self._byronToShelleyEpoch = UInt64(config.int(
+            forKey: CodingKeys.byronToShelleyEpoch.rawValue,
+            default: 208
+        ))
     }
     
     static func `default`() throws -> MultitoolConfig {
@@ -314,6 +405,7 @@ public struct MultitoolConfig: Codable, Sendable {
         return MultitoolConfig(
             blockfrostProjectId: Environment.get(.blockfrostProjectId),
             cardano: try CardanoConfig.default(),
+            mithril: try? MithrilConfig.default(),
             ogmios: try? OgmiosConfig.default(),
             kupo: try? KupoConfig.default(),
             mode: .auto,
@@ -326,7 +418,8 @@ public struct MultitoolConfig: Codable, Sendable {
             queryTokenRegistry: true,
             cropTxOutput: true,
             maxRetryAttempts: 5,
-            baseRetryDelay: 200
+            baseRetryDelay: 200,
+            byronToShelleyEpoch: 208
         )
     }
     
@@ -458,3 +551,4 @@ public struct AdaHandlePolicyIds: NetworkDependable {
         self.guildnet = guildnet
     }
 }
+

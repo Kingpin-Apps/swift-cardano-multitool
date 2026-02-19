@@ -129,7 +129,7 @@ extension TransactionMainCommand {
             
             let config = try await MultitoolConfig.load()
             let context = try await getContext(config: config)
-            try await printInfo(config: config, context: context)
+            try await printContextInfo(config: config, context: context)
             
             // Ensure required arguments are present
             guard var stakeAddress = stakeAddress,
