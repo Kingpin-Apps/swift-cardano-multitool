@@ -10,9 +10,21 @@ import SwiftKoios
 
 extension CertificateMainCommand {
     
-    struct StakeDelegationCertificate: CertificateCommandable {
+    struct StakeDelegation: CertificateCommandable {
         static let configuration = CommandConfiguration(
-            abstract: "Generates the delegation certificate name.deleg.cert to delegate stake to a stakepool."
+            abstract: "Generates a stake delegation certificate.",
+            usage: """
+            scm certificate stake-delegation --stake-address test --pool-operator pool1xyz
+            """,
+            discussion: """
+            Creates a stake address delegation certificate which delegates the 
+            stake from the specified stake address to the specified stake pool. 
+            The certificate can then be included in a transaction to activate 
+            the delegation on-chain. If the `--generate-transaction` flag is 
+            used, a transaction will also be created to submit the certificate 
+            on-chain, with the fee paid by the specified fee payment address.
+            """,
+            aliases: ["stake-deleg"]
         )
         
         // MARK: - Required Arguments
@@ -187,7 +199,7 @@ extension CertificateMainCommand {
                     let stakeCredential = StakeCredential(
                         credential: .verificationKeyHash(try stakeVkey.hash())
                     )
-                    let stakeDelegationCertificate = StakeDelegation(
+                    let stakeDelegationCertificate = SwiftCardanoCore.StakeDelegation(
                         stakeCredential: stakeCredential,
                         poolKeyHash: poolOperator.poolKeyHash
                     )
@@ -223,7 +235,7 @@ extension CertificateMainCommand {
                 let logger = getLogger(config: config)
                 let txBuilder = TxBuilder(context: context, logger: logger)
                 
-                let stakeDelegationCertificate = try StakeDelegation.load(
+                let stakeDelegationCertificate = try SwiftCardanoCore.StakeDelegation.load(
                     from: outFile.string
                 )
                 txBuilder.certificates = [
@@ -283,7 +295,7 @@ extension CertificateMainCommand {
                                 "Status: \(poolDetails.poolStatus!)",
                                 "Pledge: \(poolDetails.pledge ?? "N/A")",
                                 "Live Pledge: \(poolDetails.livePledge ?? "N/A")",
-                                "Live Stake: \(poolDetails.liveStake ?? "N/A")",
+                                "Active Stake: \(poolDetails.activeStake ?? "N/A")",
                                 "Block Count: \(poolDetails.blockCount ?? 0)"
                             ]
                         ))

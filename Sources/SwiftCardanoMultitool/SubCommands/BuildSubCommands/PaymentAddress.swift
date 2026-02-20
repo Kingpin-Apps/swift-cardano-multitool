@@ -18,14 +18,14 @@ extension BuildMainCommand {
             You can provide either the address name (preferred) or the paths 
             to the payment and stake verification key files. If using the 
             address name, the corresponding key files must exist in the 
-            current working directory in the format 'address_name.payment.vkey' 
-            and 'address_name.stake.vkey'.
+            current working directory in the format 'name.payment.vkey' 
+            and 'name.stake.vkey'.
             """
         )
         
         @Option(
             name: .shortAndLong,
-            help: "The name of the address. Address key files must exist in the current working directory and are in the format 'address_name.stake.vkey' and 'address_name.payment.vkey'."
+            help: "The name of the address. Address key files must exist in the current working directory and are in the format 'name.stake.vkey' and 'name.payment.vkey'."
         )
         var addressName: String? = nil
         

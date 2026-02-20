@@ -8,10 +8,20 @@ import SwiftCardanoUtils
 extension BuildMainCommand {
     struct StakeAddress: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Build a Cardano stake address from the address key files."
+            abstract: "Build a Cardano stake address from the address key files.",
+            usage: """
+            scm build stake-address ---address-name test
+            """,
+            discussion: """
+            Build a Cardano stake address from the address verification key 
+            file. You can provide either the address name (preferred) or the 
+            paths to the stake verification key files. If using the address 
+            name, the corresponding key files must exist in the current working 
+            directory in the format 'name.stake.vkey'.
+            """
         )
         
-        @Option(name: .shortAndLong, help: "The name of the address. Address stake verification key file must exist in the current working directory and are in the format 'address_name.stake.vkey'.")
+        @Option(name: .shortAndLong, help: "The name of the address. Address stake verification key file must exist in the current working directory and are in the format 'name.stake.vkey'.")
         var addressName: String? = nil
         
         @Option(name: .shortAndLong, help: "The path to the staking verification key file.")
@@ -28,7 +38,7 @@ extension BuildMainCommand {
                 case .name:
                     addressName = noora.textPrompt(
                         title: "Address Name",
-                        prompt: "Enter the name of the address (without .payment.addr):",
+                        prompt: "Enter the name of the address (without .stake.addr):",
                         description: "The corresponding key files must exist in the current working directory.",
                         collapseOnAnswer: true,
                         validationRules: [NonEmptyValidationRule(error: "Address name cannot be empty.")]
@@ -85,7 +95,7 @@ extension BuildMainCommand {
                         .alert(
                             "Could not determine address name from stake verification key file path.",
                             takeaways: [
-                                "Make sure the \(stakeVkey!) uses the naming convention 'address_name.stake.vkey'.",
+                                "Make sure the \(stakeVkey!) uses the naming convention 'name.stake.vkey'.",
                                 "Or provide the address name using the --address-name option."
                             ]
                         )

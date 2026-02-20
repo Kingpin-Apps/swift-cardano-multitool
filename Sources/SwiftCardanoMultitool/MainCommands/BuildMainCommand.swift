@@ -11,7 +11,7 @@ enum BuildCommands: String, CaseIterable, CustomStringConvertible {
     var description: String {
         switch self {
             case .paymentAddress:
-                return "Payment Address - Build a Cardano payment address from the Cardano-cli address key files."
+                return "Payment Address - Build a Cardano payment address from the cli address key files."
             case .stakeAddress:
                 return "Stake Address - Build a Cardano stake address from the stake verification key file."
             case .back:

@@ -6,16 +6,12 @@ import Logging
 enum MainCommands: String, CaseIterable, CustomStringConvertible {
     case build
     case certificates
-//    case check
     case config
     case convert
-//    case deregister
     case download
-//    case get
     case generate
     case protect
     case query
-//    case register
     case run
     case send
     case transaction
@@ -32,16 +28,12 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
         switch self {
             case .build: return "Build - Build payment and stake address from keys."
             case .certificates: return "Certificates - Create and submit various certificates."
-//            case .check: return "Check  - various aspects of the Cardano node"
             case .config: return "Config - Manage configuration settings."
             case .convert: return "Convert - Show data in various other formats."
-//            case .deregister: return "Deregister stake pools or addresses"
             case .download: return "Download - Download necessary files or data."
-//            case .get: return "Get information or data"
             case .generate: return "Generate - Create keys, addresses, or other data."
             case .protect: return "Protect - Secure sensitive data with a password."
             case .query: return "Query - Get various data from the blockchain."
-//            case .register: return "Register stake pools or addresses"
             case .run: return "Run - Start various Cardano services."
             case .send: return "Send - Trasnfer ADA or assets."
             case .transaction: return "Transaction - Operate on Cardano transactions."
@@ -55,16 +47,12 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
         switch self {
             case .build: return BuildMainCommand.self
             case .certificates: return CertificateMainCommand.self
-//            case .check: return CheckMainCommand.self
             case .config: return ConfigMainCommand.self
             case .convert: return ConvertMainCommand.self
-//            case .deregister: return DeregisterMainCommand.self
             case .download: return DownloadMainCommand.self
-//            case .get: return GetMainCommand.self
             case .generate: return GenerateMainCommand.self
             case .protect: return ProtectMainCommand.self
             case .query: return QueryMainCommand.self
-//            case .register: return RegisterMainCommand.self
             case .run: return RunMainCommand.self
             case .send: return SendMainCommand.self
             case .transaction: return TransactionMainCommand.self

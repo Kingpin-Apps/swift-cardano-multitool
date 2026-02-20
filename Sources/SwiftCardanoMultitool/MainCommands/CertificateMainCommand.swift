@@ -26,9 +26,9 @@ enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
     var description: String {
         switch self {
             case .stakeRegistration:
-                return "Stake Registration - Generates `name.stake.cert` to register a stake address on the blockchain."
+                return "Stake Address Registration - Generates `name.stake.cert` to register a stake address on the blockchain."
             case .stakeDeregistration:
-                return "Stake Deregistration - Generates  `name.stake.dereg-cert` to deregister a stake address from the blockchain."
+                return "Stake Address Deregistration - Generates  `name.stake.dereg-cert` to deregister a stake address from the blockchain."
             case .stakeDelegation:
                 return "Stake Delegation - Generates `name.deleg.cert to delegate a stake to a stakepool."
             case .poolRegistration:
@@ -71,11 +71,11 @@ enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .stakeRegistration:
-                return CertificateMainCommand.StakeRegistrationCertificate.self
+                return CertificateMainCommand.StakeRegistration.self
+            case .stakeDelegation:
+                return CertificateMainCommand.StakeDelegation.self
             case .stakeDeregistration:
                 return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-            case .stakeDelegation:
-                return CertificateMainCommand.StakeDelegationCertificate.self
             case .poolRegistration:
                 return CertificateMainCommand.StakepoolRegistrationCertificate.self
             case .poolRetirement:
@@ -118,7 +118,8 @@ struct CertificateMainCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "certificate",
         abstract: "Generate various certificate.",
-        subcommands: CertificateCommands.allCases.map { $0.command() }
+        subcommands: CertificateCommands.allCases.map { $0.command() },
+        aliases: ["cert"]
     )
     
     func run() async throws {

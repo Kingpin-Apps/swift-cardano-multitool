@@ -9,9 +9,21 @@ import SwiftCardanoTxBuilder
 
 extension CertificateMainCommand {
     
-    struct StakeRegistrationCertificate: CertificateCommandable {
+    struct StakeRegistration: CertificateCommandable {
         static let configuration = CommandConfiguration(
-            abstract: "Generates the registration certificate name.stake.cert to register a stake-address from the blockchain."
+            abstract: "Generates a stake address registration certificate.",
+            usage: """
+            scm certificate stake-registration --stake-address test
+            """,
+            discussion: """
+            Creates a stake address registration certificate for the specified 
+            stake address. The certificate can be used to register the stake 
+            address on the blockchain, allowing it to participate in staking 
+            and voting. If the `--generate-transaction` flag is used, a 
+            transaction will also be created to submit the certificate 
+            on-chain, with the fee paid by the specified fee payment address.
+            """,
+            aliases: ["stake-reg"]
         )
         
         // MARK: - Required Arguments
@@ -209,7 +221,7 @@ extension CertificateMainCommand {
                         spacedPrint(
                             "Generate Registration-Certificate in \(.primary("\(era)")) format."
                         )
-                        let stakeRegistrationCertificate = StakeRegistration(
+                        let stakeRegistrationCertificate = SwiftCardanoCore.StakeRegistration(
                             stakeCredential: stakeCredential
                         )
                         try stakeRegistrationCertificate.save(to: outFile.string)
@@ -254,7 +266,7 @@ extension CertificateMainCommand {
                 let logger = getLogger(config: config)
                 let txBuilder = TxBuilder(context: context, logger: logger)
                 
-                let stakeRegistrationCertificate = try StakeRegistration.load(
+                let stakeRegistrationCertificate = try SwiftCardanoCore.StakeRegistration.load(
                     from: outFile.string
                 )
                 txBuilder.certificates = [

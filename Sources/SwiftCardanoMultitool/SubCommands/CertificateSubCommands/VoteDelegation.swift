@@ -11,7 +11,21 @@ extension CertificateMainCommand {
     
     struct VoteDelegation: CertificateCommandable {
         static let configuration = CommandConfiguration(
-            abstract: "Generates the vote delegation certificate to delegate voting power to a DRep."
+            abstract: "Generates a vote delegation certificate.",
+            usage: """
+            scm certificate vote-delegation --stake-address test --drep drep1
+            """,
+            discussion: """
+            Creates a vote delegation certificate that delegates voting power 
+            from a specified stake address to a DRep (delegation representative).
+            The DRep can be identified by a bech32 ID, hex hash, or .vkey file. 
+            This certificate is used in the governance process to allow 
+            stakeholders to delegate their voting rights to trusted 
+            representatives. If the `--generate-transaction` flag is used, a 
+            transaction will also be created to submit the certificate 
+            on-chain, with the fee paid by the specified fee payment address.
+            """,
+            aliases: ["vote-deleg"]
         )
         
         // MARK: - Required Arguments

@@ -60,7 +60,8 @@ struct TransactionMainCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "transaction",
         abstract: "Transaction related commands.",
-        subcommands: TransactionCommands.allCases.map { $0.command() }
+        subcommands: TransactionCommands.allCases.map { $0.command() },
+        aliases: ["tx"]
     )
     
     func run() async throws {
