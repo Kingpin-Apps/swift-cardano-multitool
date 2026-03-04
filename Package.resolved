@@ -1,5 +1,5 @@
 {
-  "originHash" : "93777532fe32756c1436dc158cb6bfa727dcd7a557f2a68ace119265b459f0ca",
+  "originHash" : "63ca4b42ec1f042e92c9e884d0bb2fcfa82aeb6faf69ffbeacd580e4e3c6ab31",
   "pins" : [
     {
       "identity" : "base32",
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tuist/Command.git",
       "state" : {
-        "revision" : "079a7803b581d3022469b3a331bccd51d48d2fc0",
-        "version" : "0.13.0"
+        "revision" : "2b9c835b8e373faf0e9a196508a34e20db73769a",
+        "version" : "0.14.0"
       }
     },
     {
@@ -51,8 +51,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kolos65/Mockable",
       "state" : {
-        "revision" : "0a822d53fa7516abe659b44a9c508b8eb9b666bd",
-        "version" : "0.4.1"
+        "revision" : "92523c3c0623402e9600dcf99f63603f52a889d8",
+        "version" : "0.6.1"
       }
     },
     {
@@ -168,8 +168,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
       "state" : {
-        "revision" : "aa5de6529a1a4d0ad84547d85ad8386ffc80811c",
-        "version" : "0.2.5"
+        "revision" : "6de08641c9a7abe65769bfe62ca89fa4b6ce55c4",
+        "version" : "0.2.6"
       }
     },
     {
@@ -195,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-utils.git",
       "state" : {
-        "revision" : "08f1aeb923be464cdf8fd769466f5b7d5fb60524",
-        "version" : "0.2.2"
+        "revision" : "6e37051942379c63a53ebeab6727195f79b1d80c",
+        "version" : "0.3.0"
       }
     },
     {
@@ -402,8 +402,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
       "state" : {
-        "revision" : "4c27acf5394b645b70d8ba19dc249c0472d5f618",
-        "version" : "1.7.0"
+        "revision" : "dfd70507def84cb5fb821278448a262c6ff2bbad",
+        "version" : "1.9.0"
       }
     },
     {

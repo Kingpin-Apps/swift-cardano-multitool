@@ -10,6 +10,7 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
     case convert
     case download
     case generate
+    case install
     case protect
     case query
     case run
@@ -32,6 +33,7 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
             case .convert: return "Convert - Show data in various other formats."
             case .download: return "Download - Download necessary files or data."
             case .generate: return "Generate - Create keys, addresses, or other data."
+            case .install: return "Install - Install cli tools or dependencies."
             case .protect: return "Protect - Secure sensitive data with a password."
             case .query: return "Query - Get various data from the blockchain."
             case .run: return "Run - Start various Cardano services."
@@ -51,6 +53,7 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
             case .convert: return ConvertMainCommand.self
             case .download: return DownloadMainCommand.self
             case .generate: return GenerateMainCommand.self
+            case .install: return InstallMainCommand.self
             case .protect: return ProtectMainCommand.self
             case .query: return QueryMainCommand.self
             case .run: return RunMainCommand.self

@@ -757,7 +757,7 @@ public struct Pool: Codable, Sendable {
     /// - Returns: The StakePool object
     public static func load(from poolJsonFile: FilePath) throws -> Pool {
         let data = try Data(contentsOf: URL(fileURLWithPath: poolJsonFile.string))
-        var poolJson = try JSONDecoder().decode(Pool.self, from: data)
+        let poolJson = try JSONDecoder().decode(Pool.self, from: data)
         
         return poolJson
     }
