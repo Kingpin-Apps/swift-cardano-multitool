@@ -9,7 +9,7 @@ extension QueryMainCommand {
     struct Address: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Query UTxOs for an address.")
         
-        @Option(name: .shortAndLong, help: "The address to query.")
+        @Argument(help: "The address to query.")
         var address: AddressInfo? = nil
         
         /// Wizard to interactively gather missing parameters

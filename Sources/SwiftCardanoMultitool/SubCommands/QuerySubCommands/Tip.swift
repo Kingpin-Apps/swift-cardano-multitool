@@ -5,7 +5,19 @@ import SwiftCardanoChain
 
 extension QueryMainCommand {
     struct Tip: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Query the tip of the blockchain.")
+        static let configuration = CommandConfiguration(
+            abstract: "Query the tip of the blockchain.",
+            usage: """
+            scm query tip
+            """,
+            discussion: """
+            This command retrieves the current tip of the blockchain, which 
+            includes information such as the current slot number, block hash, 
+            and block number. The output is displayed in a human-readable 
+            format, and if the context supports it (like Cardano CLI), the full 
+            JSON response will also be printed for more detailed information.
+            """
+        )
         
         func run() async throws {
             let config = try await MultitoolConfig.load()

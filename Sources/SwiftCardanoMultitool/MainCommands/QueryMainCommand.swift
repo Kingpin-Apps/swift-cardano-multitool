@@ -69,12 +69,7 @@ struct QueryMainCommand: AsyncParsableCommand {
     }
 }
 
-extension QueryMainCommand {
-    struct StakePool: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Query stake pool information.")
-        func run() async throws { print("Query stake pool command not yet implemented") }
-    }
-    
+extension QueryMainCommand {    
     struct StakeDistribution: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Query stake distribution.")
         func run() async throws { print("Query stake distribution command not yet implemented") }
