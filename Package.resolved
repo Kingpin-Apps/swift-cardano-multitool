@@ -1,5 +1,5 @@
 {
-  "originHash" : "63ca4b42ec1f042e92c9e884d0bb2fcfa82aeb6faf69ffbeacd580e4e3c6ab31",
+  "originHash" : "f94ee683bcf580282e9c2bcb604937c9770aa180133c5fba7c946d83912ce350",
   "pins" : [
     {
       "identity" : "base32",
@@ -60,8 +60,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tuist/Noora",
       "state" : {
-        "revision" : "f33556847a6d3facd51886409e23b6906b44de67",
-        "version" : "0.51.0"
+        "revision" : "70c6d1477a982f3e4cd46ed2d122e04e9d0a0b59",
+        "version" : "0.56.0"
       }
     },
     {
@@ -96,8 +96,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/onevcat/Rainbow",
       "state" : {
-        "revision" : "16da5c62dd737258c6df2e8c430f8a3202f655a7",
-        "version" : "4.2.0"
+        "revision" : "cdf146ae671b2624917648b61c908d1244b98ca1",
+        "version" : "4.2.1"
       }
     },
     {
@@ -123,8 +123,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser.git",
       "state" : {
-        "revision" : "cdd0ef3755280949551dc26dee5de9ddeda89f54",
-        "version" : "1.6.2"
+        "revision" : "c5d11a805e765f52ba34ec7284bd4fcd6ba68615",
+        "version" : "1.7.0"
       }
     },
     {
@@ -168,8 +168,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
       "state" : {
-        "revision" : "6de08641c9a7abe65769bfe62ca89fa4b6ce55c4",
-        "version" : "0.2.6"
+        "revision" : "512c52a6cb3373c9483bafd5e14546fdbb904c00",
+        "version" : "0.2.9"
       }
     },
     {
@@ -177,8 +177,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "3813dd135f84e02afeb2cf066daf9fe8bfb874b7",
-        "version" : "0.2.30"
+        "revision" : "6a1d38ad54595a8f506dcd195fb036f1fd71f751",
+        "version" : "0.2.31"
       }
     },
     {
@@ -195,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-utils.git",
       "state" : {
-        "revision" : "6e37051942379c63a53ebeab6727195f79b1d80c",
-        "version" : "0.3.0"
+        "revision" : "30e78c0c4f43456f43d73a4a5fc3240ae70ee773",
+        "version" : "0.3.4"
       }
     },
     {
@@ -285,8 +285,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log.git",
       "state" : {
-        "revision" : "2778fd4e5a12a8aaa30a3ee8285f4ce54c5f3181",
-        "version" : "1.9.1"
+        "revision" : "bbd81b6725ae874c69e9b8c8804d462356b55523",
+        "version" : "1.10.1"
       }
     },
     {

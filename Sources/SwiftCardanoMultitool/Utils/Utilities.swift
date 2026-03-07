@@ -29,6 +29,12 @@ public func lovelaceToAdaFormatString(_ lovelace: UInt64, numDecimals: Int = 2) 
     return formatNumber(adaValue, numDecimals: numDecimals)
 }
 
+public func adaAndLovelaceFormat(_ lovelaces: UInt64, numDecimals: Int = 2) -> TerminalText {
+    let ada = lovelaceToAdaFormatString(lovelaces, numDecimals: numDecimals)
+    return "\(.success("\(ada)")) \(.muted("(\(lovelaces) lovelaces)"))"
+}
+
+
 public func formatNumber(_ value: Any?, numDecimals: Int = 2) -> String {
     // Normalize nil / empty string
     if value == nil { return "0 ₳" }

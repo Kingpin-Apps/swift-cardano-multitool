@@ -3,6 +3,9 @@ run:
 
 build:
     swift build
+    
+clean:
+    swift package clean
 
 test:
     swift test

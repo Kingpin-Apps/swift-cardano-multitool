@@ -207,8 +207,8 @@ public struct OpCertUtils {
             return try await context.kesPeriodInfo(pool: poolOperator, opCert: nil)
         }
         
-        let poolName = poolInfo.poolMetadata?.name ?? "Unknown"
-        let poolTicker = poolInfo.poolMetadata?.ticker ?? "???"
+        let poolName = poolInfo.poolParams.poolMetadata?.name ?? "Unknown"
+        let poolTicker = poolInfo.poolParams.poolMetadata?.ticker ?? "???"
         
         spacedPrint("Got the information back for the Pool: \(.success("\(poolName) (\(poolTicker))"))\n")
         

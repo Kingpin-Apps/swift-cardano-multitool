@@ -313,7 +313,12 @@ extension CertificateMainCommand {
                     do {
                         let stakePools = try await context.stakePools()
                         
-                        if !stakePools.contains(try poolOperator.id()) {
+                        if (
+                            try stakePools
+                                .first(
+                                    where: { try $0.id() == poolOperator.id()
+                                    }) == nil
+                        ) {
                             noora.error(.alert(
                                 "The specified Pool ID \(try poolOperator.id()) was not found in the stake pool list from the chain.",
                                 takeaways: [
