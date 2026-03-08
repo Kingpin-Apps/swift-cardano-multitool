@@ -13,14 +13,14 @@ enum RunCommands: String, CaseIterable, CustomStringConvertible {
     
     var description: String {
         switch self {
-            case .node: return "Run cardano-node."
-            case .dbSync: return "Run cardano-db-sync."
-            case .wallet: return "Run cardano-wallet."
-            case .submitApi: return "Run cardano-submit-api."
-            case .ogmios: return "Run Ogmios."
-            case .kupo: return "Run Kupo."
-            case .back: return "Go back to the main menu."
-            case .exit: return "Exit the program."
+            case .node: return "Cardano Node  - Run cardano-node."
+            case .dbSync: return "Cardano DB Sync - Run cardano-db-sync."
+            case .wallet: return "Cardano Wallet - Run cardano-wallet."
+            case .submitApi: return "Cardano Submit API - Run cardano-submit-api."
+            case .ogmios: return "Ogmios - Run Ogmios."
+            case .kupo: return "Kupo - Run Kupo."
+            case .back: return "Back - Go back to the main menu."
+            case .exit: return "Exit - Leave the program."
         }
     }
     

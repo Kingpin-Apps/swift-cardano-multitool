@@ -14,15 +14,15 @@ enum WorkOfflineCommands: String, CaseIterable, CustomStringConvertible {
     
     var description: String {
         switch self {
-            case .sync: return "Sync offline data."
-            case .buildTx: return "Build transaction offline."
-            case .signTx: return "Sign transaction offline."
-            case .calculateFee: return "Calculate fee offline."
-            case .verify: return "Verify transaction offline."
-            case .exportData: return "Export offline data."
-            case .importData: return "Import offline data."
-            case .back: return "Go back to the main menu."
-            case .exit: return "Exit the program."
+            case .sync: return "Sync - Synchronize offline data with the blockchain."
+            case .buildTx: return "BuildTx - Build transaction offline."
+            case .signTx: return "SignTx - Sign transaction offline."
+            case .calculateFee: return "CalculateFee - Calculate fee offline."
+            case .verify: return "Verify - Verify transaction offline."
+            case .exportData: return "ExportData - Export offline data."
+            case .importData: return "ImportData - Import offline data."
+            case .back: return "Back - Go back to the main menu."
+            case .exit: return "Exit - Leave the program."
         }
     }
     

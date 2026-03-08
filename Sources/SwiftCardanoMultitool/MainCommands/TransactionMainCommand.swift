@@ -31,8 +31,8 @@ enum TransactionCommands: String, CaseIterable, CustomStringConvertible {
             case .rewardsWithdraw: return "Generate a rewards withdraw transaction."
             case .txid: return "Calculate transaction ID."
             case .view: return "View transaction details."
-            case .back: return "Go back to the main menu."
-            case .exit: return "Exit the program."
+            case .back: return "Back - Go back to the main menu."
+            case .exit: return "Exit - Leave the program."
         }
     }
     

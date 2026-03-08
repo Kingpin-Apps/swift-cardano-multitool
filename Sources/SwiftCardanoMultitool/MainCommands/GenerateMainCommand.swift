@@ -16,25 +16,25 @@ enum GenerateCommands: String, CaseIterable, CustomStringConvertible {
     var description: String {
         switch self {
             case .nodeColdKeys:
-                return "Generate the node cold keys."
+                return "Cold keys - Generate a new set of cold keys."
             case .nodeKesKeys:
-                return "Generate the node KES keys."
+                return "KES keys - Generate the node KES keys."
             case .nodeVrfKeys:
-                return "Generate the node vrf keys."
+                return "VRF keys - Generate the node VRF keys."
             case .nodeOperationalCertificate:
-                return "Generate the node operational certificate."
+                return "Operational Certificate - Generate the node operational certificate."
             case .paymentAddressOnly:
-                return "Generate a payment address only."
+                return "Payment Address - Generate a payment address only."
             case .paymentAndStakeAddress:
-                return "Generate a payment and stake address."
+                return "Payment and Stake Address - Generate a payment and stake address."
             case .keyRotation:
                 return "Key Rotation - Rotate KES keys and generate a new operational certificate."
             case .poolJSON:
                 return "Pool.json - Generate a new pool.json file."
             case .back:
-                return "Go back to the main menu."
-            case .exit: 
-                return "Exit the program."
+                return "Back - Go back to the main menu."
+            case .exit:
+                return "Exit - Leave the program."
         }
     }
     

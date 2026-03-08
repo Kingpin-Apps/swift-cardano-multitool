@@ -15,9 +15,9 @@ enum BuildCommands: String, CaseIterable, CustomStringConvertible {
             case .stakeAddress:
                 return "Stake Address - Build a Cardano stake address from the stake verification key file."
             case .back:
-                return "Go back to the main menu."
+                return "Back - Go back to the main menu."
             case .exit:
-                return "Exit the program."
+                return "Exit - Leave the program."
         }
     }
     

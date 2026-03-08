@@ -30,7 +30,6 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
             case .build: return "Build - Build payment and stake address from keys."
             case .certificates: return "Certificates - Create and submit various certificates."
             case .config: return "Config - Manage configuration settings."
-            case .convert: return "Convert - Show data in various other formats."
             case .download: return "Download - Download necessary files or data."
             case .generate: return "Generate - Create keys, addresses, or other data."
             case .install: return "Install - Install cli tools or dependencies."
@@ -50,7 +49,6 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
             case .build: return BuildMainCommand.self
             case .certificates: return CertificateMainCommand.self
             case .config: return ConfigMainCommand.self
-            case .convert: return ConvertMainCommand.self
             case .download: return DownloadMainCommand.self
             case .generate: return GenerateMainCommand.self
             case .install: return InstallMainCommand.self

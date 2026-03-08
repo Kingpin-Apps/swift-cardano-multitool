@@ -9,10 +9,10 @@ enum DownloadCommands: String, CaseIterable, CustomStringConvertible {
     
     var description: String {
         switch self {
-            case .nodeConfigs: return "Download node configurations."
-            case .snapshot: return "Download blockchain snapshot."
-            case .back: return "Go back to the main menu."
-            case .exit: return "Exit the program."
+            case .nodeConfigs: return "Node Configs - Download node configurations from https://book.world.dev.cardano.org/."
+            case .snapshot: return "Database Snapshot - Download blockchain snapshot."
+            case .back: return "Back - Go back to the main menu."
+            case .exit: return "Exit - Leave the program."
         }
     }
     

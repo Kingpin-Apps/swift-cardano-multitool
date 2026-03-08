@@ -62,9 +62,9 @@ enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
             case .updateDRep:
                 return "Generates the DRep update certificate."
             case .back:
-                return "Go back to the main menu."
+                return "Back - Go back to the main menu."
             case .exit:
-                return "Exit the program."
+                return "Exit - Leave the program."
         }
     }
     

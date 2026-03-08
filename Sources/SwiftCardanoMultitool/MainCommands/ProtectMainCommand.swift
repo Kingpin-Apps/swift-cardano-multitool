@@ -10,10 +10,10 @@ enum ProtectCommands: String, CaseIterable, CustomStringConvertible {
     
     var description: String {
         switch self {
-            case .encrypt: return "Encrypt a file with a password."
-            case .decrypt: return "Decrypt a file with a password."
-            case .back: return "Go back to the main menu."
-            case .exit: return "Exit the program."
+            case .encrypt: return "Encrypt - Encrypt a file with a password."
+            case .decrypt: return "Decrypt - Decrypt a file with a password."
+            case .back: return "Back - Go back to the main menu."
+            case .exit: return "Exit - Leave the program."
         }
     }
     

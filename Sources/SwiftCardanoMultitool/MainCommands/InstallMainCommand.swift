@@ -16,23 +16,23 @@ enum InstallCommands: String, CaseIterable, CustomStringConvertible {
     var description: String {
         switch self {
             case .cardanoNode:
-                return "Install cardano-node, the backbone of the Cardano blockchain."
+                return "Cardano Node - The backbone of the Cardano blockchain."
             case .cardanoCLI:
-                return "Install cardano-cli, the command-line interface for Cardano."
+                return "Cardano CLI - The command-line interface for Cardano."
             case .cardanoHWCLI:
-                return "Install cardano-hw-cli, for managing hardware wallets (Ledger/Trezor)."
+                return "Cardano HW CLI - For managing hardware wallets (Ledger/Trezor)."
             case .cardanoSigner:
-                return "Install cardano-signer, for securely signing transactions and messages."
+                return "Cardano Signer - For securely signing transactions and messages."
             case .kupo:
-                return "Install Kupo, a lightweight Cardano chain indexer."
+                return "Kupo - A lightweight Cardano chain indexer."
             case .mithril:
-                return "Install mithril-client, for fast Cardano node bootstrapping via certified snapshots."
+                return "Mithril - For fast Cardano node bootstrapping via certified snapshots."
             case .ogmios:
-                return "Install Ogmios, a lightweight bridge interface for the Cardano node."
+                return "Ogmios - A lightweight bridge interface for the Cardano node."
             case .back:
-                return "Go back to the main menu."
+                return "Back - Go back to the main menu."
             case .exit:
-                return "Exit the program."
+                return "Exit - Leave the program."
         }
     }
 
