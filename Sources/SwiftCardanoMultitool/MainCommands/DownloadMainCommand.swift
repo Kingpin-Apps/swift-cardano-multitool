@@ -18,8 +18,8 @@ enum DownloadCommands: String, CaseIterable, CustomStringConvertible {
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-            case .nodeConfigs: return DownloadMainCommand.NodeConfigs.self
-            case .snapshot: return DownloadMainCommand.Snapshot.self
+            case .nodeConfigs: return DownloadMainCommand.ConfigurationFiles.self
+            case .snapshot: return DownloadMainCommand.DatabaseSnapshot.self
             case .back: return MainMenuCommand.self
             case .exit: return ExitCommand.self
         }

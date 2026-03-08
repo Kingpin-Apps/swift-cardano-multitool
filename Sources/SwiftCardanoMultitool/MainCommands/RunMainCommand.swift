@@ -2,10 +2,10 @@ import Foundation
 import ArgumentParser
 
 enum RunCommands: String, CaseIterable, CustomStringConvertible {
-    case node
-    case dbSync = "db-sync"
-    case wallet
-    case submitApi = "submit-api"
+    case cardanoNode
+    case cardanoDbSync = "db-sync"
+    case cardanoWallet
+    case cardanoSubmitAPI = "submit-api"
     case ogmios
     case kupo
     case back
@@ -13,10 +13,10 @@ enum RunCommands: String, CaseIterable, CustomStringConvertible {
     
     var description: String {
         switch self {
-            case .node: return "Cardano Node  - Run cardano-node."
-            case .dbSync: return "Cardano DB Sync - Run cardano-db-sync."
-            case .wallet: return "Cardano Wallet - Run cardano-wallet."
-            case .submitApi: return "Cardano Submit API - Run cardano-submit-api."
+            case .cardanoNode: return "Cardano Node  - Run cardano-node."
+            case .cardanoDbSync: return "Cardano DB Sync - Run cardano-db-sync."
+            case .cardanoWallet: return "Cardano Wallet - Run cardano-wallet."
+            case .cardanoSubmitAPI: return "Cardano Submit API - Run cardano-submit-api."
             case .ogmios: return "Ogmios - Run Ogmios."
             case .kupo: return "Kupo - Run Kupo."
             case .back: return "Back - Go back to the main menu."
@@ -26,10 +26,10 @@ enum RunCommands: String, CaseIterable, CustomStringConvertible {
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-            case .node: return RunMainCommand.Node.self
-            case .dbSync: return RunMainCommand.DbSync.self
-            case .wallet: return RunMainCommand.Wallet.self
-            case .submitApi: return RunMainCommand.SubmitApi.self
+            case .cardanoNode: return RunMainCommand.Node.self
+            case .cardanoDbSync: return RunMainCommand.DbSync.self
+            case .cardanoWallet: return RunMainCommand.Wallet.self
+            case .cardanoSubmitAPI: return RunMainCommand.SubmitApi.self
             case .ogmios: return RunMainCommand.Ogmios.self
             case .kupo: return RunMainCommand.Kupo.self
             case .back: return MainMenuCommand.self
@@ -57,20 +57,5 @@ struct RunMainCommand: AsyncParsableCommand {
         ))
         
         await selectedOption.command().main([])
-    }
-}
-
-extension RunMainCommand {
-    struct DbSync: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Run cardano-db-sync.")
-        func run() async throws { print("Run db-sync command not yet implemented") }
-    }
-    struct Wallet: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Run cardano-wallet.")
-        func run() async throws { print("Run wallet command not yet implemented") }
-    }
-    struct SubmitApi: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Run cardano-submit-api.")
-        func run() async throws { print("Run submit-api command not yet implemented") }
     }
 }

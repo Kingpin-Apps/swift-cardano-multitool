@@ -1,0 +1,170 @@
+import Foundation
+import ArgumentParser
+import Noora
+import SystemPackage
+import SwiftCardanoUtils
+
+extension InstallMainCommand {
+    struct CardanoDbSync: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "cardano-db-sync",
+            abstract: "Install cardano-db-sync."
+        )
+
+        @Option(
+            name: [.customShort("d"), .customLong("install-dir")],
+            help: "Directory to install the binary into. Defaults to ~/.local/bin."
+        )
+        var installDir: String?
+
+        @Option(
+            name: .shortAndLong,
+            help: "Install method: binary, docker, or apple-container."
+        )
+        var method: String?
+
+        @Option(
+            name: [.customShort("i"), .customLong("image")],
+            help: "Container image to pull. If omitted, the official image is used."
+        )
+        var image: String?
+
+        private static let officialImage = "ghcr.io/intersectmbo/cardano-db-sync"
+
+        mutating func wizard() async throws {
+            if method == nil {
+                let selected: InstallMethod = noora.singleChoicePrompt(
+                    title: "Install Method",
+                    question: "How would you like to install cardano-db-sync?",
+                    options: InstallMethod.available,
+                    description: "Choose an installation method."
+                )
+                method = selected.rawValue
+            }
+
+            if method == InstallMethod.binary.rawValue && installDir == nil {
+                let defaultDir = defaultInstallDirectory().path
+                let useDefault = noora.yesOrNoChoicePrompt(
+                    title: "Install Directory",
+                    question: "Install to \(defaultDir)?",
+                    defaultAnswer: true,
+                    description: "Choose 'no' to specify a custom directory."
+                )
+                if !useDefault {
+                    installDir = noora.textPrompt(
+                        title: "Install Directory",
+                        prompt: "Enter the full path to the install directory:"
+                    )
+                }
+            }
+
+            let isContainerMethod = method == InstallMethod.docker.rawValue || method == InstallMethod.appleContainer.rawValue
+            if isContainerMethod && image == nil {
+                let defaultImage = "\(Self.officialImage):latest"
+                let useDefault = noora.yesOrNoChoicePrompt(
+                    title: "Container Image",
+                    question: "Use default image (\(defaultImage))?",
+                    defaultAnswer: true,
+                    description: "Choose 'no' to specify a custom image."
+                )
+                if !useDefault {
+                    image = noora.textPrompt(
+                        title: "Container Image",
+                        prompt: "Enter the full image name (e.g. \(defaultImage)):"
+                    )
+                }
+            }
+        }
+
+        mutating func run() async throws {
+            if method == nil {
+                try await wizard()
+            }
+
+            guard let installMethod = method.flatMap({ InstallMethod(rawValue: $0) }) else {
+                noora.error(.alert(
+                    "Invalid install method: '\(method ?? "")'.",
+                    takeaways: ["Valid options are: binary, docker, apple-container."]
+                ))
+                throw ExitCode.failure
+            }
+
+            switch installMethod {
+                case .binary:
+                    try await installBinaryRelease()
+                case .docker:
+                    let img = image ?? "\(Self.officialImage):latest"
+                    noora.warning(.alert(
+                        "cardano-db-sync requires a running PostgreSQL instance.",
+                        takeaway: "See the docs for required DB setup before starting the container."
+                    ))
+                    try await pullImage(cli: "docker", image: img)
+                case .appleContainer:
+                    let img = image ?? "\(Self.officialImage):latest"
+                    noora.warning(.alert(
+                        "cardano-db-sync requires a running PostgreSQL instance.",
+                        takeaway: "See the docs for required DB setup before starting the container."
+                    ))
+                    try await pullImage(cli: "container", image: img)
+            }
+        }
+
+        private func installBinaryRelease() async throws {
+            let installDirURL = installDir.map { URL(fileURLWithPath: $0) } ?? defaultInstallDirectory()
+
+            noora.warning(.alert(
+                "cardano-db-sync requires a running PostgreSQL instance.",
+                takeaway: "Ensure PostgreSQL is installed and configured before running the binary."
+            ))
+
+            let release = try await noora.progressStep(
+                message: "Fetching latest cardano-db-sync release...",
+                successMessage: "Found latest release.",
+                errorMessage: "Failed to fetch release information.",
+                showSpinner: true
+            ) { _ in
+                return try await fetchLatestRelease(owner: "IntersectMBO", repo: "cardano-db-sync")
+            }
+
+            guard let asset = findMatchingAsset(in: release) else {
+                noora.error(.alert(
+                    "No compatible binary found for your platform (\(CurrentPlatform.os)/\(CurrentPlatform.arch)).",
+                    takeaways: [
+                        "Check available assets at: https://github.com/IntersectMBO/cardano-db-sync/releases",
+                        "You may need to build from source for your platform."
+                    ]
+                ))
+                throw ExitCode.failure
+            }
+
+            spacedPrint("Found asset: \(.primary(asset.name)) from release \(.secondary(release.tagName))")
+
+            let _ = try await noora.progressStep(
+                message: "Downloading and installing cardano-db-sync \(release.tagName)...",
+                successMessage: "cardano-db-sync \(release.tagName) installed to \(installDirURL.path)",
+                errorMessage: "Failed to install cardano-db-sync.",
+                showSpinner: true
+            ) { _ in
+                let assetURL = URL(string: asset.browserDownloadUrl)!
+                let archivePath = try await downloadFile(from: assetURL)
+                defer { try? FileManager.default.removeItem(at: archivePath) }
+                try processDownloadedAsset(archivePath: archivePath, binaryName: "cardano-db-sync", installDir: installDirURL)
+                return installDirURL.path
+            }
+
+            warnIfNotInPath(installDirURL)
+        }
+
+        private func pullImage(cli: String, image: String) async throws {
+            let _ = try await noora.progressStep(
+                message: "Pulling image \(image)...",
+                successMessage: "Successfully pulled \(image).",
+                errorMessage: "Failed to pull image.",
+                showSpinner: true
+            ) { _ in
+                try await pullContainerImage(cli: cli, image: image)
+                return image
+            }
+        }
+    }
+}

@@ -4,9 +4,12 @@ import Noora
 
 enum InstallCommands: String, CaseIterable, CustomStringConvertible {
     case cardanoNode
+    case cardanoDbSync
     case cardanoCLI
     case cardanoHWCLI
     case cardanoSigner
+    case cardanoSubmitAPI
+    case cardanoWallet
     case kupo
     case mithril
     case ogmios
@@ -17,12 +20,18 @@ enum InstallCommands: String, CaseIterable, CustomStringConvertible {
         switch self {
             case .cardanoNode:
                 return "Cardano Node - The backbone of the Cardano blockchain."
+            case .cardanoDbSync:
+                return "Cardano Db Sync - A tool for synchronizing Cardano blockchain data to a PostgreSQL database."
             case .cardanoCLI:
                 return "Cardano CLI - The command-line interface for Cardano."
             case .cardanoHWCLI:
                 return "Cardano HW CLI - For managing hardware wallets (Ledger/Trezor)."
             case .cardanoSigner:
                 return "Cardano Signer - For securely signing transactions and messages."
+            case .cardanoSubmitAPI:
+                return "Cardano Submit API - A lightweight transaction submission service."
+            case .cardanoWallet:
+                return "Cardano Wallet - The Cardano Wallet software for managing your funds."
             case .kupo:
                 return "Kupo - A lightweight Cardano chain indexer."
             case .mithril:
@@ -39,9 +48,12 @@ enum InstallCommands: String, CaseIterable, CustomStringConvertible {
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .cardanoNode: return InstallMainCommand.CardanoNode.self
+            case .cardanoDbSync: return InstallMainCommand.CardanoDbSync.self
             case .cardanoCLI: return InstallMainCommand.CardanoCLI.self
             case .cardanoHWCLI: return InstallMainCommand.CardanoHWCLI.self
             case .cardanoSigner: return InstallMainCommand.CardanoSigner.self
+            case .cardanoSubmitAPI: return InstallMainCommand.CardanoSubmitAPI.self
+            case .cardanoWallet: return InstallMainCommand.CardanoWallet.self
             case .kupo: return InstallMainCommand.Kupo.self
             case .mithril: return InstallMainCommand.Mithril.self
             case .ogmios: return InstallMainCommand.Ogmios.self

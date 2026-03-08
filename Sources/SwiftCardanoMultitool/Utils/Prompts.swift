@@ -506,6 +506,24 @@ func getPoolOperator(title: TerminalText? = nil) async throws -> PoolOperator {
     }
 }
 
+/// Prompt user to select a pool.json file from the current directory.
+/// - Returns: FilePath of the selected pool.json file.
+/// - Throws: ExitCode.failure if no pool.json files are found.
+func getPoolJSON() async throws -> FilePath {
+    let cwd = FilePath(FileManager.default.currentDirectoryPath)
+    let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+        .filter { $0.hasSuffix(".json") }
+    
+    return FilePath(
+        noora.singleChoicePrompt(
+            title: "Pool JSON Files",
+            question: "Select the pool.json file:",
+            options: files,
+            filterMode: .enabled
+        )
+    )
+}
+
 /// Prompt user to select which tool to use for generating keys (cardano-cli or SwiftCardano).
 /// - Returns: Tool enum value indicating the selected tool.
 func getToolToUse() async throws -> Tool {

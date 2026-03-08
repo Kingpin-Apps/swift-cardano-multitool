@@ -7,7 +7,7 @@ import SwiftCardanoUtils
 
 
 extension DownloadMainCommand {
-    struct Snapshot: AsyncParsableCommand {
+    struct DatabaseSnapshot: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Download blockchain snapshot.")
         
         @Option(name: .shortAndLong, help: "The network to download database snapshot for. Will use the default network if not specified.")

@@ -7,7 +7,7 @@ import SwiftCardanoUtils
 
 
 extension DownloadMainCommand {
-    struct NodeConfigs: AsyncParsableCommand {
+    struct ConfigurationFiles: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Download node configuration files from https://book.world.dev.cardano.org"
         )
@@ -82,11 +82,19 @@ extension DownloadMainCommand {
             
             if blockPoducer {
                 configFiles.append("config-bp.json")
+                
+                if network == .mainnet {
+                    configFiles.append("topology-non-bootstrap-peers.json")
+                }
+                else {
+                    configFiles.append("topology.json")
+                }
             } else {
                 configFiles.append("config.json")
+                configFiles.append("topology.json")
             }
             configFiles.append(contentsOf: [
-                "topology.json",
+                "tracer-config.json",
                 "byron-genesis.json",
                 "shelley-genesis.json",
                 "alonzo-genesis.json",

@@ -7,7 +7,6 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
     case build
     case certificates
     case config
-    case convert
     case download
     case generate
     case install

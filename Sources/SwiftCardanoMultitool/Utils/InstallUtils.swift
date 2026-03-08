@@ -1,4 +1,5 @@
 import Foundation
+import Dispatch
 import SystemPackage
 import ArgumentParser
 import Noora
@@ -237,6 +238,92 @@ func pullContainerImage(cli: String, image: String) async throws {
         } catch {
             continuation.resume(throwing: error)
         }
+    }
+}
+
+/// Run a foreground binary process, forwarding SIGINT/SIGTERM for graceful shutdown.
+/// Resolves a bare binary name via `which`; absolute paths are used as-is.
+func runForegroundProcess(
+    binary: String,
+    arguments: [String],
+    environment: [String: String]? = nil
+) async throws {
+    // Resolve executable URL
+    let execURL: URL
+    if binary.hasPrefix("/") {
+        execURL = URL(fileURLWithPath: binary)
+    } else {
+        let which = Process()
+        which.executableURL = URL(fileURLWithPath: "/usr/bin/which")
+        which.arguments = [binary]
+        let pipe = Pipe()
+        which.standardOutput = pipe
+        which.standardError = Pipe()
+        try which.run()
+        which.waitUntilExit()
+        guard which.terminationStatus == 0 else {
+            throw SwiftCardanoMultitoolError.operationError(
+                "'\(binary)' not found in PATH. Install it first with: scm install \(binary)"
+            )
+        }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let path = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !path.isEmpty else {
+            throw SwiftCardanoMultitoolError.operationError("Could not resolve path for '\(binary)'")
+        }
+        execURL = URL(fileURLWithPath: path)
+    }
+
+    let process = Process()
+    process.executableURL = execURL
+    process.arguments = arguments
+    process.standardInput = FileHandle.standardInput
+    process.standardOutput = FileHandle.standardOutput
+    process.standardError = FileHandle.standardError
+    if let env = environment {
+        var merged = ProcessInfo.processInfo.environment
+        for (k, v) in env { merged[k] = v }
+        process.environment = merged
+    }
+
+    signal(SIGINT,  SIG_IGN)
+    signal(SIGTERM, SIG_IGN)
+
+    let sigintSource  = DispatchSource.makeSignalSource(signal: SIGINT,  queue: .global())
+    let sigtermSource = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .global())
+
+    var runError: Error?
+
+    await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+        process.terminationHandler = { _ in continuation.resume() }
+
+        do {
+            try process.run()
+            let pid = process.processIdentifier
+            sigintSource.setEventHandler  { _ = kill(pid, SIGINT)  }
+            sigtermSource.setEventHandler { _ = kill(pid, SIGTERM) }
+            sigintSource.resume()
+            sigtermSource.resume()
+        } catch {
+            runError = error
+            continuation.resume()
+        }
+    }
+
+    sigintSource.cancel()
+    sigtermSource.cancel()
+    signal(SIGINT,  SIG_DFL)
+    signal(SIGTERM, SIG_DFL)
+
+    if let error = runError {
+        throw SwiftCardanoMultitoolError.operationError(
+            "Failed to start '\(binary)': \(error.localizedDescription)"
+        )
+    }
+    guard process.terminationStatus == 0 else {
+        throw SwiftCardanoMultitoolError.operationError(
+            "'\(binary)' exited with status \(process.terminationStatus)"
+        )
     }
 }
 
