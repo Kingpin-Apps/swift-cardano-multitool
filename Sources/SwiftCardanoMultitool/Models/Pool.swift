@@ -6,283 +6,8 @@ import SwiftCardanoCore
 import SwiftCardanoUtils
 import SwiftKES
 import Configuration
+import OrderedCollections
 
-// MARK: - Supporting Enums
-
-/// Enum for witness type indicating whether the witness is local or external
-public enum WitnessType: String, Codable, Sendable, Hashable, CaseIterable, CustomStringConvertible {
-    case local = "local"
-    case external = "external"
-    
-    public var description: String { rawValue }
-}
-
-/// Enum for relay type
-public enum SPORelayType: String, Codable, Sendable, Hashable, CaseIterable, CustomStringConvertible {
-    case ip = "ip"
-    case dns = "dns"
-    
-    public var description: String { rawValue }
-}
-
-/// Enum for host type
-public enum HostType: String, Codable, Sendable, Hashable, CaseIterable, CustomStringConvertible {
-    case ipv4 = "ipv4"
-    case ipv6 = "ipv6"
-    case single = "single"
-    case multi = "multi"
-    
-    public var description: String { rawValue }
-}
-
-// MARK: - Supporting Models
-
-/// Pool Relay model for stake pool configuration
-public struct PoolRelay: Codable, Sendable, Hashable, Equatable {
-    public var type: SPORelayType?
-    public var host: String?
-    public var port: String?
-    public var hostType: HostType?
-    
-    private enum CodingKeys: String, CodingKey {
-        case type
-        case host
-        case port
-        case hostType = "host_type"
-    }
-    
-    public init(
-        type: SPORelayType? = nil,
-        host: String? = nil,
-        port: String? = nil,
-        hostType: HostType? = nil
-    ) {
-        self.type = type
-        self.host = host
-        self.port = port
-        
-        // Set default hostType based on relay type if not provided
-        if let type = type, hostType == nil {
-            self.hostType = (type == .ip) ? .ipv4 : .single
-        } else {
-            self.hostType = hostType
-        }
-    }
-    
-    /// Validates the host length (max 64 characters)
-    public func validate() throws {
-        if let host = host, host.count > 64 {
-            throw SwiftCardanoMultitoolError.valueError(
-                "The relay host is too long. Max. 64 chars allowed!"
-            )
-        }
-    }
-}
-
-/// Delegator model for stake pool delegation
-public struct Delegator: Codable, Sendable {
-    public var name: String?
-    public var witness: WitnessType
-    
-    @FilePathCodable
-    public var stakeVkey: FilePath?
-    
-    @FilePathCodable
-    public var stakeSkey: FilePath?
-    
-    @FilePathCodable
-    public var delegationCertificate: FilePath?
-    
-    private enum CodingKeys: String, CodingKey {
-        case name
-        case witness
-        case stakeVkey = "stake_vkey"
-        case stakeSkey = "stake_skey"
-        case delegationCertificate = "delegation_certificate"
-    }
-    
-    public init(
-        name: String? = nil,
-        witness: WitnessType = .local,
-        stakeVkey: FilePath? = nil,
-        stakeSkey: FilePath? = nil,
-        delegationCertificate: FilePath? = nil
-    ) {
-        self.name = name
-        self.witness = witness
-        
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        self.stakeVkey = stakeVkey ?? (name.map { cwd.appending("\($0).staking.vkey") })
-        self.stakeSkey = stakeSkey ?? (name.map { cwd.appending("\($0).staking.skey") })
-        self.delegationCertificate = delegationCertificate
-    }
-}
-
-/// Pool Owner model (extends Delegator)
-public struct PoolOwner: Codable, Sendable {
-    public var name: String?
-    public var witness: WitnessType
-    
-    @FilePathCodable
-    public var stakeVkey: FilePath?
-    
-    @FilePathCodable
-    public var stakeSkey: FilePath?
-    
-    @FilePathCodable
-    public var delegationCertificate: FilePath?
-    
-    private enum CodingKeys: String, CodingKey {
-        case name
-        case witness
-        case stakeVkey = "stake_vkey"
-        case stakeSkey = "stake_skey"
-        case delegationCertificate = "delegation_certificate"
-    }
-    
-    public init(
-        name: String? = nil,
-        witness: WitnessType = .local,
-        stakeVkey: FilePath? = nil,
-        stakeSkey: FilePath? = nil,
-        delegationCertificate: FilePath? = nil
-    ) {
-        self.name = name
-        self.witness = witness
-        
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        self.stakeVkey = stakeVkey ?? (name.map { cwd.appending("\($0).stake.vkey") })
-        self.stakeSkey = stakeSkey ?? (name.map { cwd.appending("\($0).stake.skey") })
-        self.delegationCertificate = delegationCertificate
-    }
-}
-
-/// Rewards Owner model for stake pool rewards destination
-public struct RewardsOwner: Codable, Sendable {
-    public var name: String?
-    
-    @FilePathCodable
-    public var stakeVkey: FilePath?
-    
-    @FilePathCodable
-    public var stakeSkey: FilePath?
-    
-    private enum CodingKeys: String, CodingKey {
-        case name
-        case stakeVkey = "stake_vkey"
-        case stakeSkey = "stake_skey"
-    }
-    
-    public init(
-        name: String? = nil,
-        stakeVkey: FilePath? = nil,
-        stakeSkey: FilePath? = nil
-    ) {
-        self.name = name
-        
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        self.stakeVkey = stakeVkey ?? (name.map { cwd.appending("\($0).stake.vkey") })
-        self.stakeSkey = stakeSkey ?? (name.map { cwd.appending("\($0).stake.skey") })
-    }
-}
-
-/// Registration model for stake pool registration information
-public struct PoolRegistration: Codable, Sendable {
-    public var certCreated: Date?
-    
-    @FilePathCodable
-    public var certificate: FilePath?
-    
-    public var protectionKey: String?
-    public var epoch: Int?
-    public var submitted: Date?
-    public var submittedStatus: String?
-    public var proof: String?
-    
-    private enum CodingKeys: String, CodingKey {
-        case certCreated = "cert_created"
-        case certificate
-        case protectionKey = "protection_key"
-        case epoch
-        case submitted
-        case submittedStatus = "submitted_status"
-        case proof
-    }
-    
-    public init(
-        certCreated: Date? = nil,
-        certificate: FilePath? = nil,
-        protectionKey: String? = nil,
-        epoch: Int? = nil,
-        submitted: Date? = nil,
-        submittedStatus: String? = nil,
-        proof: String? = nil
-    ) {
-        self.certCreated = certCreated
-        self.certificate = certificate
-        self.protectionKey = protectionKey
-        self.epoch = epoch
-        self.submitted = submitted
-        self.submittedStatus = submittedStatus
-        self.proof = proof
-    }
-}
-
-/// Deregistration model for stake pool deregistration information
-public struct PoolDeregistration: Codable, Sendable {
-    public var submitted: Date?
-    public var certCreated: Date?
-    
-    @FilePathCodable
-    public var certificate: FilePath?
-    
-    public var epoch: Int?
-    public var proof: String?
-    public var payeeName: String?
-    public var payeeAddress: String?
-    
-    @FilePathCodable
-    public var payeeSkey: FilePath?
-    
-    @FilePathCodable
-    public var payeeHwsFile: FilePath?
-    
-    private enum CodingKeys: String, CodingKey {
-        case submitted
-        case certCreated = "cert_created"
-        case certificate
-        case epoch
-        case proof
-        case payeeName = "payee_name"
-        case payeeAddress = "payee_address"
-        case payeeSkey = "payee_skey"
-        case payeeHwsFile = "payee_hws_file"
-    }
-    
-    public init(
-        submitted: Date? = nil,
-        certCreated: Date? = nil,
-        certificate: FilePath? = nil,
-        epoch: Int? = nil,
-        proof: String? = nil,
-        payeeName: String? = nil,
-        payeeAddress: String? = nil,
-        payeeSkey: FilePath? = nil,
-        payeeHwsFile: FilePath? = nil
-    ) {
-        self.submitted = submitted
-        self.certCreated = certCreated
-        self.certificate = certificate
-        self.epoch = epoch
-        self.proof = proof
-        self.payeeName = payeeName
-        self.payeeAddress = payeeAddress
-        self.payeeSkey = payeeSkey
-        self.payeeHwsFile = payeeHwsFile
-    }
-}
-
-// MARK: - Pool Model
 
 /// Stake pool model class for storing important information and configuration for a pool
 public struct Pool: Codable, Sendable {
@@ -552,11 +277,18 @@ public struct Pool: Codable, Sendable {
         delegationCertificates: FilePath? = nil,
         itnSkey: FilePath? = nil,
         itnVkey: FilePath? = nil,
-    ) {
+    ) throws {
         self.name = name
         self.owners = owners
         self.pledge = pledge
         self.cost = cost
+        
+        guard let margin = margin, margin < 1.00 else {
+            throw SwiftCardanoMultitoolError.valueError(
+                "Margin must be less than 1.00 (100%)!"
+            )
+        }
+        
         self.margin = margin
         self.relays = relays
         self.metaName = metaName
@@ -653,7 +385,9 @@ public struct Pool: Codable, Sendable {
         
         // Validate pool ID bech32
         if let idBech = idBech {
-            if !idBech.hasPrefix("pool1") || idBech.count != 56 {
+            do {
+                let _ = try PoolOperator(from: idBech)
+            } catch {
                 throw SwiftCardanoMultitoolError.valueError(
                     "The pool id bech32 is not valid!"
                 )
@@ -662,10 +396,9 @@ public struct Pool: Codable, Sendable {
         
         // Validate pool ID hex
         if let idHex = idHex {
-            let hexPattern = "^[a-fA-F0-9]{56}$"
-            let regex = try? NSRegularExpression(pattern: hexPattern)
-            let range = NSRange(idHex.startIndex..., in: idHex)
-            if regex?.firstMatch(in: idHex, options: [], range: range) == nil {
+            do {
+                let _ = try PoolOperator(from: idHex.hexStringToData)
+            } catch {
                 throw SwiftCardanoMultitoolError.valueError(
                     "The pool id hex is not valid!"
                 )
@@ -680,9 +413,9 @@ public struct Pool: Codable, Sendable {
         }
         
         // Validate meta homepage length
-        if let metaHomepage = metaHomepage, metaHomepage.absoluteString.count > 64 {
+        if let metaHomepage = metaHomepage, metaHomepage.absoluteString.count > 128 {
             throw SwiftCardanoMultitoolError.valueError(
-                "The pool meta homepage is too long. Max. 64 chars allowed!"
+                "The pool meta homepage is too long. Max. 128 chars allowed!"
             )
         }
         
@@ -710,8 +443,9 @@ public struct Pool: Codable, Sendable {
         }
         
         // Validate all relays
-        for relay in relays {
+        for (index, relay) in relays.enumerated() {
             try relay.validate()
+            try relay.validateRelayEntry(index: index)
         }
     }
     
@@ -763,8 +497,8 @@ public struct Pool: Codable, Sendable {
     }
     
     /// Merge this StakePool with another, preferring non-nil values from self
-    private func merging(with other: Pool) -> Pool {
-        return Pool(
+    private func merging(with other: Pool) throws -> Pool {
+        return try Pool(
             name: self.name ?? other.name,
             owners: self.owners.isEmpty ? other.owners : self.owners,
             pledge: self.pledge ?? other.pledge,
@@ -891,19 +625,185 @@ public struct Pool: Codable, Sendable {
     /// Generate the metadata JSON dictionary
     /// - Parameter includeExtendedMetadata: Whether to include the extended metadata URL
     /// - Returns: The metadata dictionary
-    public func metadataJson(includeExtendedMetadata: Bool = false) -> [String: Any] {
-        var metadata: [String: Any] = [
-            "name": metaName ?? "",
-            "description": metaDescription ?? "",
-            "ticker": metaTicker ?? "",
-            "homepage": metaHomepage?.absoluteString ?? ""
-        ]
+    public func toPoolMetadata() throws -> PoolMetadata {
+        let poolMetadata = try PoolMetadata(
+            name: metaName,
+            description: metaDescription,
+            ticker: metaTicker,
+            homepage: try Url(metaHomepage!.absoluteString),
+            url: metaUrl != nil ? try Url(metaUrl!.absoluteString) : nil,
+            poolMetadataHash: metadataHash != nil ? PoolMetadataHash(payload: metadataHash!.hexStringToData) : nil
+        )
         
-        if includeExtendedMetadata, let extendedMetaUrl = extendedMetaUrl {
-            metadata["extended"] = extendedMetaUrl.absoluteString
+        return poolMetadata
+    }
+    
+    // MARK: - PoolParameters Generation
+    
+    /// Generate the pool parameters for registration
+    /// - Parameter network: The network ID (mainnet or testnet)
+    /// - Returns: The pool parameters object
+    public func toPoolParams(network: NetworkId) throws -> PoolParams {
+        // Pool operator (from cold verification key)
+        guard let coldVkeyPath = coldVkey else {
+            throw SwiftCardanoMultitoolError.valueError(
+                "Cold verification key file path is required to generate pool parameters."
+            )
+        }
+        let stakePoolVKey = try StakePoolVerificationKey.load(from: coldVkeyPath.string)
+        let poolOperator = try stakePoolVKey.poolKeyHash()
+        
+        // VRF key hash (from VRF verification key)
+        guard let vrfVkeyPath = vrfVkey else {
+            throw SwiftCardanoMultitoolError.valueError(
+                "VRF verification key file path is required to generate pool parameters."
+            )
+        }
+        let vrfVKey = try VRFVerificationKey.load(from: vrfVkeyPath.string)
+        let vrfKeyHash = try vrfVKey.hash()
+        
+        // Pledge and cost
+        guard let pledge = pledge else {
+            throw SwiftCardanoMultitoolError.valueError(
+                "Pledge is required to generate pool parameters."
+            )
+        }
+        guard let cost = cost else {
+            throw SwiftCardanoMultitoolError.valueError(
+                "Cost is required to generate pool parameters."
+            )
         }
         
-        return metadata
+        // Margin (convert Double to UnitInterval)
+        guard let margin = margin else {
+            throw SwiftCardanoMultitoolError.valueError(
+                "Margin is required to generate pool parameters."
+            )
+        }
+        let (numerator, denominator) = Self.doubleToFraction(margin)
+        let unitInterval = UnitInterval(
+            numerator: numerator,
+            denominator: denominator
+        )
+        
+        // Reward account hash (from rewards owner or first owner stake vkey)
+        let rewardsStakeVkeyPath = rewardsOwner?.stakeVkey
+            ?? owners.first?.stakeVkey
+        guard let rewardsVkeyPath = rewardsStakeVkeyPath else {
+            throw SwiftCardanoMultitoolError.valueError(
+                "Rewards owner or at least one pool owner with a stake verification key is required."
+            )
+        }
+        let rewardsStakeVKey = try StakeVerificationKey.load(from: rewardsVkeyPath.string)
+        let rewardAccount = try rewardsStakeVKey.rewardAccountHash(network: network)
+        
+        // Pool owners (verification key hashes from each owner's stake vkey)
+        var ownerHashes: [VerificationKeyHash] = []
+        for owner in owners {
+            guard let ownerStakeVkeyPath = owner.stakeVkey else {
+                throw SwiftCardanoMultitoolError.valueError(
+                    "Owner \(owner.name ?? "unknown") is missing a stake verification key file."
+                )
+            }
+            let ownerStakeVKey = try StakeVerificationKey.load(from: ownerStakeVkeyPath.string)
+            let ownerHash = try ownerStakeVKey.hash()
+            ownerHashes.append(ownerHash)
+        }
+        let poolOwners: ListOrOrderedSet<VerificationKeyHash> = .orderedSet(
+            try OrderedSet(Set(ownerHashes))
+        )
+        
+        // Relays
+        let cardanoRelays: [Relay] = try relays.map { relay in
+            guard let relayType = relay.type else {
+                throw SwiftCardanoMultitoolError.valueError(
+                    "Relay type is required for each relay."
+                )
+            }
+            let port = relay.port.flatMap { Int($0) }
+            
+            switch relayType {
+            case .ip:
+                let hostType = relay.hostType ?? .ipv4
+                switch hostType {
+                case .ipv4:
+                    return .singleHostAddr(
+                        SingleHostAddr(
+                            port: port,
+                            ipv4: relay.host.flatMap { IPv4Address($0) },
+                            ipv6: nil
+                        )
+                    )
+                case .ipv6:
+                    return .singleHostAddr(
+                        SingleHostAddr(
+                            port: port,
+                            ipv4: nil,
+                            ipv6: relay.host.flatMap { IPv6Address($0) }
+                        )
+                    )
+                default:
+                    return .singleHostAddr(
+                        SingleHostAddr(
+                            port: port,
+                            ipv4: relay.host.flatMap { IPv4Address($0) },
+                            ipv6: nil
+                        )
+                    )
+                }
+            case .dns:
+                let hostType = relay.hostType ?? .single
+                switch hostType {
+                case .multi:
+                    return .multiHostName(
+                        MultiHostName(dnsName: relay.host)
+                    )
+                default:
+                    return .singleHostName(
+                        SingleHostName(port: port, dnsName: relay.host)
+                    )
+                }
+            }
+        }
+        
+        // Pool metadata
+        let poolMetadata: PoolMetadata? = try toPoolMetadata()
+        
+        return PoolParams(
+            poolOperator: poolOperator,
+            vrfKeyHash: vrfKeyHash,
+            pledge: pledge,
+            cost: cost,
+            margin: unitInterval,
+            rewardAccount: rewardAccount,
+            poolOwners: poolOwners,
+            relays: cardanoRelays.isEmpty ? nil : cardanoRelays,
+            poolMetadata: poolMetadata
+        )
+    }
+    
+    /// Convert a Double (0.0 - 1.0) to a fraction (numerator, denominator)
+    private static func doubleToFraction(_ value: Double) -> (UInt64, UInt64) {
+        guard value > 0 else { return (0, 1) }
+        guard value < 1 else { return (1, 1) }
+        
+        // Multiply by increasing powers of 10 until we get integers
+        var denominator: UInt64 = 1
+        var numerator = value
+        while numerator != Double(UInt64(numerator)) && denominator < 1_000_000_000 {
+            numerator *= 10
+            denominator *= 10
+        }
+        let num = UInt64(numerator.rounded())
+        
+        // Simplify by GCD
+        let divisor = gcd(num, denominator)
+        return (num / divisor, denominator / divisor)
+    }
+    
+    /// Greatest common divisor
+    private static func gcd(_ a: UInt64, _ b: UInt64) -> UInt64 {
+        b == 0 ? a : gcd(b, a % b)
     }
     
     /// Generate a dummy pool JSON for template purposes
@@ -949,7 +849,7 @@ public struct Pool: Codable, Sendable {
     /// - Parameter poolJson: The path to the poolName.pool.json file
     public static func generateNewPoolJson(at poolJson: FilePath) throws {
         let poolName = poolJson.lastComponent?.string.split(separator: ".").first.map(String.init) ?? "pool"
-        let pool = Pool(name: poolName.lowercased())
+        let pool = try Pool(name: poolName.lowercased())
         
         let dummyJson = pool.dummyPoolJson()
         let jsonData = try JSONSerialization.data(withJSONObject: dummyJson, options: [.prettyPrinted, .sortedKeys])

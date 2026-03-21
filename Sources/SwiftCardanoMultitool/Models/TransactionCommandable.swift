@@ -554,6 +554,7 @@ extension TransactionCommandable {
         txBuilder: TxBuilder,
         config: MultitoolConfig,
         utxos: [UTxO] = [],
+        witnessOverride: Int? = nil,
         buildArgs: [String] = [],
         protocolParamsFile: FilePath,
         txRawFile: FilePath,
@@ -563,6 +564,10 @@ extension TransactionCommandable {
         
         guard let feePaymentAddress = transactionOptions.feePaymentAddress else {
             throw ValidationError("Fee payment address is not set.")
+        }
+        
+        if let witnessOverride {
+            txBuilder.witnessOverride = witnessOverride
         }
         
         let metadataFile = FilePath(
@@ -671,6 +676,7 @@ extension TransactionCommandable {
                 txFile: txFile,
                 minOutUtxo: minOutUtxo,
                 buildArgs: buildArgs,
+                witnessCount: witnessOverride ?? 1,
                 certificates: txBuilder.certificates,
                 withdrawals: txBuilder.withdrawals,
                 messages: transactionOptions.messages,
@@ -711,6 +717,7 @@ extension TransactionCommandable {
         txFile: FilePath,
         minOutUtxo: UInt64,
         buildArgs: [String] = [],
+        witnessCount: Int = 2,
         certificates: [Certificate]? = nil,
         withdrawals: Withdrawals? = nil,
         messages: [String]? = nil,
@@ -802,7 +809,7 @@ extension TransactionCommandable {
             "--output-text",
             "--tx-body-file", txRawFile.string,
             "--protocol-params-file", protocolParamsFile.string,
-            "--witness-count", "2",
+            "--witness-count", "\(witnessCount)",
             "--reference-script-size", "0"
         ])
         

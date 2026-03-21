@@ -253,3 +253,47 @@ public enum WhichPeriod: CaseIterable, CustomStringConvertible, ExpressibleByArg
         }
     }
 }
+
+/// Enum for transaction types
+public enum TransactionType: String, Codable, Sendable, Hashable, CaseIterable, CustomStringConvertible {
+    case transaction = "Transaction"
+    case assetMinting = "AssetMinting"
+    case assetBurning = "AssetBurning"
+    case withdrawal = "Withdrawal"
+    case stakeKeyRegistration = "StakeKeyRegistration"
+    case stakeKeyDeRegistration = "StakeKeyDeRegistration"
+    case delegationCertRegistration = "DelegationCertRegistration"
+    case poolRegistration = "PoolRegistration"
+    case poolReRegistration = "PoolReRegistration"
+    case poolRetirement = "PoolRetirement"
+    
+    public var description: String { rawValue }
+}
+
+// MARK: - PoolJSON Enums
+
+/// Enum for witness type indicating whether the witness is local or external
+public enum WitnessType: String, Codable, Sendable, Hashable, CaseIterable, CustomStringConvertible {
+    case local = "local"
+    case external = "external"
+    
+    public var description: String { rawValue }
+}
+
+/// Enum for relay type
+public enum SPORelayType: String, Codable, Sendable, Hashable, CaseIterable, CustomStringConvertible {
+    case ip = "ip"
+    case dns = "dns"
+    
+    public var description: String { rawValue }
+}
+
+/// Enum for host type
+public enum HostType: String, Codable, Sendable, Hashable, CaseIterable, CustomStringConvertible {
+    case ipv4 = "ipv4"
+    case ipv6 = "ipv6"
+    case single = "single"
+    case multi = "multi"
+    
+    public var description: String { rawValue }
+}

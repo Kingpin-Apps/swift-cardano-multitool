@@ -250,6 +250,11 @@ extension CertificateMainCommand {
                     throw ExitCode.validationFailure
                 }
                 
+                let signingKeys: [String] = [
+                    try stakeAddress.info.getSigningMethod().path.string,
+                    try feePaymentAddress.info.getSigningMethod().path.string
+                ]
+                
                 spacedPrint(
                     "\nSubmit Stake Delegation Certificate \(.primary("\(outFile.string)")) with funds from Address \(.primary("\(feePaymentAddress.info.name!)"))"
                 )
@@ -271,8 +276,6 @@ extension CertificateMainCommand {
                         apiKey: koiosApiKey,
                         network: cardanoConfig.network
                     )
-                    
-//                    let context = try getContext(config: config)
                     
                     poolInfo = try await noora.progressStep(
                         message: "Fetching stake pool info...",
@@ -389,6 +392,7 @@ extension CertificateMainCommand {
                 try await buildTransaction(
                     txBuilder: txBuilder,
                     config: config,
+                    witnessOverride: signingKeys.count,
                     protocolParamsFile: protocolParamsFile,
                     txRawFile: txRawFile,
                     txFile: txFile,
@@ -406,14 +410,13 @@ extension CertificateMainCommand {
                     args.append("--submit")
                 }
                 
-                let signingKeys: [String] = [
-                    "--signing-keys", try stakeAddress.info.getSigningMethod().path.string,
-                    "--signing-keys", try feePaymentAddress.info.getSigningMethod().path.string
-                ]
+                let signingKeysArgs: [String] = signingKeys.flatMap {
+                    ["--signing-key-file", $0]
+                }
                 await TransactionMainCommand.Sign.main([
                     "--tx-file", txFile.string,
                     "--out-file", txSignedFile.string,
-                ] + args + signingKeys)
+                ] + args + signingKeysArgs)
                 
                 if !transactionOptions.save {
                     try FileManager.default.removeItem(atPath: txRawFile.string)

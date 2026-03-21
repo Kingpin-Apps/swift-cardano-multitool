@@ -34,7 +34,7 @@ extension RunMainCommand {
                 throw ExitCode.failure
             }
             
-            if let container = cardanoConfig.container,
+            if let _ = cardanoConfig.container,
                useDefaultEntrypoint == nil {
                 try await wizard()
             } else {

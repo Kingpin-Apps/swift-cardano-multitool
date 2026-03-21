@@ -68,7 +68,8 @@ struct GenerateMainCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "generate",
         abstract: "Generate various files.",
-        subcommands: GenerateCommands.allCases.map { $0.command() }
+        subcommands: GenerateCommands.allCases.map { $0.command() },
+        aliases: ["gen"]
     )
     
     func run() async throws {

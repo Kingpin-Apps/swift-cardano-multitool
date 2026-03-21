@@ -7,23 +7,24 @@ import SwiftCardanoUtils
 import SwiftCardanoChain
 import SwiftCardanoTxBuilder
 
+
 extension CertificateMainCommand {
     
-    struct StakeRegistration: CertificateCommandable {
+    struct StakeDeregistration: CertificateCommandable {
         static let configuration = CommandConfiguration(
-            abstract: "Generates a stake address registration certificate.",
+            abstract: "Generates a stake address deregistration certificate.",
             usage: """
-            scm certificate stake-registration --stake-address test
+            scm certificate stake-deregistration --stake-address test
             """,
             discussion: """
-            Creates a stake address registration certificate for the specified 
-            stake address. The certificate can be used to register the stake 
-            address on the blockchain, allowing it to participate in staking 
-            and voting. If the `--generate-transaction` flag is used, a 
-            transaction will also be created to submit the certificate 
-            on-chain, with the fee paid by the specified fee payment address.
+            Creates a stake address deregistration certificate named 
+            name.stake.dereg-cert to deregister a stake address from the 
+            blockchain. The stake address must be provided in a file named 
+            name.stake.addr. If the `--generate-transaction` flag is used, a 
+            transaction will also be created to submit the certificate on-chain,
+            with the fee paid by the specified fee payment address.
             """,
-            aliases: ["stake-reg"]
+            aliases: ["stake-dereg"]
         )
         
         // MARK: - Required Arguments
@@ -49,7 +50,7 @@ extension CertificateMainCommand {
         
         /// Interactive wizard to gather missing parameters
         mutating func wizard() async throws {
-            stakeAddress = try await getStakeAddress(title: "Stake Address to register")
+            stakeAddress = try await getStakeAddress(title: "Stake Address to deregister")
             
             try await self.wizardForCertificate()
             
@@ -59,6 +60,7 @@ extension CertificateMainCommand {
             
             try self.validate()
         }
+
         
         mutating func run() async throws {
             // Run wizard if required parameters are missing
@@ -96,7 +98,7 @@ extension CertificateMainCommand {
             
             // Output certificate path
             if certificateOptions.outFile == nil {
-                certificateOptions.outFile = cwd.appending("\(stakeVkeyFilePath.stem!)-\(timestamp).stake-reg.cert")
+                certificateOptions.outFile = cwd.appending("\(stakeVkeyFilePath.stem!)-\(timestamp).stake-dereg.cert")
             }
             
             guard let outFile = certificateOptions.outFile else {
@@ -119,7 +121,7 @@ extension CertificateMainCommand {
             }
             
             print(noora.format(
-                "\nGenerating stake registration certificate for: \(.primary(stakeAddress.info.name!))"
+                "\nGenerating stake deregistration certificate for: \(.primary(stakeAddress.info.name!))"
             ))
             
             if stakeAddress.info.type != .stake {
@@ -148,14 +150,18 @@ extension CertificateMainCommand {
             
             stakeAddress.info.addressTypeEra()
             
-            guard stakeAddress.info.stakeAddressInfo.count == 0 else {
-                try await stakeAddressInfoSummary(
-                    stakeAddressInfo: stakeAddress.info.stakeAddressInfo,
-                    config: config,
-                    protocolParams: protocolParams
+            guard stakeAddress.info.stakeAddressInfo.count != 0 else {
+                noora.warning(
+                    "Stake Address is not registered on the chain."
                 )
-                throw CleanExit.message("Stake Address is already registered on the chain.")
+                throw ExitCode.validationFailure
             }
+            
+            try await stakeAddressInfoSummary(
+                stakeAddressInfo: stakeAddress.info.stakeAddressInfo,
+                config: config,
+                protocolParams: protocolParams
+            )
             
             let depositFee = protocolParams.stakeAddressDeposit
             
@@ -181,10 +187,10 @@ extension CertificateMainCommand {
                     
                     if [.babbage, .alonzo, .mary, .allegra, .shelley].contains(era) {
                         spacedPrint(
-                            "Generate Registration-Certificate in \(.primary("\(era)")) format."
+                            "Generate Deregistration-Certificate in \(.primary("\(era)")) format."
                         )
                         _ = try await cli.stakeAddress
-                            .registrationCertificate(arguments: [
+                            .deregistrationCertificate(arguments: [
                                 "--stake-address", stakeAddress.info.address!.toBech32(),
                                 "--out-file", outFile.string
                             ])
@@ -193,7 +199,7 @@ extension CertificateMainCommand {
                             "Generate Registration-Certificate with the currently set deposit fee: \(.primary("\(depositFee)")) lovelaces."
                         )
                         _ = try await cli.stakeAddress
-                            .registrationCertificate(arguments: [
+                            .deregistrationCertificate(arguments: [
                                 "--stake-address", stakeAddress.info.address!.toBech32(),
                                 "--key-reg-deposit-amt", "\(depositFee)",
                                 "--out-file", outFile.string
@@ -219,17 +225,17 @@ extension CertificateMainCommand {
                     
                     if [.babbage, .alonzo, .mary, .allegra, .shelley].contains(era) {
                         spacedPrint(
-                            "Generate Registration-Certificate in \(.primary("\(era)")) format."
+                            "Generate Deregistration-Certificate in \(.primary("\(era)")) format."
                         )
-                        let stakeRegistrationCertificate = SwiftCardanoCore.StakeRegistration(
+                        let stakeRegistrationCertificate = SwiftCardanoCore.StakeDeregistration(
                             stakeCredential: stakeCredential
                         )
                         try stakeRegistrationCertificate.save(to: outFile.string)
                     } else {
                         spacedPrint(
-                            "Generate Registration-Certificate with the currently set deposit fee: \(.primary("\(depositFee)")) lovelaces."
+                            "Generate Deregistration-Certificate with the currently set deposit fee: \(.primary("\(depositFee)")) lovelaces."
                         )
-                        let stakeRegistrationCertificate = Register(
+                        let stakeRegistrationCertificate = Unregister(
                             stakeCredential: stakeCredential,
                             coin: Coin(depositFee)
                         )
@@ -249,12 +255,12 @@ extension CertificateMainCommand {
             
             // Success message
             noora.success(.alert(
-                "Stake Address Registration certificate created successfully.",
+                "Stake Address Deregistration certificate created successfully.",
                 takeaways: [
                     "File: \(outFile.string)",
-                    "This certificate registers the stake address: \(.primary(try stakeAddress.info.address!.toBech32()))",
+                    "This certificate deregisters the stake address: \(.primary(try stakeAddress.info.address!.toBech32()))",
                     "Associated with \(stakeVkeyFilePath.string).",
-                    "Include this certificate when building your transaction to activate the registration."
+                    "Include this certificate when building your transaction to activate the deregistration."
                 ]
             ))
             
@@ -287,7 +293,7 @@ extension CertificateMainCommand {
                 ]
                 
                 spacedPrint(
-                    "\nSubmit Stake Address Registration Certificate \(.primary("\(outFile.string)")) with funds from Address \(.primary("\(feePaymentAddress.info.name!)"))"
+                    "\nSubmit Stake Address Deregistration Certificate \(.primary("\(outFile.string)")) with funds from Address \(.primary("\(feePaymentAddress.info.name!)"))"
                 )
                 
                 spacedPrint(
@@ -336,6 +342,8 @@ extension CertificateMainCommand {
                     try FileManager.default.removeItem(atPath: txSignedFile.string)
                 }
             }
+            
+            
         }
     }
 }

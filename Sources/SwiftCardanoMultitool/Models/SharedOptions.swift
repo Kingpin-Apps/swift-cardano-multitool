@@ -11,7 +11,7 @@ struct SharedCertificateOptions: ParsableArguments {
     
     // MARK: - CertificateCommandable Arguments
     
-    @Option(name: [.short, .long], help: "The file name to save the certificate to. If not specified, '{addressName}-{timestamp}.vote-deleg.cert' will be used.")
+    @Option(name: [.short, .long], help: "The file name to save the certificate to. If not specified, '{addressName}-{timestamp}.{type}.cert' will be used.")
     var outFile: FilePath? = nil
     
     @Flag(name: [.short, .long], help: "Whether to generate a transaction for the certificate")

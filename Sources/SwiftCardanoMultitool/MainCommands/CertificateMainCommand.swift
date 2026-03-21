@@ -2,14 +2,13 @@ import Foundation
 import ArgumentParser
 
 enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
+    case stakeDelegation
     case stakeRegistration
     case stakeDeregistration
-    case stakeDelegation
     case poolRegistration
     case poolRetirement
     case genesisKeyDelegation
     case moveInstantaneousRewards
-    case unregister
     case voteDelegate
     case stakeVoteDelegate
     case stakeRegisterDelegate
@@ -25,22 +24,20 @@ enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
     
     var description: String {
         switch self {
+            case .stakeDelegation:
+                return "Stake Delegation - Generates `name.deleg.cert to delegate a stake to a stakepool."
             case .stakeRegistration:
                 return "Stake Address Registration - Generates `name.stake.cert` to register a stake address on the blockchain."
             case .stakeDeregistration:
                 return "Stake Address Deregistration - Generates  `name.stake.dereg-cert` to deregister a stake address from the blockchain."
-            case .stakeDelegation:
-                return "Stake Delegation - Generates `name.deleg.cert to delegate a stake to a stakepool."
             case .poolRegistration:
-                return "Generates the certificate poolName.pool.cert to (re)register a stakepool on the blockchain."
+                return "Pool Registration - Generates the certificate poolName.pool.cert to (re)register a stakepool on the blockchain."
             case .poolRetirement:
-                return "Generates the certificate poolName.pool.dereg-cert to retire a stakepool from the blockchain."
+                return "Pool Retirement - Generates the certificate poolName.pool.dereg-cert to retire a stakepool from the blockchain."
             case .genesisKeyDelegation:
                 return "Generates the genesis key delegation certificate."
             case .moveInstantaneousRewards:
                 return "Generates the move instantaneous rewards certificate."
-            case .unregister:
-                return "Generates the stake address retirement certificate."
             case .voteDelegate:
                 return "Generates the vote delegation certificate."
             case .stakeVoteDelegate:
@@ -75,16 +72,14 @@ enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
             case .stakeDelegation:
                 return CertificateMainCommand.StakeDelegation.self
             case .stakeDeregistration:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.StakeDeregistration.self
             case .poolRegistration:
-                return CertificateMainCommand.StakepoolRegistrationCertificate.self
+                return CertificateMainCommand.StakePoolRegistrationCertificate.self
             case .poolRetirement:
                 return CertificateMainCommand.StakepoolDeregistrationCertificate.self
             case .genesisKeyDelegation:
                 return CertificateMainCommand.StakeAddressRegistrationCertificate.self
             case .moveInstantaneousRewards:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
-            case .unregister:
                 return CertificateMainCommand.StakeAddressRegistrationCertificate.self
             case .voteDelegate:
                 return CertificateMainCommand.VoteDelegation.self

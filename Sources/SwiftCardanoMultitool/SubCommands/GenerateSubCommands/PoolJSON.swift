@@ -7,10 +7,23 @@ import SwiftCardanoCore
 extension GenerateMainCommand {
     struct PoolJSON: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Create a new pool.json file with the specified pool details."
+            commandName: "pool-json",
+            abstract: "Create a new pool.json file with the specified pool details.",
+            usage: """
+            scm generate pool-json --pool-name test
+            """,
+            discussion: """
+            This command helps you create a new pool.json file for your Cardano 
+            stake pool. You can specify the pool name, and the command will 
+            interactively prompt you for all necessary details such as pool 
+            parameters, metadata, relay information, and key file locations. 
+            The generated pool.json file will be saved as <poolName>.pool.json 
+            in the current directory.
+            """,
+            aliases: ["pool"]
         )
         
-        @Option(name: .shortAndLong, help: "The name of the pool. The pool file will be saved as <poolName>.json.")
+        @Option(name: .shortAndLong, help: "The name of the pool. The pool file will be saved as <poolName>.pool.json.")
         var poolName: String? = nil
         
         @Option(name: .shortAndLong, help: "Overwrite the existing pool.json file if it exists.")
@@ -655,7 +668,7 @@ extension GenerateMainCommand {
             poolName = noora.textPrompt(
                 title: "Pool Name",
                 prompt: "Enter the name of the pool:",
-                description: "This name is used for file naming (e.g., <poolName>.json, <poolName>.cold.vkey, etc.).",
+                description: "This name is used for file naming (e.g., <poolName>.pool.json, <poolName>.cold.vkey, etc.).",
                 collapseOnAnswer: true,
                 validationRules: [NonEmptyValidationRule(error: "Pool name cannot be empty.")]
             ).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -669,7 +682,7 @@ extension GenerateMainCommand {
             }
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let poolFile = cwd.appending("\(poolName!).json")
+            let poolFile = cwd.appending("\(poolName!).pool.json")
             
             if !overwrite && FileManager.default.fileExists(atPath: poolFile.string) {
                 noora.warning(.alert(
@@ -720,7 +733,7 @@ extension GenerateMainCommand {
             let rewardsOwner = promptRewardsOwner(cwd: cwd)
             
             // Build the Pool
-            let pool = Pool(
+            let pool = try Pool(
                 name: poolName!,
                 owners: owners,
                 pledge: params.pledge,
@@ -760,6 +773,8 @@ extension GenerateMainCommand {
                     "Fields like registration, KES keys, and opcert are managed by other commands."
                 ]
             ))
+            
+            throw CleanExit.message("Exiting...")
         }
     }
 }
