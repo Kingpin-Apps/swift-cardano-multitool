@@ -12,7 +12,7 @@ import Path
 
 extension TransactionMainCommand {
     
-    struct RewardsWithdraw: TransactionCommandable {
+    struct RewardsWithdraw: TransactionSendable {
         static let configuration = CommandConfiguration(
             abstract: "Generates a rewards withdrawal transaction to withdraw staking rewards.",
             usage: """

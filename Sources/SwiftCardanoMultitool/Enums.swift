@@ -17,7 +17,21 @@ enum GetAddressBy: String, CaseIterable, CustomStringConvertible {
             case .name:
                 return "The name of the stem of the file."
             case .path:
-                return "The path to the file."
+                return "The path to the address.addr file."
+        }
+    }
+}
+
+enum GetTransactionBy: String, CaseIterable, CustomStringConvertible {
+    case cborHex
+    case path
+    
+    var description: String {
+        switch self {
+            case .cborHex:
+                return "The CBOR Hex representation of the transaction."
+            case .path:
+                return "The path to the transaction file."
         }
     }
 }

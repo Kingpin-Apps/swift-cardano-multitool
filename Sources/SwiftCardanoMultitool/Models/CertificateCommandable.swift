@@ -3,7 +3,7 @@ import Foundation
 import SystemPackage
 import Noora
 
-protocol CertificateCommandable: TransactionCommandable {
+protocol CertificateCommandable: TransactionSendable {
     var certificateOptions: SharedCertificateOptions { get set }
 }
 

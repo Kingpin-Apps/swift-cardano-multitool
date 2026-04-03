@@ -8,7 +8,7 @@ import SwiftCardanoChain
 import Path
 
 extension TransactionMainCommand {
-    struct Submit: AsyncParsableCommand {
+    struct Submit: TransactionAsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Submit a transaction.",
             discussion: """
@@ -24,16 +24,32 @@ extension TransactionMainCommand {
         @Option(name: [.short, .long], help: "The file path to the transaction to submit.")
         var txFile: FilePath?
         
+        @Option(name: .long, help: "Raw CBOR hex string of the transaction.")
+        var cborHex: String?
+        
         // MARK: - Wizard
         
         mutating func wizard() async throws {
-            txFile = try await getTransactionFilePath()
+            let enterTransactionBy = try await getTransactionBy()
+            
+            switch enterTransactionBy {
+                case .cborHex:
+                    cborHex = noora.textPrompt(
+                        title: "Transaction CBOR Hex",
+                        prompt: "Enter the raw CBOR hex string of the transaction:",
+                        validationRules: [NonEmptyValidationRule(error: "CBOR hex cannot be empty.")]
+                    ).trimmingCharacters(in: .whitespacesAndNewlines)
+                case .path:
+                    txFile = try await getTransactionFilePath(title: "Select a transaction file to inspect.")
+            }
         }
+        
+        // MARK: - Run
         
         mutating func run() async throws {
             // If no arguments provided, run wizard
-            if txFile == nil {
-                try await self.wizard()
+            if txFile == nil && cborHex == nil {
+                try await wizard()
             }
             
             guard let txFile = txFile else {
@@ -60,7 +76,7 @@ extension TransactionMainCommand {
             spacedPrint("\nSubmitting transaction...")
             
             do {
-                let tx = try Transaction.load(from: txFile.string)
+                let tx = try resolveTransaction()
                 let txId = try await context.submitTx(tx: .transaction(tx))
                 
                 print(noora.format(

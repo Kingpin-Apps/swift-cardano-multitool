@@ -8,11 +8,11 @@ import SwiftCardanoChain
 import SwiftCardanoTxBuilder
 import Path
 
-protocol TransactionCommandable: AsyncParsableCommand {
+protocol TransactionSendable: AsyncParsableCommand {
     var transactionOptions: SharedTransactionOptions { get set }
 }
 
-extension TransactionCommandable {
+extension TransactionSendable {
     var isSame: Bool {
         return transactionOptions.feePaymentAddress?.info.address == transactionOptions.toAddress?.info.address
     }

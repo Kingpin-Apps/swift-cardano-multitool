@@ -10,7 +10,7 @@ import Path
 
 
 extension TransactionMainCommand {
-    struct Sign: AsyncParsableCommand {
+    struct Sign: TransactionAsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "Sign a transaction.",
             usage: """
@@ -30,6 +30,9 @@ extension TransactionMainCommand {
         
         @Option(name: [.short, .long], help: "The file path to the transaction to submit.")
         var txFile: FilePath?
+        
+        @Option(name: .long, help: "Raw CBOR hex string of the transaction.")
+        var cborHex: String?
         
         @Option(name: [.short, .long], help: "The file paths to the signing keys (repeat option to pass multiple).")
         var signingKeys: [FilePath] = []
@@ -64,7 +67,18 @@ extension TransactionMainCommand {
         // MARK: - Wizard
         
         mutating func wizard() async throws {
-            txFile = try await getTransactionFilePath()
+            let enterTransactionBy = try await getTransactionBy()
+            
+            switch enterTransactionBy {
+                case .cborHex:
+                    cborHex = noora.textPrompt(
+                        title: "Transaction CBOR Hex",
+                        prompt: "Enter the raw CBOR hex string of the transaction:",
+                        validationRules: [NonEmptyValidationRule(error: "CBOR hex cannot be empty.")]
+                    ).trimmingCharacters(in: .whitespacesAndNewlines)
+                case .path:
+                    txFile = try await getTransactionFilePath(title: "Select a transaction file to sign.")
+            }
             
             var addMore = true
             while addMore {
@@ -114,20 +128,20 @@ extension TransactionMainCommand {
         // MARK: - Run
             
         mutating func run() async throws {
-            if txFile == nil || signingKeys.isEmpty {
+            if (txFile == nil && cborHex == nil) || signingKeys.isEmpty {
                 try await self.wizard()
-            }
-            
-            guard let txFile = txFile else {
-                noora.error("Transaction file is required.")
-                throw ExitCode.validationFailure
             }
             
             let config = try await MultitoolConfig.load()
             let context = try await getContext(config: config)
             
             spacedPrint("\nSigning transaction...")
-            let tx = try Transaction.load(from: txFile.string)
+            let tx = try resolveTransaction()
+            
+            guard let txId = tx.id?.description else {
+                noora.error("Failed to compute transaction ID.")
+                throw ExitCode.failure
+            }
             
             let signingMethods: [SigningMethod] = try signingKeys.map { keyPath in
                 if keyPath.extension == "hwsfile" {
@@ -141,7 +155,7 @@ extension TransactionMainCommand {
             }
             
             noora.info(.alert(
-                "Sign (Witness+Assemble) the unsigned transaction body at \(.path(try AbsolutePath(validating: txFile.string))) with:",
+                "Sign (Witness+Assemble) the unsigned transaction \(.primary("\(txId)")) with:",
                 takeaways: try signingMethods.map {
                     switch $0 {
                         case .hardwareWallet(let hwsfile):
@@ -159,10 +173,35 @@ extension TransactionMainCommand {
                         return cwd.appending("\(filePath.stem!).witness")
                 }
             }
-            
-            if outFile == nil {
-                outFile = cwd.appending("\(txFile.stem!).signed.tx")
+
+            // Resolve effective tx file: write cborHex to a temp file if txFile not provided
+            let effectiveTxFile: FilePath
+            var tempTxFilePath: String? = nil
+            if let file = txFile {
+                effectiveTxFile = file
+            } else {
+                let tempFilePath = FilePath(FileManager.default.temporaryDirectory.path).appending("\(txId).tx")
+                try await FileUtils.dumpLockedFile(tempFilePath, data: try tx.toTextEnvelope()!)
+                effectiveTxFile = tempFilePath
+                tempTxFilePath = tempFilePath.string
             }
+            defer {
+                if let path = tempTxFilePath {
+                    try? FileManager.default.removeItem(atPath: path)
+                }
+            }
+
+            if outFile == nil && txFile != nil {
+                guard let txFile = txFile else {
+                    noora.error("Transaction file path is required to determine default output file name.")
+                    throw ExitCode.validationFailure
+                }
+                outFile = cwd.appending("\(txFile.stem!).signed.tx")
+            } else if outFile == nil && cborHex != nil {
+                let timestamp = DateUtils.getCurrentTimestamp()
+                outFile = cwd.appending("\(txId)-\(timestamp).signed.tx")
+            }
+            
             guard let outFile = outFile else {
                 noora.error("Output file path is required.")
                 throw ExitCode.validationFailure
@@ -191,30 +230,30 @@ extension TransactionMainCommand {
                     logger: getLogger(config: config)
                 )
                 
-                try await hwcli.autocorrectTxBodyFile(txBodyFile: txFile.string)
-                
-                try await FileUtils.displayFile(FilePath(txFile.string))
-                
-                
+                try await hwcli.autocorrectTxBodyFile(txBodyFile: effectiveTxFile.string)
+
+                try await FileUtils.displayFile(effectiveTxFile)
+
+
                 _ = try await hwcli.startHardwareWallet()
-                
+
                 _ = try await hwcli.transaction.witness(
-                    txFile: txFile,
+                    txFile: effectiveTxFile,
                     hwSigningFiles: signingKeys,
                     outFiles: witnessFiles,
                     changeOutputKeyFiles: signingKeys
                 )
-                
+
                 let cli = try await CardanoCLI(
                     configuration: Config(cardano: config.cardano),
                     logger: getLogger(config: config)
                 )
-                
+
                 let witnessArgs = witnessFiles.flatMap { ["--witness-file", $0.string] }
-                
+
                 _ = try await cli.transaction.assemble(
                     arguments: [
-                        "--tx-body-file", txFile.string,
+                        "--tx-body-file", effectiveTxFile.string,
                         "--out-file", outFile.string
                     ] + witnessArgs
                 )
@@ -230,10 +269,10 @@ extension TransactionMainCommand {
                     )
                     
                     let skeyArgs = witnessFiles.flatMap { ["--signing-key-file", $0.string] }
-                    
+
                     _ = try await cli.transaction.sign(
                         arguments: [
-                            "--tx-body-file", txFile.string,
+                            "--tx-body-file", effectiveTxFile.string,
                             "--out-file", outFile.string
                         ] + skeyArgs
                     )

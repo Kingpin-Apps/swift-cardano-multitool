@@ -13,6 +13,15 @@ func getAddressBy(title: TerminalText? = nil) async throws -> GetAddressBy {
     )
 }
 
+
+func getTransactionBy(title: TerminalText? = nil) async throws -> GetTransactionBy {
+    return noora.singleChoicePrompt(
+        title: title ?? "Transaction",
+        question: "Enter transaction files by:",
+        description: "Do you want to enter the transaction CBOR Hex or select the file from the current working directory?.",
+    )
+}
+
 func enterAddressBy(title: TerminalText? = nil) async throws -> EnterAddressBy {
     return noora.singleChoicePrompt(
         title: title ?? "Payment Address",

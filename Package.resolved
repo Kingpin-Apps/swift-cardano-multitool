@@ -1,5 +1,5 @@
 {
-  "originHash" : "6ae52e5512bdddb3c1b6d96c452d83b2d1570fe77d5cba3bfc07076e73f043f3",
+  "originHash" : "bb66166936f47892e7a5aefd251fbd534de0371338a43ea1aea6f0286353553b",
   "pins" : [
     {
       "identity" : "base32",
@@ -173,6 +173,15 @@
       }
     },
     {
+      "identity" : "swift-blst",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kingpin-Apps/swift-blst.git",
+      "state" : {
+        "revision" : "40438a41e6ee4db24627e89730bc46aacb0d1afc",
+        "version" : "0.1.2"
+      }
+    },
+    {
       "identity" : "swift-cardano-chain",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
@@ -186,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "6a1d38ad54595a8f506dcd195fb036f1fd71f751",
-        "version" : "0.2.31"
+        "revision" : "adb8fc8eb6c53eecca3e48424d0888eadaa01633",
+        "version" : "0.3.0"
       }
     },
     {
@@ -197,6 +206,24 @@
       "state" : {
         "revision" : "07b8a4a982a9fcaf08dbea6e47bc07ff8d99730f",
         "version" : "0.2.4"
+      }
+    },
+    {
+      "identity" : "swift-cardano-txvalidator",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git",
+      "state" : {
+        "revision" : "c2639f4efba1b3bd54223ada8472731c6935610c",
+        "version" : "0.1.1"
+      }
+    },
+    {
+      "identity" : "swift-cardano-uplc",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kingpin-Apps/swift-cardano-uplc.git",
+      "state" : {
+        "revision" : "adcb3c34254eef23d7c1526117a1828774912eb4",
+        "version" : "0.1.0"
       }
     },
     {
@@ -312,8 +339,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-ncal.git",
       "state" : {
-        "revision" : "e42fbe3c3d45a159ac626c956c83466373927722",
-        "version" : "0.2.1"
+        "revision" : "092ff55a1e32ea7bd6faeb6a3884dd90109558ae",
+        "version" : "0.2.2"
       }
     },
     {
@@ -359,6 +386,15 @@
       "state" : {
         "revision" : "279aa6b77be6aa842a4bf3c45fa79fa15edf3e07",
         "version" : "1.2.0"
+      }
+    },
+    {
+      "identity" : "swift-secp256k1",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/21-DOT-DEV/swift-secp256k1",
+      "state" : {
+        "revision" : "4735a0ed8fd9d9f7e0a8b75aa760cf81a157452f",
+        "version" : "0.22.0"
       }
     },
     {

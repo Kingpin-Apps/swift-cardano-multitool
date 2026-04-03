@@ -7,7 +7,7 @@ import SwiftCardanoChain
 
 
 extension TransactionMainCommand {
-    struct View: AsyncParsableCommand {
+    struct View: TransactionAsyncParsableCommand {
         static let configuration = CommandConfiguration(
             abstract: "View transaction details.",
             usage: """
@@ -20,27 +20,35 @@ extension TransactionMainCommand {
         
         // MARK: - Required Arguments
         
-        @Option(name: [.short, .long], help: "Staking address file base name (without .stake.addr). Example: owner → owner.stake.addr")
+        @Option(name: [.short, .long], help: "The file path to the transaction to view.")
         var txFile: FilePath?
+        
+        @Option(name: .long, help: "Raw CBOR hex string of the transaction.")
+        var cborHex: String?
         
         // MARK: - Wizard
         
         mutating func wizard() async throws {
-            txFile = try await getTransactionFilePath()
+            let enterTransactionBy = try await getTransactionBy()
+            
+            switch enterTransactionBy {
+                case .cborHex:
+                    cborHex = noora.textPrompt(
+                        title: "Transaction CBOR Hex",
+                        prompt: "Enter the raw CBOR hex string of the transaction:",
+                        validationRules: [NonEmptyValidationRule(error: "CBOR hex cannot be empty.")]
+                    ).trimmingCharacters(in: .whitespacesAndNewlines)
+                case .path:
+                    txFile = try await getTransactionFilePath(title: "Select a transaction file to sign.")
+            }
         }
         
         mutating func run() async throws {
-            // If no arguments provided, run wizard
-            if txFile == nil {
+            if txFile == nil && cborHex == nil {
                 try await self.wizard()
             }
             
-            guard let txFile = txFile else {
-                noora.error("Transaction file path is required.")
-                throw ExitCode.validationFailure
-            }
-            
-            let tx = try Transaction.load(from: txFile.string)
+            let tx = try resolveTransaction()
             
             spacedPrint(
                 "Transaction Details: \n\n \(tx.debugDescription)",
