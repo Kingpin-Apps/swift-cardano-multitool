@@ -658,18 +658,26 @@ public func printContextInfo(
 /// - Parameters:
 ///   - context: The chain context to use for querying protocol parameters
 ///   - protocolParamsFile: The file path to save protocol parameters
+///   - quiet: Whether to suppress progress messages and spinner (default is false)
 /// - Returns: The retrieved protocol parameters
 public func getProtocolParameters(
     context: any ChainContext,
-    protocolParamsFile: FilePath? = nil
+    protocolParamsFile: FilePath? = nil,
+    quiet: Bool = false
 ) async throws -> ProtocolParameters {
-    let protocolParams = try await noora.progressStep(
-        message: "Querying protocol parameters...",
-        successMessage: "Successfully retrieved protocol parameters.",
-        errorMessage: "Failed to retrieve protocol parameters.",
-        showSpinner: true
-    ) { updateMessage in
-        return try await context.protocolParameters()
+    
+    let protocolParams: ProtocolParameters
+    if !quiet {
+        protocolParams = try await noora.progressStep(
+            message: "Querying protocol parameters...",
+            successMessage: "Successfully retrieved protocol parameters.",
+            errorMessage: "Failed to retrieve protocol parameters.",
+            showSpinner: true
+        ) { updateMessage in
+            return try await context.protocolParameters()
+        }
+    } else {
+        protocolParams = try await context.protocolParameters()
     }
     
     if let protocolParamsFile = protocolParamsFile {

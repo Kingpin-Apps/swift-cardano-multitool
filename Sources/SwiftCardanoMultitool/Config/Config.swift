@@ -437,10 +437,11 @@ public struct MultitoolConfig: Codable, Sendable {
     }
     
     /// Load the configuration from the default path specified by the `CONFIG` environment variable.
+    /// - Parameter quiet: If true, suppresses debug output.
     /// - Returns: The loaded configuration.
     /// - Throws: An error if the file cannot be read or parsed.
     /// - Note: Environment variables will override values in the JSON file.
-    static func load() async throws -> MultitoolConfig {        
+    static func load(quiet: Bool = false) async throws -> MultitoolConfig {
         guard let configPath = Environment.getFilePath(.config) else {
             noora.error(.alert("Unable to find configuration path.", takeaways: [
                 "Make sure the \(Environment.config.rawValue) environment variable is set.",
@@ -459,9 +460,12 @@ public struct MultitoolConfig: Codable, Sendable {
         
         let absolute = FileManager.default.currentDirectoryPath + "/" + configPath.string
 
-        spacedPrint(
-            "\nUsing config from: \(.path(try .init(validating: absolute)))"
-        )
+        if !quiet {
+            spacedPrint(
+                "\nUsing config from: \(.path(try .init(validating: absolute)))"
+            )
+        }
+        
         
         return try await load(from: configPath)
     }

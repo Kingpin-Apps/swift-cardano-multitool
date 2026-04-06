@@ -1,5 +1,5 @@
 {
-  "originHash" : "bb66166936f47892e7a5aefd251fbd534de0371338a43ea1aea6f0286353553b",
+  "originHash" : "fc917cbdd86aaed138ea7a0d49cf5ec18d8e04ad649e7146e255d3df93ae4ba9",
   "pins" : [
     {
       "identity" : "base32",
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mattpolzin/OpenAPIKit",
       "state" : {
-        "revision" : "c1dcd65ccbcc1f3e132293ff2338c72c49a9026d",
-        "version" : "3.8.0"
+        "revision" : "343b2c1793058fcc53c1bd7e2907f8e3a4d640fb",
+        "version" : "3.9.0"
       }
     },
     {
@@ -186,8 +186,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
       "state" : {
-        "revision" : "512c52a6cb3373c9483bafd5e14546fdbb904c00",
-        "version" : "0.2.9"
+        "revision" : "9f72e8a03d4844b018fbfa5b5192b8bd2783895e",
+        "version" : "0.2.13"
       }
     },
     {
@@ -195,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "adb8fc8eb6c53eecca3e48424d0888eadaa01633",
-        "version" : "0.3.0"
+        "revision" : "cc1bf9fb3f05da4a02f55bd7036bb88aad0454d3",
+        "version" : "0.3.3"
       }
     },
     {
@@ -213,8 +213,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git",
       "state" : {
-        "revision" : "c2639f4efba1b3bd54223ada8472731c6935610c",
-        "version" : "0.1.1"
+        "revision" : "af3a59ef8598114ddca01237818ccb1575712e7e",
+        "version" : "0.1.2"
       }
     },
     {
@@ -312,8 +312,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-koios.git",
       "state" : {
-        "revision" : "f736bc504db09c1f3d558aa5747b997e37cdaf70",
-        "version" : "0.1.5"
+        "revision" : "e0af84f37fe689368696048aa4e7c00c4fe106fb",
+        "version" : "0.1.7"
       }
     },
     {
@@ -366,8 +366,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-openapi-generator",
       "state" : {
-        "revision" : "d74223cc5595a8165181c4d9579243c932e5cd07",
-        "version" : "1.10.3"
+        "revision" : "73997cc62c2193d5046e431c9d546119dda14502",
+        "version" : "1.11.1"
       }
     },
     {
@@ -375,8 +375,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-openapi-runtime",
       "state" : {
-        "revision" : "7722cf8eac05c1f1b5b05895b04cfcc29576d9be",
-        "version" : "1.8.3"
+        "revision" : "f039fa6d6338aab5164f3d1be16281524c9a8f89",
+        "version" : "1.11.0"
       }
     },
     {

@@ -7,7 +7,7 @@ import SwiftCardanoChain
 import SwiftCardanoTxValidator
 
 extension TransactionMainCommand {
-    struct Validate: AsyncParsableCommand {
+    struct Validate: TransactionAsyncParsableCommand {
         static let configuration = CommandConfiguration(
             commandName: "validate",
             abstract: "Validate a transaction against ledger rules.",
@@ -66,76 +66,58 @@ extension TransactionMainCommand {
             if txFile == nil && cborHex == nil {
                 try await wizard()
             }
-
-            let hex = try resolveCborHex()
+            
+            let tx = try resolveTransaction()
 
             // Load chain context and config
-            let config = try await MultitoolConfig.load()
+            let config = try await MultitoolConfig.load(quiet: json)
             let context = try await getContext(config: config)
-            try await printContextInfo(config: config, context: context)
+            
+            if !json {
+                try await printContextInfo(config: config, context: context)
+            }
+            
+            let txValidator = TxValidator()
 
             // Fetch protocol parameters from the chain
-            let protocolParams = try await getProtocolParameters(context: context)
+            let protocolParams = try await getProtocolParameters(context: context, quiet: json)
 
-            // Build a ValidationContext with current slot and network
-            let cardanoConfig = try getCardanoConfig(config: config)
-            let currentSlot = try await noora.progressStep(
-                message: "Querying current slot...",
-                successMessage: "Current slot retrieved.",
-                errorMessage: "Failed to retrieve current slot.",
-                showSpinner: true
-            ) { _ in
-                try await context.lastBlockSlot()
-            }
-
-            let validationCtx = ValidationContext(
-                currentSlot: UInt64(currentSlot),
-                network: cardanoConfig.network.networkId
+            let validationCtx = try await ValidationContext.from(
+                transaction: tx,
+                chainContext: context
             )
 
-            noora.warning(.alert(
-                "Partial validation only.",
-                takeaway: "UTxO inputs are not resolved from the chain, so the balance conservation check (inputs = outputs + fee) is skipped."
-            ))
-
             // Run validation
-            print(noora.format("\n\(.primary("━━━ Running Validation ━━━"))\n"))
-
-            let report = try await noora.progressStep(
-                message: "Validating transaction...",
-                successMessage: "Validation complete.",
-                errorMessage: "Validation failed unexpectedly.",
-                showSpinner: true
-            ) { _ in
-                try await TxValidator().validate(
-                    cborHex: hex,
+            if !json {
+                print(noora.format("\n\(.primary("━━━ Running Validation ━━━"))\n"))
+                
+                let report = try await noora.progressStep(
+                    message: "Validating transaction...",
+                    successMessage: "Validation complete.",
+                    errorMessage: "Validation failed unexpectedly.",
+                    showSpinner: true
+                ) { _ in
+                    try await txValidator.validate(
+                        transaction: tx,
+                        protocolParams: protocolParams,
+                        context: validationCtx,
+                        chainContext: context
+                    )
+                }
+                
+                displayReport(report)
+            } else {
+                let report = try await txValidator.validate(
+                    transaction: tx,
                     protocolParams: protocolParams,
                     context: validationCtx,
                     chainContext: context
                 )
+                spacedPrint("\(try report.toJSON())")
             }
-
-            if json {
-                print(try report.toJSON())
-                return
-            }
-
-            displayReport(report)
         }
 
         // MARK: - Private Helpers
-
-        private func resolveCborHex() throws -> String {
-            if let hex = cborHex {
-                return hex
-            }
-            if let file = txFile {
-                let tx = try Transaction.load(from: file.string)
-                return try tx.toCBORHex()
-            }
-            noora.error("Transaction input is required.")
-            throw ExitCode.validationFailure
-        }
 
         private func displayReport(_ report: TxValidatorReport) {
             let view = report.transactionView

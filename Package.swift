@@ -17,8 +17,9 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-configuration", .upToNextMinor(from: "0.2.0")),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.6.3"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.2.30"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.2.9"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.2.10"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "0.2.4"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.1.2"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.3.3"),
         .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.1"),
@@ -27,7 +28,6 @@ let package = Package(
         .package(url: "https://github.com/thoven87/icalendar-kit.git", from: "2.1.0"),
         // Provides Crypto compatible APIs on Linux
         .package(url: "https://github.com/apple/swift-crypto.git", from: "3.15.1"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.1.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
