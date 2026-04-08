@@ -136,6 +136,10 @@ extension TransactionMainCommand {
                     "Has Plutus Scripts: \(hasScriptsText)",
                 ]
             ))
+            
+            print()
+            printDivider()
+            
 
             // Overall verdict
             spacedPrint("\(.primary("─── Verdict ───"))")
@@ -192,7 +196,6 @@ extension TransactionMainCommand {
             }
             
             print()
-            printDivider()
             
             if !errors.isEmpty {
                 for error in errors {

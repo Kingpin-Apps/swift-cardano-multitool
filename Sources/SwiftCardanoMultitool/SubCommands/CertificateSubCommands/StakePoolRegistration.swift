@@ -17,12 +17,18 @@ extension CertificateMainCommand {
             scm certificate pool-registration --pool-name test
             """,
             discussion: """
-            Creates a stake address registration certificate for the specified 
-            stake address. The certificate can be used to register the stake 
-            address on the blockchain, allowing it to participate in staking 
-            and voting. If the `--generate-transaction` flag is used, a 
-            transaction will also be created to submit the certificate 
-            on-chain, with the fee paid by the specified fee payment address.
+            This command generates a stake pool registration certificate based 
+            on the information provided in a pool JSON file. You can specify 
+            the pool JSON file directly, or provide the pool name to search for 
+            a file named <poolName>.pool.json in the current directory. The 
+            command will validate the pool information, generate the necessary 
+            metadata, and create a registration certificate that can be used to 
+            register your stake pool on the Cardano network. Optionally, you can 
+            also generate a transaction with the certificate included to submit 
+            to the network. If the pool is already registered, you can use the 
+            --force option to create a new certificate for re-registration, but 
+            use this with caution as it may lead to unexpected consequences if 
+            the pool is already registered.
             """,
             aliases: ["pool-reg"]
         )
@@ -165,10 +171,6 @@ extension CertificateMainCommand {
             }
             
             var pool = try Pool.load(from: poolJSON)
-            
-//            let poolParams = try pool.toPoolParams(
-//                network: config.cardano?.network.networkId ?? .mainnet
-//            )
             
             let protocolParamsFile = cwd.appending(
                 "protocol-parameters.json"

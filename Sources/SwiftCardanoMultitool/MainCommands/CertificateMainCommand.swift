@@ -35,29 +35,29 @@ enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
             case .poolRetirement:
                 return "Pool Retirement - Generates the certificate poolName.pool.dereg-cert to retire a stakepool from the blockchain."
             case .genesisKeyDelegation:
-                return "Generates the genesis key delegation certificate."
+                return "Genesis Key Delegation - Generates the genesis key delegation certificate to delegate a genesis key to a stake pool."
             case .moveInstantaneousRewards:
-                return "Generates the move instantaneous rewards certificate."
+                return "Move Instantaneous Rewards - Generates the move instantaneous rewards certificate."
             case .voteDelegate:
-                return "Generates the vote delegation certificate."
+                return "Vote Delegate - Generates the vote delegation certificate."
             case .stakeVoteDelegate:
-                return "Generates the stake and vote delegation certificate."
+                return "Stake and Vote Delegate - Generates the stake and vote delegation certificate."
             case .stakeRegisterDelegate:
-                return "Generates the stake address registration and stake delegation certificate."
+                return "Stake Register and Delegate - Generates the stake address registration and stake delegation certificate."
             case .voteRegisterDelegate:
-                return "Generates the stake registration and vote delegation certificate."
+                return "Vote Register and Delegate - Generates the stake registration and vote delegation certificate."
             case .stakeVoteRegisterDelegate:
-                return "Generates the stake address registration and vote delegation certificate."
+                return "Stake and Vote Register and Delegate - Generates the stake address registration and vote delegation certificate."
             case .authCommitteeHot:
-                return "Generates the constitutional committee hot key registration certificate."
+                return "Auth Committee Hot - Generates the constitutional committee hot key registration certificate."
             case .resignCommitteeCold:
-                return "Generates the constitutional committee cold key resignation certificate."
+                return "Resign Committee Cold - Generates the constitutional committee cold key resignation certificate."
             case .registerDRep:
-                return "Generates the DRep registration certificate."
+                return "Register DRep - Generates the DRep registration certificate."
             case .unRegisterDRep:
-                return "Generates the DRep retirement certificate."
+                return "Unregister DRep - Generates the DRep retirement certificate."
             case .updateDRep:
-                return "Generates the DRep update certificate."
+                return "Update DRep - Generates the DRep update certificate."
             case .back:
                 return "Back - Go back to the main menu."
             case .exit:
