@@ -1,4 +1,5 @@
 import Foundation
+import Command
 import ArgumentParser
 
 enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
@@ -68,39 +69,39 @@ enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .stakeRegistration:
-                return CertificateMainCommand.StakeRegistration.self
+                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
             case .stakeDelegation:
-                return CertificateMainCommand.StakeDelegation.self
+                return CertificateMainCommand.StakeAddressDelegationCertificate.self
             case .stakeDeregistration:
-                return CertificateMainCommand.StakeDeregistration.self
+                return CertificateMainCommand.StakeAddressDeregistrationCertificate.self
             case .poolRegistration:
                 return CertificateMainCommand.StakePoolRegistrationCertificate.self
             case .poolRetirement:
-                return CertificateMainCommand.StakepoolDeregistrationCertificate.self
+                return CertificateMainCommand.StakePoolRegistrationCertificate.self
             case .genesisKeyDelegation:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.GenesisKeyDelegationCertificate.self
             case .moveInstantaneousRewards:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.MoveInstantaneousRewardsCertificate.self
             case .voteDelegate:
-                return CertificateMainCommand.VoteDelegation.self
+                return CertificateMainCommand.VoteDelegationCertificate.self
             case .stakeVoteDelegate:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.StakeVoteDelegateCertificate.self
             case .stakeRegisterDelegate:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.StakeRegisterDelegateCertificate.self
             case .voteRegisterDelegate:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.VoteRegisterDelegateCertificate.self
             case .stakeVoteRegisterDelegate:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.StakeVoteRegisterDelegateCertificate.self
             case .authCommitteeHot:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.AuthCommitteeHotCertificate.self
             case .resignCommitteeCold:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.ResignCommitteeColdCertificate.self
             case .registerDRep:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.RegisterDRepCertificate.self
             case .unRegisterDRep:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.UnRegisterDRepCertificate.self
             case .updateDRep:
-                return CertificateMainCommand.StakeAddressRegistrationCertificate.self
+                return CertificateMainCommand.UpdateDRepCertificate.self
             case .back:
                 return MainMenuCommand.self
             case .exit:
@@ -129,38 +130,5 @@ struct CertificateMainCommand: AsyncParsableCommand {
         ))
         
         await selectedOption.command().main([])
-    }
-}
-
-extension CertificateMainCommand {
-    
-    struct StakeAddressRegistrationCertificate: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(
-            abstract: "Generates the registration certificate name.stake.cert to register a stake-address from the blockchain."
-        )
-        
-        func run() async throws {
-            print("Generate stake address registration certificate command not yet implemented")
-        }
-    }
-    
-    struct StakepoolRegistrationCertificate: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(
-            abstract: "Generates the certificate poolName.pool.cert to (re)register a stakepool on the blockchain."
-        )
-        
-        func run() async throws {
-            print("Generate stakepool registration certificate command not yet implemented")
-        }
-    }
-    
-    struct StakepoolDeregistrationCertificate: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(
-            abstract: "Generates the certificate poolName.pool.dereg-cert to retire a stakepool from the blockchain."
-        )
-        
-        func run() async throws {
-            print("Generate stakepool deregistration certificate command not yet implemented")
-        }
     }
 }

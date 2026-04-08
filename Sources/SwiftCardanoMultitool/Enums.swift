@@ -108,6 +108,80 @@ enum EnterPoolOperatorBy: String, CaseIterable, CustomStringConvertible {
     }
 }
 
+enum EnterCommitteeColdCredentialBy: String, CaseIterable, CustomStringConvertible {
+    case bech32
+    case hex
+    case vkey
+    case skey
+
+    var description: String {
+        switch self {
+            case .bech32:
+                return "The Committee Cold Credential in Bech32 format (cc_cold1...)."
+            case .hex:
+                return "The Committee Cold Credential as a 56-character hex key hash."
+            case .vkey:
+                return "The path to the cold verification key file (.cc-cold.vkey)."
+            case .skey:
+                return "The path to the cold signing key file (.cc-cold.skey)."
+        }
+    }
+}
+
+enum EnterCommitteeHotCredentialBy: String, CaseIterable, CustomStringConvertible {
+    case bech32
+    case hex
+    case vkey
+    case skey
+
+    var description: String {
+        switch self {
+            case .bech32:
+                return "The Committee Hot Credential in Bech32 format (cc_hot1...)."
+            case .hex:
+                return "The Committee Hot Credential as a 56-character hex key hash."
+            case .vkey:
+                return "The path to the hot verification key file (.cc-hot.vkey)."
+            case .skey:
+                return "The path to the hot signing key file (.cc-hot.skey)."
+        }
+    }
+}
+
+enum EnterDRepCredentialBy: String, CaseIterable, CustomStringConvertible {
+    case bech32
+    case hex
+    case vkey
+    case skey
+
+    var description: String {
+        switch self {
+            case .bech32:
+                return "The DRep Credential in Bech32 format (drep1...)."
+            case .hex:
+                return "The DRep Credential as a 56-character hex key hash."
+            case .vkey:
+                return "The path to the DRep verification key file (.drep.vkey)."
+            case .skey:
+                return "The path to the DRep signing key file (.drep.skey)."
+        }
+    }
+}
+
+enum MoveInstantaneousRewardSourceOption: String, CaseIterable, CustomStringConvertible {
+    case reserves
+    case treasury
+
+    var description: String {
+        switch self {
+            case .reserves:
+                return "Reserves - Transfer from the reserves."
+            case .treasury:
+                return "Treasury - Transfer from the treasury."
+        }
+    }
+}
+
 public enum KeyGenMethod: String, CaseIterable, CustomStringConvertible, ExpressibleByArgument, Sendable, Codable, Hashable {
 
     case cli = "cli"

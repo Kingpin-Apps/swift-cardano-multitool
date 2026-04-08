@@ -533,6 +533,247 @@ func getPoolJSON() async throws -> FilePath {
     )
 }
 
+/// Prompt user to enter a Committee Cold Credential.
+func getCommitteeColdCredential(title: TerminalText? = nil) async throws -> CommitteeColdCredential {
+    let method: EnterCommitteeColdCredentialBy = noora.singleChoicePrompt(
+        title: title ?? "Committee Cold Credential",
+        question: "Enter Committee Cold Credential by:",
+        description: "Accepted formats: Bech32 (cc_cold1...), hex, or key file."
+    )
+    let cwd = FilePath(FileManager.default.currentDirectoryPath)
+
+    switch method {
+        case .bech32:
+            let raw = noora.textPrompt(
+                title: "CC Cold Credential",
+                prompt: "Enter the Committee Cold Credential in Bech32 format (cc_cold1...):",
+                collapseOnAnswer: true,
+                validationRules: [NonEmptyValidationRule(error: "Value cannot be empty.")]
+            ).trimmingCharacters(in: .whitespacesAndNewlines)
+            return try CommitteeColdCredential(from: raw)
+        case .hex:
+            let raw = noora.textPrompt(
+                title: "CC Cold Credential",
+                prompt: "Enter the Committee Cold key hash in hex format:",
+                collapseOnAnswer: true,
+                validationRules: [NonEmptyValidationRule(error: "Value cannot be empty.")]
+            ).trimmingCharacters(in: .whitespacesAndNewlines)
+            return try CommitteeColdCredential(from: raw.hexStringToData, as: .keyHash)
+        case .vkey:
+            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+                .filter { $0.hasSuffix(".cc-cold.vkey") }
+            if files.isEmpty {
+                noora.error(.alert(
+                    "No Committee Cold verification key files found in current directory.",
+                    takeaways: ["Ensure a .cc-cold.vkey file exists in the current directory."]
+                ))
+                throw ExitCode.failure
+            }
+            let fileName = noora.singleChoicePrompt(
+                title: "CC Cold VKey",
+                question: "Select the Committee Cold verification key file:",
+                options: files,
+                description: "Available .cc-cold.vkey files in current directory",
+                collapseOnSelection: true,
+                filterMode: .enabled
+            )
+            let vkey = try CommitteeColdVerificationKey.load(from: cwd.appending(fileName).string)
+            return CommitteeColdCredential(credential: .verificationKeyHash(try vkey.hash()))
+        case .skey:
+            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+                .filter { $0.hasSuffix(".cc-cold.skey") }
+            if files.isEmpty {
+                noora.error(.alert(
+                    "No Committee Cold signing key files found in current directory.",
+                    takeaways: ["Ensure a .cc-cold.skey file exists in the current directory."]
+                ))
+                throw ExitCode.failure
+            }
+            let fileName = noora.singleChoicePrompt(
+                title: "CC Cold SKey",
+                question: "Select the Committee Cold signing key file:",
+                options: files,
+                description: "Available .cc-cold.skey files in current directory",
+                collapseOnSelection: true,
+                filterMode: .enabled
+            )
+            let skey = try CommitteeColdSigningKey.load(from: cwd.appending(fileName).string)
+            let vkey: CommitteeColdVerificationKey = try skey.toVerificationKey()
+            return CommitteeColdCredential(credential: .verificationKeyHash(try vkey.hash()))
+    }
+}
+
+/// Prompt user to enter a Committee Hot Credential.
+func getCommitteeHotCredential(title: TerminalText? = nil) async throws -> CommitteeHotCredential {
+    let method: EnterCommitteeHotCredentialBy = noora.singleChoicePrompt(
+        title: title ?? "Committee Hot Credential",
+        question: "Enter Committee Hot Credential by:",
+        description: "Accepted formats: Bech32 (cc_hot1...), hex, or key file."
+    )
+    let cwd = FilePath(FileManager.default.currentDirectoryPath)
+
+    switch method {
+        case .bech32:
+            let raw = noora.textPrompt(
+                title: "CC Hot Credential",
+                prompt: "Enter the Committee Hot Credential in Bech32 format (cc_hot1...):",
+                collapseOnAnswer: true,
+                validationRules: [NonEmptyValidationRule(error: "Value cannot be empty.")]
+            ).trimmingCharacters(in: .whitespacesAndNewlines)
+            return try CommitteeHotCredential(from: raw)
+        case .hex:
+            let raw = noora.textPrompt(
+                title: "CC Hot Credential",
+                prompt: "Enter the Committee Hot key hash in hex format:",
+                collapseOnAnswer: true,
+                validationRules: [NonEmptyValidationRule(error: "Value cannot be empty.")]
+            ).trimmingCharacters(in: .whitespacesAndNewlines)
+            return try CommitteeHotCredential(from: raw.hexStringToData, as: .keyHash)
+        case .vkey:
+            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+                .filter { $0.hasSuffix(".cc-hot.vkey") }
+            if files.isEmpty {
+                noora.error(.alert(
+                    "No Committee Hot verification key files found in current directory.",
+                    takeaways: ["Ensure a .cc-hot.vkey file exists in the current directory."]
+                ))
+                throw ExitCode.failure
+            }
+            let fileName = noora.singleChoicePrompt(
+                title: "CC Hot VKey",
+                question: "Select the Committee Hot verification key file:",
+                options: files,
+                description: "Available .cc-hot.vkey files in current directory",
+                collapseOnSelection: true,
+                filterMode: .enabled
+            )
+            let vkey = try CommitteeHotVerificationKey.load(from: cwd.appending(fileName).string)
+            return CommitteeHotCredential(credential: .verificationKeyHash(try vkey.hash()))
+        case .skey:
+            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+                .filter { $0.hasSuffix(".cc-hot.skey") }
+            if files.isEmpty {
+                noora.error(.alert(
+                    "No Committee Hot signing key files found in current directory.",
+                    takeaways: ["Ensure a .cc-hot.skey file exists in the current directory."]
+                ))
+                throw ExitCode.failure
+            }
+            let fileName = noora.singleChoicePrompt(
+                title: "CC Hot SKey",
+                question: "Select the Committee Hot signing key file:",
+                options: files,
+                description: "Available .cc-hot.skey files in current directory",
+                collapseOnSelection: true,
+                filterMode: .enabled
+            )
+            let skey = try CommitteeHotSigningKey.load(from: cwd.appending(fileName).string)
+            let vkey: CommitteeHotVerificationKey = try skey.toVerificationKey()
+            return CommitteeHotCredential(credential: .verificationKeyHash(try vkey.hash()))
+    }
+}
+
+/// Prompt user to enter a DRep Credential (for DRep certificate commands).
+func getDRepCredential(title: TerminalText? = nil) async throws -> DRepCredential {
+    let method: EnterDRepCredentialBy = noora.singleChoicePrompt(
+        title: title ?? "DRep Credential",
+        question: "Enter DRep Credential by:",
+        description: "Accepted formats: Bech32 (drep1...), hex, or key file."
+    )
+    let cwd = FilePath(FileManager.default.currentDirectoryPath)
+
+    switch method {
+        case .bech32:
+            let raw = noora.textPrompt(
+                title: "DRep Credential",
+                prompt: "Enter the DRep Credential in Bech32 format (drep1...):",
+                collapseOnAnswer: true,
+                validationRules: [NonEmptyValidationRule(error: "Value cannot be empty.")]
+            ).trimmingCharacters(in: .whitespacesAndNewlines)
+            return try DRepCredential(from: raw)
+        case .hex:
+            let raw = noora.textPrompt(
+                title: "DRep Credential",
+                prompt: "Enter the DRep key hash in hex format:",
+                collapseOnAnswer: true,
+                validationRules: [NonEmptyValidationRule(error: "Value cannot be empty.")]
+            ).trimmingCharacters(in: .whitespacesAndNewlines)
+            return try DRepCredential(from: raw.hexStringToData, as: .keyHash)
+        case .vkey:
+            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+                .filter { $0.hasSuffix(".drep.vkey") }
+            if files.isEmpty {
+                noora.error(.alert(
+                    "No DRep verification key files found in current directory.",
+                    takeaways: ["Ensure a .drep.vkey file exists in the current directory."]
+                ))
+                throw ExitCode.failure
+            }
+            let fileName = noora.singleChoicePrompt(
+                title: "DRep VKey",
+                question: "Select the DRep verification key file:",
+                options: files,
+                description: "Available .drep.vkey files in current directory",
+                collapseOnSelection: true,
+                filterMode: .enabled
+            )
+            let vkey = try DRepVerificationKey.load(from: cwd.appending(fileName).string)
+            return DRepCredential(credential: .verificationKeyHash(try vkey.hash()))
+        case .skey:
+            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+                .filter { $0.hasSuffix(".drep.skey") }
+            if files.isEmpty {
+                noora.error(.alert(
+                    "No DRep signing key files found in current directory.",
+                    takeaways: ["Ensure a .drep.skey file exists in the current directory."]
+                ))
+                throw ExitCode.failure
+            }
+            let fileName = noora.singleChoicePrompt(
+                title: "DRep SKey",
+                question: "Select the DRep signing key file:",
+                options: files,
+                description: "Available .drep.skey files in current directory",
+                collapseOnSelection: true,
+                filterMode: .enabled
+            )
+            let skey = try DRepSigningKey.load(from: cwd.appending(fileName).string)
+            let vkey: DRepVerificationKey = try skey.toVerificationKey()
+            return DRepCredential(credential: .verificationKeyHash(try vkey.hash()))
+    }
+}
+
+/// Prompt user to optionally provide an Anchor (metadata URL + hash).
+/// - Parameter purpose: Describes the context (e.g. "DRep registration", "committee resignation").
+/// - Returns: Anchor if user confirmed, nil otherwise.
+func getOptionalAnchor(purpose: String = "metadata") async throws -> Anchor? {
+    let include = noora.yesOrNoChoicePrompt(
+        title: "Include Anchor",
+        question: "Include \(purpose) anchor (URL + hash)?",
+        description: "An anchor links this certificate to off-chain metadata (CIP-100)."
+    )
+    guard include else { return nil }
+
+    let urlString = noora.textPrompt(
+        title: "Anchor URL",
+        prompt: "Enter the metadata URL (max 128 characters):",
+        collapseOnAnswer: true,
+        validationRules: [NonEmptyValidationRule(error: "URL cannot be empty.")]
+    ).trimmingCharacters(in: .whitespacesAndNewlines)
+
+    let hashHex = noora.textPrompt(
+        title: "Anchor Hash",
+        prompt: "Enter the metadata hash (32-byte hex, 64 characters):",
+        collapseOnAnswer: true,
+        validationRules: [NonEmptyValidationRule(error: "Hash cannot be empty.")]
+    ).trimmingCharacters(in: .whitespacesAndNewlines)
+
+    let anchorUrl = try Url(urlString)
+    let hashData = hashHex.hexStringToData
+    let anchorDataHash = AnchorDataHash(payload: hashData)
+    return Anchor(anchorUrl: anchorUrl, anchorDataHash: anchorDataHash)
+}
+
 /// Prompt user to select which tool to use for generating keys (cardano-cli or SwiftCardano).
 /// - Returns: Tool enum value indicating the selected tool.
 func getToolToUse() async throws -> Tool {

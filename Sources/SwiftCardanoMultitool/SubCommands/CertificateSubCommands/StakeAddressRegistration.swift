@@ -9,8 +9,9 @@ import SwiftCardanoTxBuilder
 
 extension CertificateMainCommand {
     
-    struct StakeRegistration: CertificateCommandable {
+    struct StakeAddressRegistrationCertificate: CertificateCommandable {
         static let configuration = CommandConfiguration(
+            commandName: "stake-address-registration",
             abstract: "Generates a stake address registration certificate.",
             usage: """
             scm certificate stake-registration --stake-address test

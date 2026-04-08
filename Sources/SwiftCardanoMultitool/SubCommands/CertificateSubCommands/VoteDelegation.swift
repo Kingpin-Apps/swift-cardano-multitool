@@ -9,8 +9,9 @@ import SwiftCardanoTxBuilder
 
 extension CertificateMainCommand {
     
-    struct VoteDelegation: CertificateCommandable {
+    struct VoteDelegationCertificate: CertificateCommandable {
         static let configuration = CommandConfiguration(
+            commandName: "vote-delegation",
             abstract: "Generates a vote delegation certificate.",
             usage: """
             scm certificate vote-delegation --stake-address test --drep drep1

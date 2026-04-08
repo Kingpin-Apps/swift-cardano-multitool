@@ -10,8 +10,9 @@ import SwiftKoios
 
 extension CertificateMainCommand {
     
-    struct StakeDelegation: CertificateCommandable {
+    struct StakeAddressDelegationCertificate: CertificateCommandable {
         static let configuration = CommandConfiguration(
+            commandName: "stake-address-delegation",
             abstract: "Generates a stake delegation certificate.",
             usage: """
             scm certificate stake-delegation --stake-address test --pool-operator pool1xyz

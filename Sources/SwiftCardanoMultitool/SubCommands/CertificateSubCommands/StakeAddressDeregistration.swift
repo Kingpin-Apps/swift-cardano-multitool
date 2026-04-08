@@ -10,8 +10,9 @@ import SwiftCardanoTxBuilder
 
 extension CertificateMainCommand {
     
-    struct StakeDeregistration: CertificateCommandable {
+    struct StakeAddressDeregistrationCertificate: CertificateCommandable {
         static let configuration = CommandConfiguration(
+            commandName: "stake-address-deregistration",
             abstract: "Generates a stake address deregistration certificate.",
             usage: """
             scm certificate stake-deregistration --stake-address test
