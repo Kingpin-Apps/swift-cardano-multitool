@@ -63,7 +63,29 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-@main
+@available(macOS 10.15, macCatalyst 13, iOS 13, tvOS 13, watchOS 6, *)
+public func runApp() async {
+    do {
+        var command = try SwiftCardanoMultitool.parseAsRoot()
+        if var asyncCmd = command as? any AsyncParsableCommand {
+            do {
+                try await asyncCmd.run()
+            } catch {
+                SwiftCardanoMultitool.exit(withError: error)
+            }
+        } else {
+            do {
+                try command.run()
+            } catch {
+                SwiftCardanoMultitool.exit(withError: error)
+            }
+        }
+    } catch {
+        SwiftCardanoMultitool.exit(withError: error)
+    }
+}
+
+@available(macOS 10.15, macCatalyst 13, iOS 13, tvOS 13, watchOS 6, *)
 struct SwiftCardanoMultitool: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "scm",

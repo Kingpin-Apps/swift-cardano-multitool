@@ -1,0 +1,3 @@
+import SwiftCardanoMultitoolLib
+
+await runApp()

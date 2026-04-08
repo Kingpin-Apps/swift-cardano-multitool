@@ -219,17 +219,25 @@ extension TransactionMainCommand {
             }
 
             if !warnings.isEmpty {
+                
+                noora.warning(.alert(
+                    "⚠︎ \(phaseName) has \(warnings.count) warning(s)",
+                ))
+                
                 for warning in warnings {
-                    var takeaway: TerminalText = "Field: \(.muted(warning.fieldPath))"
+                    
+                    var warningsText: [TerminalText] = []
+                    warningsText.append("\(.accent("[\(warning.kind.description)]"))")
+                    warningsText.append("▸ \(warning.message)")
+                    warningsText.append(" ↳ Field: \(.muted(warning.fieldPath))")
                     
                     if let hint = warning.hint {
-                        takeaway = "Field: \(.muted(warning.fieldPath)) \n    ↳ Hint: \(.info(hint))"
+                        warningsText.append(" ↳ Hint: \(.info(hint))\n")
                     }
                     
-                    noora.warning(.alert(
-                        "\(.accent("[\(warning.kind.description)]")) \(warning.message)",
-                        takeaway: takeaway
-                    ))
+                    for line in warningsText {
+                        formatPrint(line)
+                    }
                     print()
                 }
                 printDivider()
