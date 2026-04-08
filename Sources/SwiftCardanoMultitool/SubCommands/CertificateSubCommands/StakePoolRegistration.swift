@@ -166,9 +166,9 @@ extension CertificateMainCommand {
             
             var pool = try Pool.load(from: poolJSON)
             
-            let poolParams = try pool.toPoolParams(
-                network: config.cardano?.network.networkId ?? .mainnet
-            )
+//            let poolParams = try pool.toPoolParams(
+//                network: config.cardano?.network.networkId ?? .mainnet
+//            )
             
             let protocolParamsFile = cwd.appending(
                 "protocol-parameters.json"

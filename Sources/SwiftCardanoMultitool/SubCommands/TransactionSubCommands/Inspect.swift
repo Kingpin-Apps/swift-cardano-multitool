@@ -79,11 +79,10 @@ extension TransactionMainCommand {
             }
 
             if json {
-                print(try JSONExport.encode(view))
-                return
+                spacedPrint("\(try JSONExport.encode(view))")
+            } else {
+                try await displayTransactionView(view)
             }
-
-            try await displayTransactionView(view)
         }
 
         // MARK: - Private Helpers
@@ -245,7 +244,7 @@ extension TransactionMainCommand {
                     TableColumn(title: "Lovelace", width: .auto, alignment: .left),
                     TableColumn(title: "Flags", width: .auto, alignment: .left),
                 ]
-                let outHeaders: [TableCellStyle] = [.primary("#"), .primary("Address"), .primary("Lovelace"), .primary("Flags")]
+                
                 var outRows: [[TerminalText]] = []
                 for (i, out) in view.outputs.enumerated() {
                     var flags: [String] = []
@@ -254,9 +253,9 @@ extension TransactionMainCommand {
                     if out.hasScriptRef { flags.append("ScriptRef") }
                     let flagStr = flags.isEmpty ? "-" : flags.joined(separator: ", ")
                     
-                    let addressURL = try explorer.viewAddress(
-                        address: Address.fromBech32(out.address)
-                    )
+//                    let addressURL = try explorer.viewAddress(
+//                        address: Address.fromBech32(out.address)
+//                    )
                     
                     outRows.append([
                         "\(.muted("\(i + 1)"))",

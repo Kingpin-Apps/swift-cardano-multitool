@@ -89,7 +89,7 @@ extension TransactionMainCommand {
 
             // Run validation
             if !json {
-                print(noora.format("\n\(.primary("━━━ Running Validation ━━━"))\n"))
+                spacedPrint("\(.primary("━━━ Running Validation ━━━"))")
                 
                 let report = try await noora.progressStep(
                     message: "Validating transaction...",
@@ -122,7 +122,7 @@ extension TransactionMainCommand {
         private func displayReport(_ report: TxValidatorReport) {
             let view = report.transactionView
 
-            print(noora.format("\n\(.primary("━━━ Transaction Validation Report ━━━"))\n"))
+            spacedPrint("\(.primary("━━━ Transaction Validation Report ━━━"))")
 
             // TX overview
             let hasScriptsText: TerminalText = view.hasPlutusScripts ? "\(.success("Yes"))" : "\(.danger("No"))"
@@ -138,7 +138,8 @@ extension TransactionMainCommand {
             ))
 
             // Overall verdict
-            print(noora.format("\n\(.primary("─── Verdict ───"))\n"))
+            spacedPrint("\(.primary("─── Verdict ───"))")
+            
             if report.isValid {
                 noora.success("✓ Transaction is VALID")
             } else {
@@ -189,18 +190,29 @@ extension TransactionMainCommand {
             } else {
                 noora.error(.alert("✗ \(phaseName) failed with \(errors.count) error(s)"))
             }
-
+            
+            print()
+            printDivider()
+            
             if !errors.isEmpty {
                 for error in errors {
-                    var takeaways: [TerminalText] = ["Field: \(.muted(error.fieldPath))"]
+                    
+                    var errorsText: [TerminalText] = []
+                    errorsText.append("\(.danger("[\(error.kind.description)]"))")
+                    errorsText.append("▸ \(error.message)")
+                    errorsText.append(" ↳ Field: \(.muted(error.fieldPath))")
+                    
                     if let hint = error.hint {
-                        takeaways.append("Hint: \(.info(hint))")
+                        errorsText.append(" ↳ Hint: \(.info(hint))\n")
                     }
-                    noora.error(.alert(
-                        "\(.danger("[\(error.kind)]")) \(error.message)",
-                        takeaways: takeaways
-                    ))
+                    
+                    for line in errorsText {
+                        formatPrint(line)
+                    }
+                    print()
+                    
                 }
+                printDivider()
             }
 
             if !warnings.isEmpty {
@@ -208,18 +220,21 @@ extension TransactionMainCommand {
                     var takeaway: TerminalText = "Field: \(.muted(warning.fieldPath))"
                     
                     if let hint = warning.hint {
-                        takeaway = "\(takeaway) \n • Hint: \(.info(hint))"
+                        takeaway = "Field: \(.muted(warning.fieldPath)) \n    ↳ Hint: \(.info(hint))"
                     }
                     
                     noora.warning(.alert(
-                        "\(.accent("[\(warning.kind)]")) \(warning.message)",
+                        "\(.accent("[\(warning.kind.description)]")) \(warning.message)",
                         takeaway: takeaway
                     ))
+                    print()
                 }
+                printDivider()
             }
 
             if errors.isEmpty && warnings.isEmpty {
                 spacedPrint("\(.muted("No issues found."))")
+                printDivider()
             }
         }
     }

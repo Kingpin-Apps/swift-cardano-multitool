@@ -1,5 +1,5 @@
 {
-  "originHash" : "fc917cbdd86aaed138ea7a0d49cf5ec18d8e04ad649e7146e255d3df93ae4ba9",
+  "originHash" : "0a19be0da7f14eab432b916d4130026a39e6b6fa7bb178260300996ce6e3421f",
   "pins" : [
     {
       "identity" : "base32",
@@ -186,8 +186,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
       "state" : {
-        "revision" : "9f72e8a03d4844b018fbfa5b5192b8bd2783895e",
-        "version" : "0.2.13"
+        "revision" : "d1417af596b894e035ed104b2cb2da30bf521ca8",
+        "version" : "0.2.15"
       }
     },
     {
@@ -195,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "cc1bf9fb3f05da4a02f55bd7036bb88aad0454d3",
-        "version" : "0.3.3"
+        "revision" : "fb58ccd5a63721a3735a06444088dfb2dbbc41de",
+        "version" : "0.3.6"
       }
     },
     {
@@ -204,8 +204,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git",
       "state" : {
-        "revision" : "07b8a4a982a9fcaf08dbea6e47bc07ff8d99730f",
-        "version" : "0.2.4"
+        "revision" : "fd20300c5b7dd354d6149b053aa1e74b60043802",
+        "version" : "0.2.6"
       }
     },
     {
@@ -213,8 +213,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git",
       "state" : {
-        "revision" : "af3a59ef8598114ddca01237818ccb1575712e7e",
-        "version" : "0.1.2"
+        "revision" : "eae6a4f122bdd6b18428e238f5e86e96d169708d",
+        "version" : "0.1.6"
       }
     },
     {
@@ -222,8 +222,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-uplc.git",
       "state" : {
-        "revision" : "adcb3c34254eef23d7c1526117a1828774912eb4",
-        "version" : "0.1.0"
+        "revision" : "0f729333b368b07136d3acb61630250af0d122ef",
+        "version" : "0.1.2"
       }
     },
     {

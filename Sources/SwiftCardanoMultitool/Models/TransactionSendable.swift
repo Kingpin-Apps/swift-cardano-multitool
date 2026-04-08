@@ -653,7 +653,7 @@ extension TransactionSendable {
             ) { (current, _) in current }
         }
         
-        let minOutUtxo = try await minLovelacePostAlonzo(
+        let minOutUtxo = try await Utils.minLovelacePostAlonzo(
             utxosToUse[0].output,
             txBuilder.context
         )
