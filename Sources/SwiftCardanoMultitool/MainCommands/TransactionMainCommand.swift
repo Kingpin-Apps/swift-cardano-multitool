@@ -87,19 +87,4 @@ extension TransactionMainCommand {
         static let configuration = CommandConfiguration(abstract: "Build a transaction.")
         func run() async throws { print("Transaction build command not yet implemented") }
     }
-    
-    struct CalculateMinFee: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Calculate minimum transaction fee.")
-        func run() async throws { print("Transaction calculate-min-fee command not yet implemented") }
-    }
-    
-    struct CalculateMinRequiredUtxo: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Calculate minimum required UTXO.")
-        func run() async throws { print("Transaction calculate-min-required-utxo command not yet implemented") }
-    }
-    
-    struct HashScriptData: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Hash script data.")
-        func run() async throws { print("Transaction hash-script-data command not yet implemented") }
-    }
 }
