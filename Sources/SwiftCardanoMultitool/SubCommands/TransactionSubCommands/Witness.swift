@@ -267,16 +267,6 @@ extension TransactionMainCommand {
                 else {
                     let txBuilder = TxBuilder(context: context, logger: logger)
                     
-                    let keys: [SigningKeyType] = try signingMethods.map { method in
-                        switch method {
-                            case .softwareKey(let skeyPath):
-                                return try SigningKeyType.load(from: skeyPath.string)
-                            case .hardwareWallet:
-                                noora.error("Hardware wallet signing is not supported in software key signing method.")
-                                throw ExitCode.validationFailure
-                        }
-                    }
-                    
                     for method in signingMethods {
                         let skeyType: SigningKeyType
                         let witnessFile: FilePath

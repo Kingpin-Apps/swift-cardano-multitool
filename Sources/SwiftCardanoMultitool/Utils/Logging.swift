@@ -23,23 +23,21 @@ struct OSLogHandler: LogHandler {
         self.logger = os.Logger(subsystem: subsystem, category: category)
     }
     
-    func log(level: Logging.Logger.Level, message: Logging.Logger.Message,
-             metadata: Logging.Logger.Metadata?, source: String,
-             file: String, function: String, line: UInt) {
-        let mergedMetadata = self.metadata.merging(metadata ?? [:]) { $1 }
+    func log(event: LogEvent) {
+        let mergedMetadata = self.metadata.merging(event.metadata ?? [:]) { $1 }
         let metadataString = mergedMetadata.isEmpty ? "" : " \(mergedMetadata)"
         
-        switch level {
+        switch event.level {
             case .trace, .debug:
-                logger.debug("\(message)\(metadataString)")
+                logger.debug("\(event.message)\(metadataString)")
             case .info, .notice:
-                logger.info("\(message)\(metadataString)")
+                logger.info("\(event.message)\(metadataString)")
             case .warning:
-                logger.warning("\(message)\(metadataString)")
+                logger.warning("\(event.message)\(metadataString)")
             case .error:
-                logger.error("\(message)\(metadataString)")
+                logger.error("\(event.message)\(metadataString)")
             case .critical:
-                logger.fault("\(message)\(metadataString)")
+                logger.fault("\(event.message)\(metadataString)")
         }
     }
     

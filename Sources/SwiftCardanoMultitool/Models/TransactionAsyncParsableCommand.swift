@@ -14,7 +14,7 @@ extension TransactionAsyncParsableCommand {
     
     var effectiveTxFile: FilePath {
         get async throws {
-            var tempTxFilePath: String? = nil
+            let tempTxFilePath: String? = nil
             if let file = txFile {
                 return file
             } else {
