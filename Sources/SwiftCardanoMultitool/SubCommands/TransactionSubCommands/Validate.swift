@@ -133,6 +133,8 @@ extension TransactionMainCommand {
                     "Fee: \(.primary("\(view.fee) lovelace"))",
                     "Inputs: \(.primary("\(view.inputs.count)"))",
                     "Outputs: \(.primary("\(view.outputs.count)"))",
+                    "Collateral Inputs: \(.primary("\(view.collateralInputs.count)"))",
+                    "Reference Inputs: \(.primary("\(view.referenceInputs.count)"))",
                     "Has Plutus Scripts: \(hasScriptsText)",
                 ]
             ))
@@ -143,11 +145,16 @@ extension TransactionMainCommand {
 
             // Overall verdict
             spacedPrint("\(.primary("─── Verdict ───"))")
-            
-            if report.isValid {
-                noora.success("✓ Transaction is VALID")
-            } else {
+
+            let hasErrors = !report.allErrors.isEmpty
+            let hasWarnings = !report.allWarnings.isEmpty
+
+            if hasErrors {
                 noora.error(.alert("✗ Transaction is INVALID"))
+            } else if hasWarnings {
+                noora.warning(.alert("✓ Transaction is VALID", takeaway: "Transaction passed validation but may have issues. Review warnings below."))
+            } else {
+                noora.success("✓ Transaction is VALID")
             }
 
             // Phase-1 results
@@ -189,10 +196,12 @@ extension TransactionMainCommand {
             let errors = result.errors
             let warnings = result.warnings
 
-            if result.isValid {
-                noora.success("✓ \(phaseName) passed")
-            } else {
+            if !errors.isEmpty {
                 noora.error(.alert("✗ \(phaseName) failed with \(errors.count) error(s)"))
+            } else if !warnings.isEmpty {
+                noora.warning(.alert("✓ \(phaseName) passed", takeaway: "\(phaseName) passed but has \(warnings.count) warning(s). Review below."))
+            } else {
+                noora.success("✓ \(phaseName) passed")
             }
             
             print()
@@ -221,16 +230,16 @@ extension TransactionMainCommand {
             if !warnings.isEmpty {
                 
                 noora.warning(.alert(
-                    "⚠︎ \(phaseName) has \(warnings.count) warning(s)",
+                    "\(phaseName) has \(warnings.count) warning(s)",
                 ))
+                print()
                 
                 for warning in warnings {
-                    
                     var warningsText: [TerminalText] = []
                     warningsText.append("\(.accent("[\(warning.kind.description)]"))")
                     warningsText.append("▸ \(warning.message)")
                     warningsText.append(" ↳ Field: \(.muted(warning.fieldPath))")
-                    
+
                     if let hint = warning.hint {
                         warningsText.append(" ↳ Hint: \(.info(hint))\n")
                     }
@@ -248,5 +257,6 @@ extension TransactionMainCommand {
                 printDivider()
             }
         }
+
     }
 }

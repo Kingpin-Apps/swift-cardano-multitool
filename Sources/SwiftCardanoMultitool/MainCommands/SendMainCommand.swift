@@ -2,17 +2,17 @@ import Foundation
 import ArgumentParser
 
 enum SendCommands: String, CaseIterable, CustomStringConvertible {
-    case ada
-    case assets
     case all
+    case assets
+    case lovelaces
     case back
     case exit
     
     var description: String {
         switch self {
-            case .ada: return "ADA - Send ADA."
-            case .assets: return "Assets - Send native assets."
-            case .all: return "All - Send all assets from address."
+            case .all: return "All - Send all ADA and assets, all assets, or all ADA from an address."
+            case .assets: return "Assets - Send a specific native asset (amount, all, or min) to an address."
+            case .lovelaces: return "Lovelaces - Send a lovelace amount (specific or minimum) to an address."
             case .back: return "Back - Go back to the main menu."
             case .exit: return "Exit - Leave the program."
         }
@@ -20,9 +20,9 @@ enum SendCommands: String, CaseIterable, CustomStringConvertible {
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
-            case .ada: return SendMainCommand.Ada.self
-            case .assets: return SendMainCommand.Assets.self
             case .all: return SendMainCommand.All.self
+            case .assets: return SendMainCommand.Assets.self
+            case .lovelaces: return SendMainCommand.Lovelaces.self
             case .back: return MainMenuCommand.self
             case .exit: return ExitCommand.self
         }
@@ -43,17 +43,10 @@ struct SendMainCommand: AsyncParsableCommand {
             description: "Available Send Commands:",
         )
         
-        print(noora.format(
+        formatPrint(
             "Running \(.command(selectedOption.rawValue)) command...\n"
-        ))
+        )
         
         await selectedOption.command().main([])
-    }
-}
-
-extension SendMainCommand {
-    struct All: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Send all assets from address.")
-        func run() async throws { print("Send all command not yet implemented") }
     }
 }

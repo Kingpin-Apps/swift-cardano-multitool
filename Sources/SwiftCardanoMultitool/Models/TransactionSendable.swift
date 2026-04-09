@@ -559,7 +559,8 @@ extension TransactionSendable {
         protocolParamsFile: FilePath,
         txRawFile: FilePath,
         txFile: FilePath,
-        txSignedFile: FilePath
+        txSignedFile: FilePath,
+        changeAddressOverride: Address? = nil
     ) async throws {
         
         guard let feePaymentAddress = transactionOptions.feePaymentAddress else {
@@ -663,6 +664,9 @@ extension TransactionSendable {
         txBuilder.auxiliaryData = auxilliaryData
         
         if transactionOptions.useCardanoCLI {
+            if changeAddressOverride != nil {
+                throw ValidationError("cardano-cli mode does not support sending all funds to a destination address. Remove --use-cardano-cli to use SwiftCardano instead.")
+            }
             try await buildTransactionWithCardanoCLI(
                 toAddress: transactionOptions.toAddress,
                 feePaymentAddress: feePaymentAddress,
@@ -691,7 +695,8 @@ extension TransactionSendable {
                 txBuilder: txBuilder,
                 utxos: utxosToUse,
                 txFile: txFile,
-                minOutUtxo: minOutUtxo
+                minOutUtxo: minOutUtxo,
+                changeAddressOverride: changeAddressOverride
             )
         }
         
@@ -890,17 +895,18 @@ extension TransactionSendable {
         txBuilder: TxBuilder,
         utxos: [UTxO],
         txFile: FilePath,
-        minOutUtxo: UInt64
+        minOutUtxo: UInt64,
+        changeAddressOverride: Address? = nil
     ) async throws {
-        
+
         spacedPrint("Using \(.primary("swift-cardano")) to build transaction...")
-        
+
         for utxo in utxos {
             txBuilder.addInput(utxo)
         }
-        
+
         let txBody = try await txBuilder.build(
-            changeAddress: feePaymentAddress.info.address
+            changeAddress: changeAddressOverride ?? feePaymentAddress.info.address
         )
         
         let txInCount = txBody.inputs.count
