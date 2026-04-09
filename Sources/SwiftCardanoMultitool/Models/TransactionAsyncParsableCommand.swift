@@ -1,3 +1,4 @@
+import Foundation
 import SystemPackage
 import ArgumentParser
 import SwiftCardanoCore
@@ -10,6 +11,34 @@ protocol TransactionAsyncParsableCommand: AsyncParsableCommand {
 
 
 extension TransactionAsyncParsableCommand {
+    
+    var effectiveTxFile: FilePath {
+        get async throws {
+            var tempTxFilePath: String? = nil
+            if let file = txFile {
+                return file
+            } else {
+                let tempFilePath =  FilePath(
+                    FileManager
+                        .default
+                        .temporaryDirectory
+                        .appendingPathComponent(UUID().uuidString)
+                        .appendingPathExtension("tx")
+                        .path
+                )
+                
+                defer {
+                    if let path = tempTxFilePath {
+                        try? FileManager.default.removeItem(atPath: path)
+                    }
+                }
+                
+                let tx = try resolveTransaction()
+                try await FileUtils.dumpLockedFile(tempFilePath, data: try tx.toTextEnvelope()!)
+                return tempFilePath
+            }
+        }
+    }
     
     // MARK: - Private Helpers
     
@@ -36,5 +65,7 @@ extension TransactionAsyncParsableCommand {
         noora.error("Transaction input is required.")
         throw ExitCode.validationFailure
     }
+    
+    
     
 }

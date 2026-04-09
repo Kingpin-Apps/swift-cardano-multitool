@@ -3,26 +3,29 @@ import ArgumentParser
 import Noora
 import SystemPackage
 import SwiftCardanoCore
-import SwiftCardanoUtils
 import SwiftCardanoChain
 import SwiftCardanoTxBuilder
+import SwiftCardanoUtils
 import Path
 
 
+
 extension TransactionMainCommand {
-    struct Sign: TransactionAsyncParsableCommand {
+    struct Witness: TransactionAsyncParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Sign a transaction.",
+            abstract: "Witness a transaction.",
             usage: """
-            scm transaction sign \\
+            scm transaction witness \\
                 --tx-file test.tx \\
                 --signing-keys test.payment.skey \\
                 --signing-keys test.stake.skey \\
                 --out-file test.signed.tx \\
             """,
             discussion: """
-            Sign a transaction using software signing keys (.skey files) or hardware wallet signing keys (.hwsfile files). You can provide multiple signing keys by repeating the --signing-keys option.
-            The signed transaction can be saved to a specified output file and optionally submitted to the blockchain.
+            Witnesses a transaction by signing it with the provided signing 
+            keys. The transaction can be provided as a file or as a raw CBOR hex 
+            string. The signed transaction can be saved to a file and optionally 
+            submitted to the blockchain.
             """
         )
         
@@ -127,7 +130,7 @@ extension TransactionMainCommand {
         }
         
         // MARK: - Run
-            
+        
         mutating func run() async throws {
             if (txFile == nil && cborHex == nil) || signingKeys.isEmpty {
                 try await self.wizard()
@@ -137,7 +140,7 @@ extension TransactionMainCommand {
             let context = try await getContext(config: config)
             let logger = getLogger(config: config)
             
-            spacedPrint("\nSigning transaction...")
+            spacedPrint("\nWitnessing transaction...")
             let tx = try resolveTransaction()
             
             guard let txId = tx.id?.description else {
@@ -157,7 +160,7 @@ extension TransactionMainCommand {
             }
             
             noora.info(.alert(
-                "Sign (Witness+Assemble) the unsigned transaction \(.primary("\(txId)")) with:",
+                "Witness the unsigned transaction \(.primary("\(txId)")) with:",
                 takeaways: try signingMethods.map {
                     switch $0 {
                         case .hardwareWallet(let hwsfile):
@@ -175,7 +178,7 @@ extension TransactionMainCommand {
                         return cwd.appending("\(filePath.stem!).witness")
                 }
             }
-
+            
             if outFile == nil && txFile != nil {
                 guard let txFile = txFile else {
                     noora.error("Transaction file path is required to determine default output file name.")
@@ -216,34 +219,18 @@ extension TransactionMainCommand {
                 )
                 
                 try await hwcli.autocorrectTxBodyFile(txBodyFile: effectiveTxFile.string)
-
+                
                 try await FileUtils.displayFile(effectiveTxFile)
-
-
+                
+                
                 _ = try await hwcli.startHardwareWallet()
-
+                
                 _ = try await hwcli.transaction.witness(
                     txFile: effectiveTxFile,
                     hwSigningFiles: signingKeys,
                     outFiles: witnessFiles,
                     changeOutputKeyFiles: signingKeys
                 )
-
-                let cli = try await CardanoCLI(
-                    configuration: Config(cardano: config.cardano),
-                    logger: logger
-                )
-
-                let witnessArgs = witnessFiles.flatMap { ["--witness-file", $0.string] }
-
-                _ = try await cli.transaction.assemble(
-                    arguments: [
-                        "--tx-body-file", effectiveTxFile.string,
-                        "--out-file", outFile.string
-                    ] + witnessArgs
-                )
-                
-                print(noora.format("\(.success("✓")) Transaction Assembled ..."))
                 
             } else if isAllSoftware {
                 if useCardanoCLI {
@@ -253,15 +240,31 @@ extension TransactionMainCommand {
                         logger: logger
                     )
                     
-                    let skeyArgs = signingKeys.flatMap { ["--signing-key-file", $0.string] }
-
-                    _ = try await cli.transaction.sign(
-                        arguments: [
-                            "--tx-body-file", effectiveTxFile.string,
-                            "--out-file", outFile.string
-                        ] + skeyArgs
-                    )
-                } else {
+                    for signingKey in signingKeys {
+                        let witnessFile = witnessFiles.first { $0.stem == "\(signingKey.stem!).witness"}!
+                        
+                        if save {
+                            _ = try await cli.transaction.witness(
+                                arguments: [
+                                    "--tx-body-file", effectiveTxFile.string,
+                                    "--signing-key-file", signingKey.string,
+                                    "--out-file", witnessFile.string
+                                ]
+                            )
+                        } else {
+                            let witness = try await cli.transaction.witness(
+                                arguments: [
+                                    "--tx-body-file", effectiveTxFile.string,
+                                    "--signing-key-file", signingKey.string,
+                                    "--out-file", "/dev/stdout"
+                                ]
+                            )
+                            print(witness)
+                        }
+                    }
+                    
+                }
+                else {
                     let txBuilder = TxBuilder(context: context, logger: logger)
                     
                     let keys: [SigningKeyType] = try signingMethods.map { method in
@@ -274,12 +277,33 @@ extension TransactionMainCommand {
                         }
                     }
                     
-                    let signedTx = try await txBuilder.transactions.sign(
-                        transaction: tx,
-                        keys: keys
-                    )
-                    
-                    try await FileUtils.dumpLockedFile(outFile, data: try signedTx.toTextEnvelope()!)
+                    for method in signingMethods {
+                        let skeyType: SigningKeyType
+                        let witnessFile: FilePath
+                        
+                        switch method {
+                            case .softwareKey(let skeyPath):
+                                skeyType = try SigningKeyType.load(from: skeyPath.string)
+                                witnessFile = witnessFiles.first { $0.stem == "\(skeyPath.stem!).witness"}!
+                            case .hardwareWallet:
+                                noora.error("Hardware wallet signing is not supported in software key signing method.")
+                                throw ExitCode.validationFailure
+                        }
+                        
+                        let witness = try txBuilder.transactions.witness(
+                            transaction: tx,
+                            keys: [skeyType]
+                        )
+                        
+                        if save {
+                            try await FileUtils.dumpLockedFile(
+                                witnessFile,
+                                data: try witness[0].toTextEnvelope()!
+                            )
+                        } else {
+                            print(witness[0])
+                        }
+                    }
                 }
             } else {
                 noora.error(.alert(
@@ -292,42 +316,22 @@ extension TransactionMainCommand {
                 throw ExitCode.validationFailure
             }
             
-            spacedPrint("\n\(.success("✓")) Transaction signed successfully.")
+            spacedPrint("\n\(.success("✓")) Transaction witnessed successfully.")
             
-            // Load the signed transaction from the output file to display it
-            let signedTx = try Transaction.load(from: outFile.string)
             
-            if save {
-                spacedPrint(
-                    "Signed transaction saved to: \(.path(try AbsolutePath(validating: outFile.string))) \n\n \(signedTx.debugDescription)"
-                )
-            } else {
-                spacedPrint(
-                    "Signed transaction: \n\n \(signedTx.debugDescription) \n\n \(String(describing: try signedTx.toTextEnvelope()))"
-                )
-            }
-            
-            let protocolParameters = try await getProtocolParameters(
-                context: context
-            )
-            
-            try checkTransactionSize(
-                transaction: signedTx,
-                protocolParameters: protocolParameters
-            )
             
             if submit {
-                await TransactionMainCommand.Submit.main([
+                try tx.save(to: outFile.string)
+                
+                let witnessArgs = witnessFiles.flatMap { ["--witness-file", $0.string] }
+                
+                await TransactionMainCommand.Assemble.main([
                     "--tx-file", outFile.string
-                ])
+                ] + witnessArgs)
             } else {
                 noora.info(.alert(
-                    "Transaction not submitted. You can submit it later using the saved transaction file or cbor-encoded data."
+                    "Transaction not submitted. You can assemble and submit it later using the saved transaction file or cbor-encoded data."
                 ))
-            }
-            
-            if !save {
-                try FileManager.default.removeItem(atPath: outFile.string)
             }
         }
     }

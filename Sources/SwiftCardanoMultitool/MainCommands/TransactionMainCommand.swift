@@ -49,7 +49,7 @@ enum TransactionCommands: String, CaseIterable, CustomStringConvertible {
             case .calculateMinRequiredUtxo: return TransactionMainCommand.CalculateMinRequiredUtxo.self
             case .hashScriptData: return TransactionMainCommand.HashScriptData.self
             case .rewardsWithdraw: return TransactionMainCommand.RewardsWithdraw.self
-            case .txid: return TransactionMainCommand.Txid.self
+            case .txid: return TransactionMainCommand.Id.self
             case .view: return TransactionMainCommand.View.self
             case .inspect: return TransactionMainCommand.Inspect.self
             case .validate: return TransactionMainCommand.Validate.self
@@ -87,28 +87,19 @@ extension TransactionMainCommand {
         static let configuration = CommandConfiguration(abstract: "Build a transaction.")
         func run() async throws { print("Transaction build command not yet implemented") }
     }
-    struct Assemble: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Assemble a transaction.")
-        func run() async throws { print("Transaction assemble command not yet implemented") }
-    }
-    struct Witness: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Create a transaction witness.")
-        func run() async throws { print("Transaction witness command not yet implemented") }
-    }
+    
     struct CalculateMinFee: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Calculate minimum transaction fee.")
         func run() async throws { print("Transaction calculate-min-fee command not yet implemented") }
     }
+    
     struct CalculateMinRequiredUtxo: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Calculate minimum required UTXO.")
         func run() async throws { print("Transaction calculate-min-required-utxo command not yet implemented") }
     }
+    
     struct HashScriptData: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Hash script data.")
         func run() async throws { print("Transaction hash-script-data command not yet implemented") }
-    }
-    struct Txid: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Calculate transaction ID.")
-        func run() async throws { print("Transaction txid command not yet implemented") }
     }
 }

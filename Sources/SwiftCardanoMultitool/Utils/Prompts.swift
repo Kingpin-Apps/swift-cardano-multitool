@@ -297,6 +297,39 @@ func getSigningKeyFilePath(title: TerminalText? = nil) async throws -> FilePath 
     return FilePath(signingKeyFileName)
 }
 
+/// Prompt user to select a witness file from the current directory.
+/// - Parameter title: Optional title for the prompt.
+/// - Returns: FilePath of the selected witness file.
+/// - Throws: ExitCode.failure if no witness files are found.
+func getWitnessFilePath(title: TerminalText? = nil) async throws -> FilePath {
+    let cwd = FilePath(FileManager.default.currentDirectoryPath)
+    let witnessFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+        .filter { $0.hasSuffix(".witness") }
+    
+    if witnessFiles.isEmpty {
+        noora.error(.alert(
+            "No witness files found in current directory.",
+            takeaways: [
+                "Please create a witness first.",
+                "Make sure you are in the correct directory containing the witness file."
+                
+            ]
+        ))
+        throw ExitCode.failure
+    }
+    
+    let witnessFileName = noora.singleChoicePrompt(
+        title: title ?? "Witness File",
+        question: "Select the witness file:",
+        options: witnessFiles,
+        description: "Available `.witness` files in current directory",
+        collapseOnSelection: true,
+        filterMode: .enabled
+    )
+    
+    return FilePath(witnessFileName)
+}
+
 /// Prompt user to enter DRep by various methods and return the DRep instance.
 /// - Parameter title: Optional title for the prompt.
 /// - Returns: DRep instance.
