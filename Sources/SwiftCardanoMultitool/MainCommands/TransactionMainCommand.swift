@@ -82,9 +82,3 @@ struct TransactionMainCommand: AsyncParsableCommand {
     }
 }
 
-extension TransactionMainCommand {
-    struct Build: AsyncParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Build a transaction.")
-        func run() async throws { print("Transaction build command not yet implemented") }
-    }
-}
