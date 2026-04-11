@@ -138,6 +138,7 @@ extension TransactionMainCommand {
             
             let config = try await MultitoolConfig.load()
             let context = try await getContext(config: config)
+            try await printContextInfo(config: config, context: context)
             let logger = getLogger(config: config)
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)

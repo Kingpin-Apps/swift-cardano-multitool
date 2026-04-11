@@ -2,6 +2,7 @@ import Foundation
 import ArgumentParser
 import Noora
 import Configuration
+import ConfigurationTOML
 import SystemPackage
 import SwiftCardanoUtils
 import SwiftCardanoCore
@@ -209,6 +210,10 @@ public struct MultitoolConfig: Codable, Sendable {
         case maxRetryAttempts = "max_retry_attempts"
         case baseRetryDelay = "base_retry_delay"
         case byronToShelleyEpoch = "byron_to_shelley_epoch"
+        
+        var configKey: ConfigKey {
+            return ConfigKey(self.rawValue)
+        }
     }
     
     public init(from decoder: Decoder) throws {
@@ -301,11 +306,11 @@ public struct MultitoolConfig: Codable, Sendable {
     public init(config: ConfigReader) {
         
         self.blockfrostProjectId = config.string(
-            forKey: CodingKeys.blockfrostProjectId.rawValue
+            forKey: CodingKeys.blockfrostProjectId.configKey
         )
         
         self.koiosApiKey = config.string(
-            forKey: CodingKeys.koiosApiKey.rawValue
+            forKey: CodingKeys.koiosApiKey.configKey
         )
         
         self.cardano = try? CardanoConfig(config: config)
@@ -314,88 +319,88 @@ public struct MultitoolConfig: Codable, Sendable {
         self.kupo = try? KupoConfig(config: config)
         
         self.mode = config.string(
-            forKey: CodingKeys.mode.rawValue,
+            forKey: CodingKeys.mode.configKey,
             as: Mode.self,
             default: .auto,
         )
         
         self.offlineFile = config.string(
-            forKey: CodingKeys.offlineFile.rawValue,
+            forKey: CodingKeys.offlineFile.configKey,
             as: FilePath.self
         )
         
         self.tokenMetaServer = TokenMetaServerURLs(
             mainnet: config.string(
-                forKey: "\(CodingKeys.tokenMetaServer.rawValue).mainnet",
+                forKey: ConfigKey("\(CodingKeys.tokenMetaServer.rawValue).mainnet"),
                 as: URL.self,
                 default: URL(string: "https://tokens.cardano.org/metadata/")!
             ),
             preprod: config.string(
-                forKey: "\(CodingKeys.tokenMetaServer.rawValue).preprod",
+                forKey: ConfigKey("\(CodingKeys.tokenMetaServer.rawValue).preprod"),
                 as: URL.self,
                 default: URL(string: "https://metadata.cardano-testnet.iohkdev.io/metadata/")!
             ),
             preview: config.string(
-                forKey: "\(CodingKeys.tokenMetaServer.rawValue).preview",
+                forKey: ConfigKey("\(CodingKeys.tokenMetaServer.rawValue).preview"),
                 as: URL.self,
                 default: URL(string: "https://metadata.cardano-testnet.iohkdev.io/metadata/")!
             )
         )
         
         self.blockchainExplorer = config.string(
-            forKey: CodingKeys.blockchainExplorer.rawValue,
+            forKey: CodingKeys.blockchainExplorer.configKey,
             as: BlockchainExplorer.self,
             default: .cexplorer
         )
         
         self.adaHandlePolicy = AdaHandlePolicyIds(
             mainnet: config.string(
-                forKey: "\(CodingKeys.adaHandlePolicy.rawValue).mainnet",
+                forKey: ConfigKey("\(CodingKeys.adaHandlePolicy.rawValue).mainnet"),
                 default: "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a"
             ),
             preprod: config.string(
-                forKey: "\(CodingKeys.adaHandlePolicy.rawValue).preprod",
+                forKey: ConfigKey("\(CodingKeys.adaHandlePolicy.rawValue).preprod"),
                 default: "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a"
             ),
             preview: config.string(
-                forKey: "\(CodingKeys.adaHandlePolicy.rawValue).preview",
+                forKey: ConfigKey("\(CodingKeys.adaHandlePolicy.rawValue).preview"),
                 default: "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a"
             )
         )
         
         self.logLevel = config.string(
-            forKey: CodingKeys.logLevel.rawValue,
+            forKey: CodingKeys.logLevel.configKey,
             as: Logger.Level.self,
             default: .info
         )
         
         self.showVersionInfo = config.bool(
-            forKey: CodingKeys.showVersionInfo.rawValue,
+            forKey: CodingKeys.showVersionInfo.configKey,
             default: true
         )
         
         self.queryTokenRegistry = config.bool(
-            forKey: CodingKeys.queryTokenRegistry.rawValue,
+            forKey: CodingKeys.queryTokenRegistry.configKey,
             default: true
         )
         
         self.cropTxOutput = config.bool(
-            forKey: CodingKeys.cropTxOutput.rawValue,
+            forKey: CodingKeys.cropTxOutput.configKey,
             default: true
         )
         
         self.maxRetryAttempts = config.int(
-            forKey: CodingKeys.maxRetryAttempts.rawValue,
+            forKey: CodingKeys.maxRetryAttempts.configKey,
             default: 5
         )
         
         self.baseRetryDelay = UInt64(config.int(
-            forKey: CodingKeys.baseRetryDelay.rawValue,
+            forKey: CodingKeys.baseRetryDelay.configKey,
             default: 200
         ))
         
         self._byronToShelleyEpoch = UInt64(config.int(
-            forKey: CodingKeys.byronToShelleyEpoch.rawValue,
+            forKey: CodingKeys.byronToShelleyEpoch.configKey,
             default: 208
         ))
     }
@@ -476,11 +481,24 @@ public struct MultitoolConfig: Codable, Sendable {
     /// - Throws: An error if the file cannot be read or parsed.
     /// - Note: Environment variables will override values in the JSON file.
     static func load(from path: FilePath) async throws -> MultitoolConfig {
-        
-        let config = ConfigReader(providers: [
-            EnvironmentVariablesProvider(),
-            try await JSONProvider(filePath: .init(path.string))
-        ])
+        let ext = path.extension?.lowercased()
+        var providers: [any ConfigProvider] = [EnvironmentVariablesProvider()]
+        if ext == "toml" {
+            providers.append(try await FileProvider<TOMLSnapshot>(
+                parsingOptions: .default,
+                filePath: path
+            ))
+        } else if ext == "yaml" || ext == "yml" {
+            providers.append(try await FileProvider<YAMLSnapshot>(
+                filePath: path
+            ))
+        } else {
+            providers.append(try await FileProvider<JSONSnapshot>(
+                filePath: path,
+                allowMissing: false
+            ))
+        }
+        let config = ConfigReader(providers: providers)
         return MultitoolConfig(config: config)
     }
     

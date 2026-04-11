@@ -228,6 +228,10 @@ public struct Pool: Codable, Sendable {
         case delegationCertificates = "delegation_certificates"
         case itnSkey = "itn_skey"
         case itnVkey = "itn_vkey"
+        
+        var configKey: ConfigKey {
+            return ConfigKey(self.rawValue)
+        }
     }
     
     // MARK: - Initialization
@@ -567,49 +571,49 @@ public struct Pool: Codable, Sendable {
     /// - Parameter config: The ConfigReader to read configuration values from
     /// - Returns: The loaded StakePool
     public init(config: ConfigReader) {
-        self.name = config.string(forKey: CodingKeys.name.rawValue)
-        self.pledge = config.int(forKey: CodingKeys.pledge.rawValue)
-        self.cost = config.int(forKey: CodingKeys.cost.rawValue)
-        self.margin = config.double(forKey: CodingKeys.margin.rawValue)
+        self.name = config.string(forKey: CodingKeys.name.configKey)
+        self.pledge = config.int(forKey: CodingKeys.pledge.configKey)
+        self.cost = config.int(forKey: CodingKeys.cost.configKey)
+        self.margin = config.double(forKey: CodingKeys.margin.configKey)
         
-        self.metaName = config.string(forKey: CodingKeys.metaName.rawValue)
-        self.metaDescription = config.string(forKey: CodingKeys.metaDescription.rawValue)
-        self.metaTicker = config.string(forKey: CodingKeys.metaTicker.rawValue)
-        self.metaHomepage = config.string(forKey: CodingKeys.metaHomepage.rawValue, as: URL.self)
-        self.metaUrl = config.string(forKey: CodingKeys.metaUrl.rawValue, as: URL.self)
-        self.extendedMetaUrl = config.string(forKey: CodingKeys.extendedMetaUrl.rawValue, as: URL.self)
+        self.metaName = config.string(forKey: CodingKeys.metaName.configKey)
+        self.metaDescription = config.string(forKey: CodingKeys.metaDescription.configKey)
+        self.metaTicker = config.string(forKey: CodingKeys.metaTicker.configKey)
+        self.metaHomepage = config.string(forKey: CodingKeys.metaHomepage.configKey, as: URL.self)
+        self.metaUrl = config.string(forKey: CodingKeys.metaUrl.configKey, as: URL.self)
+        self.extendedMetaUrl = config.string(forKey: CodingKeys.extendedMetaUrl.configKey, as: URL.self)
         
-        self.idHex = config.string(forKey: CodingKeys.idHex.rawValue)
-        self.idBech = config.string(forKey: CodingKeys.idBech.rawValue)
-        self.metadataHash = config.string(forKey: CodingKeys.metadataHash.rawValue)
+        self.idHex = config.string(forKey: CodingKeys.idHex.configKey)
+        self.idBech = config.string(forKey: CodingKeys.idBech.configKey)
+        self.metadataHash = config.string(forKey: CodingKeys.metadataHash.configKey)
         
-        self.paymentAddr = config.string(forKey: CodingKeys.paymentAddr.rawValue)
-        self.stakeAddr = config.string(forKey: CodingKeys.stakeAddr.rawValue)
+        self.paymentAddr = config.string(forKey: CodingKeys.paymentAddr.configKey)
+        self.stakeAddr = config.string(forKey: CodingKeys.stakeAddr.configKey)
         
         // File paths
-        self.coldVkey = config.string(forKey: CodingKeys.coldVkey.rawValue, as: FilePath.self)
-        self.coldSkey = config.string(forKey: CodingKeys.coldSkey.rawValue, as: FilePath.self)
-        self.vrfSkey = config.string(forKey: CodingKeys.vrfSkey.rawValue, as: FilePath.self)
-        self.vrfVkey = config.string(forKey: CodingKeys.vrfVkey.rawValue, as: FilePath.self)
-        self.nodeCounter = config.string(forKey: CodingKeys.nodeCounter.rawValue, as: FilePath.self)
-        self.kesVkey = config.string(forKey: CodingKeys.kesVkey.rawValue, as: FilePath.self)
-        self.kesSkey = config.string(forKey: CodingKeys.kesSkey.rawValue, as: FilePath.self)
-        self.kesCounter = config.string(forKey: CodingKeys.kesCounter.rawValue, as: FilePath.self)
-        self.kesCounterNext = config.string(forKey: CodingKeys.kesCounterNext.rawValue, as: FilePath.self)
-        self.kesExpireJson = config.string(forKey: CodingKeys.kesExpireJson.rawValue, as: FilePath.self)
-        self.opCert = config.string(forKey: CodingKeys.opCert.rawValue, as: FilePath.self)
-        self.metadataFile = config.string(forKey: CodingKeys.metadataFile.rawValue, as: FilePath.self)
-        self.additionalMetadataFile = config.string(forKey: CodingKeys.additionalMetadataFile.rawValue, as: FilePath.self)
-        self.extendedMetadataFile = config.string(forKey: CodingKeys.extendedMetadataFile.rawValue, as: FilePath.self)
-        self.idHexFile = config.string(forKey: CodingKeys.idHexFile.rawValue, as: FilePath.self)
-        self.idBechFile = config.string(forKey: CodingKeys.idBechFile.rawValue, as: FilePath.self)
-        self.paymentSkey = config.string(forKey: CodingKeys.paymentSkey.rawValue, as: FilePath.self)
-        self.paymentVkey = config.string(forKey: CodingKeys.paymentVkey.rawValue, as: FilePath.self)
-        self.stakeSkey = config.string(forKey: CodingKeys.stakeSkey.rawValue, as: FilePath.self)
-        self.stakeVkey = config.string(forKey: CodingKeys.stakeVkey.rawValue, as: FilePath.self)
-        self.itnSkey = config.string(forKey: CodingKeys.itnSkey.rawValue, as: FilePath.self)
-        self.itnVkey = config.string(forKey: CodingKeys.itnVkey.rawValue, as: FilePath.self)
-        self.delegationCertificates = config.string(forKey: CodingKeys.delegationCertificates.rawValue, as: FilePath.self)
+        self.coldVkey = config.string(forKey: CodingKeys.coldVkey.configKey, as: FilePath.self)
+        self.coldSkey = config.string(forKey: CodingKeys.coldSkey.configKey, as: FilePath.self)
+        self.vrfSkey = config.string(forKey: CodingKeys.vrfSkey.configKey, as: FilePath.self)
+        self.vrfVkey = config.string(forKey: CodingKeys.vrfVkey.configKey, as: FilePath.self)
+        self.nodeCounter = config.string(forKey: CodingKeys.nodeCounter.configKey, as: FilePath.self)
+        self.kesVkey = config.string(forKey: CodingKeys.kesVkey.configKey, as: FilePath.self)
+        self.kesSkey = config.string(forKey: CodingKeys.kesSkey.configKey, as: FilePath.self)
+        self.kesCounter = config.string(forKey: CodingKeys.kesCounter.configKey, as: FilePath.self)
+        self.kesCounterNext = config.string(forKey: CodingKeys.kesCounterNext.configKey, as: FilePath.self)
+        self.kesExpireJson = config.string(forKey: CodingKeys.kesExpireJson.configKey, as: FilePath.self)
+        self.opCert = config.string(forKey: CodingKeys.opCert.configKey, as: FilePath.self)
+        self.metadataFile = config.string(forKey: CodingKeys.metadataFile.configKey, as: FilePath.self)
+        self.additionalMetadataFile = config.string(forKey: CodingKeys.additionalMetadataFile.configKey, as: FilePath.self)
+        self.extendedMetadataFile = config.string(forKey: CodingKeys.extendedMetadataFile.configKey, as: FilePath.self)
+        self.idHexFile = config.string(forKey: CodingKeys.idHexFile.configKey, as: FilePath.self)
+        self.idBechFile = config.string(forKey: CodingKeys.idBechFile.configKey, as: FilePath.self)
+        self.paymentSkey = config.string(forKey: CodingKeys.paymentSkey.configKey, as: FilePath.self)
+        self.paymentVkey = config.string(forKey: CodingKeys.paymentVkey.configKey, as: FilePath.self)
+        self.stakeSkey = config.string(forKey: CodingKeys.stakeSkey.configKey, as: FilePath.self)
+        self.stakeVkey = config.string(forKey: CodingKeys.stakeVkey.configKey, as: FilePath.self)
+        self.itnSkey = config.string(forKey: CodingKeys.itnSkey.configKey, as: FilePath.self)
+        self.itnVkey = config.string(forKey: CodingKeys.itnVkey.configKey, as: FilePath.self)
+        self.delegationCertificates = config.string(forKey: CodingKeys.delegationCertificates.configKey, as: FilePath.self)
         
         // Initialize empty arrays for owners and relays (can be populated later)
         self.owners = []
