@@ -24,11 +24,7 @@ public class PasswordUtils {
     }
     
     public func isVulnerable() throws -> Bool {
-        guard let url = Bundle.module.url(forResource: "passwords", withExtension: "txt"),
-              let content = try? String(contentsOf: url, encoding: .utf8) else {
-            return false
-        }
-        for line in content.split(separator: "\n") {
+        for line in PasswordList.raw.split(separator: "\n") {
             let trimmed = String(line).trimmingCharacters(in: .whitespacesAndNewlines)
             if PasswordUtils.compareDigest(trimmed, password) {
                 return true

@@ -3,6 +3,8 @@ import ArgumentParser
 import Noora
 import Configuration
 import ConfigurationTOML
+import TOML
+import Yams
 import SystemPackage
 import SwiftCardanoUtils
 import SwiftCardanoCore
@@ -225,7 +227,8 @@ public struct MultitoolConfig: Codable, Sendable {
         self.ogmios = try container.decodeIfPresent(OgmiosConfig.self, forKey: .ogmios)
         self.kupo = try container.decodeIfPresent(KupoConfig.self, forKey: .kupo)
         self.mode = try container.decodeIfPresent(Mode.self, forKey: .mode) ?? .auto
-        self.offlineFile = try container.decodeIfPresent(FilePath.self, forKey: .offlineFile)
+        let offlineFileStr = try container.decodeIfPresent(String.self, forKey: .offlineFile)
+        self.offlineFile = offlineFileStr.map { FilePath($0) }
         self.tokenMetaServer = try container.decode(TokenMetaServerURLs.self, forKey: .tokenMetaServer)
         self.blockchainExplorer = try container.decodeIfPresent(BlockchainExplorer.self, forKey: .blockchainExplorer) ?? .cexplorer
         self.adaHandlePolicy = try container.decode(AdaHandlePolicyIds.self, forKey: .adaHandlePolicy)
@@ -248,7 +251,7 @@ public struct MultitoolConfig: Codable, Sendable {
         try container.encodeIfPresent(ogmios, forKey: .ogmios)
         try container.encodeIfPresent(kupo, forKey: .kupo)
         try container.encode(mode, forKey: .mode)
-        try container.encodeIfPresent(offlineFile, forKey: .offlineFile)
+        try container.encodeIfPresent(offlineFile?.string, forKey: .offlineFile)
         try container.encode(tokenMetaServer, forKey: .tokenMetaServer)
         try container.encode(blockchainExplorer, forKey: .blockchainExplorer)
         try container.encode(adaHandlePolicy, forKey: .adaHandlePolicy)
@@ -405,11 +408,13 @@ public struct MultitoolConfig: Codable, Sendable {
         ))
     }
     
-    static func `default`() throws -> MultitoolConfig {
+    static func `default`(network: Network = .mainnet) throws -> MultitoolConfig {
         let cwd = FilePath(FileManager.default.currentDirectoryPath)
+        var cardanoConfig = try CardanoConfig.default()
+        cardanoConfig.network = network
         return MultitoolConfig(
             blockfrostProjectId: Environment.get(.blockfrostProjectId),
-            cardano: try CardanoConfig.default(),
+            cardano: cardanoConfig,
             mithril: try? MithrilConfig.default(),
             ogmios: try? OgmiosConfig.default(),
             kupo: try? KupoConfig.default(),
@@ -428,19 +433,145 @@ public struct MultitoolConfig: Codable, Sendable {
         )
     }
     
-    /// Save the JSON representation to a file.
-    /// - Parameter path: The file path.
-    /// - Throws: An error if the file cannot be written.
-    /// - Note: This method will not overwrite an existing file.
+    /// Save the configuration to a file, using JSON or TOML based on the file extension.
+    /// - Parameters:
+    ///   - path: The file path (.toml → TOML, anything else → JSON).
+    ///   - overwrite: If false (default), throws if the file already exists.
     func save(to path: FilePath, overwrite: Bool = false) throws {
         if FileManager.default.fileExists(atPath: path.string) && !overwrite {
             throw SwiftCardanoMultitoolError.fileAlreadyExists(path)
         }
-        
-        let data = try JSONEncoder().encode(self)
+        let ext = path.extension?.lowercased()
+        let data = ext == "toml" ? try encodeAsToml()
+            : (ext == "yaml" || ext == "yml") ? try encodeAsYaml()
+            : try encodeAsJson()
         try data.write(to: URL(fileURLWithPath: path.string), options: .atomic)
     }
-    
+
+    /// Save the configuration to a file using an explicit file type.
+    /// - Parameters:
+    ///   - path: The file path to write to.
+    ///   - fileType: The format to use (json or toml).
+    ///   - overwrite: If false (default), throws if the file already exists.
+    func save(to path: FilePath, as fileType: ConfigFileType, overwrite: Bool = false) throws {
+        if FileManager.default.fileExists(atPath: path.string) && !overwrite {
+            throw SwiftCardanoMultitoolError.fileAlreadyExists(path)
+        }
+        let data: Data
+        switch fileType {
+            case .toml: data = try encodeAsToml()
+            case .yaml: data = try encodeAsYaml()
+            case .json: data = try encodeAsJson()
+        }
+        try data.write(to: URL(fileURLWithPath: path.string), options: .atomic)
+    }
+
+    func encodeAsYaml() throws -> Data {
+        let yamlString = try YAMLEncoder().encode(self)
+        return Data(yamlString.utf8)
+    }
+
+    func encodeAsJson() throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        return try encoder.encode(self)
+    }
+
+    /// Encodes to TOML by going through JSON, stripping null values, then converting to TOML.
+    /// This avoids the limitation that TOMLEncoder cannot encode nil optionals.
+    func encodeAsToml() throws -> Data {
+        let jsonData = try JSONEncoder().encode(self)
+        guard let jsonObj = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+            throw CocoaError(.coderInvalidValue)
+        }
+        let cleaned = Self.stripJsonNulls(jsonObj)
+        return Data(Self.tomlFromDict(cleaned).utf8)
+    }
+
+    private static func stripJsonNulls(_ dict: [String: Any]) -> [String: Any] {
+        var result: [String: Any] = [:]
+        for (key, value) in dict {
+            if value is NSNull { continue }
+            if let nested = value as? [String: Any] {
+                let stripped = stripJsonNulls(nested)
+                if !stripped.isEmpty { result[key] = stripped }
+            } else if let arr = value as? [Any] {
+                result[key] = arr.compactMap { item -> Any? in
+                    if item is NSNull { return nil }
+                    if let d = item as? [String: Any] { return stripJsonNulls(d) }
+                    return item
+                }
+            } else {
+                result[key] = value
+            }
+        }
+        return result
+    }
+
+    private static func tomlFromDict(_ dict: [String: Any], sectionPath: String = "") -> String {
+        var scalars: [String] = []
+        var tables: [(String, [String: Any])] = []
+
+        for key in dict.keys.sorted() {
+            let value = dict[key]!
+            if let nested = value as? [String: Any] {
+                tables.append((key, nested))
+            } else if let arr = value as? [Any] {
+                scalars.append("\(key) = \(tomlInlineArray(arr))")
+            } else if let str = value as? String {
+                scalars.append("\(key) = \(tomlQuotedString(str))")
+            } else if let num = value as? NSNumber {
+                scalars.append("\(key) = \(tomlNumber(num))")
+            }
+        }
+
+        var parts = scalars
+        for (key, nested) in tables {
+            let fullPath = sectionPath.isEmpty ? key : "\(sectionPath).\(key)"
+            parts.append("")
+            parts.append("[\(fullPath)]")
+            parts.append(tomlFromDict(nested, sectionPath: fullPath))
+        }
+        return parts.joined(separator: "\n")
+    }
+
+    private static func tomlQuotedString(_ str: String) -> String {
+        let escaped = str
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
+            .replacingOccurrences(of: "\t", with: "\\t")
+        return "\"\(escaped)\""
+    }
+
+    private static func tomlNumber(_ num: NSNumber) -> String {
+        if CFBooleanGetTypeID() == CFGetTypeID(num) {
+            return num.boolValue ? "true" : "false"
+        }
+        if num.doubleValue.truncatingRemainder(dividingBy: 1) == 0 {
+            return "\(num.int64Value)"
+        }
+        return "\(num.doubleValue)"
+    }
+
+    private static func tomlInlineArray(_ arr: [Any]) -> String {
+        let items: [String] = arr.compactMap { item in
+            if let str = item as? String { return tomlQuotedString(str) }
+            if let num = item as? NSNumber { return tomlNumber(num) }
+            if let nested = item as? [String: Any] {
+                let pairs = nested.sorted(by: { $0.key < $1.key }).compactMap { (k, v) -> String? in
+                    if let s = v as? String { return "\(k) = \(tomlQuotedString(s))" }
+                    if let n = v as? NSNumber { return "\(k) = \(tomlNumber(n))" }
+                    return nil
+                }
+                return "{\(pairs.joined(separator: ", "))}"
+            }
+            return nil
+        }
+        return "[\(items.joined(separator: ", "))]"
+    }
+
     /// Load the configuration from the default path specified by the `CONFIG` environment variable.
     /// - Parameter quiet: If true, suppresses debug output.
     /// - Returns: The loaded configuration.
@@ -467,7 +598,7 @@ public struct MultitoolConfig: Codable, Sendable {
 
         if !quiet {
             spacedPrint(
-                "\nUsing config from: \(.path(try .init(validating: absolute)))"
+                "\nUsing config from: \(.path(try .init(validating: "/" + absolute)))"
             )
         }
         
@@ -498,6 +629,7 @@ public struct MultitoolConfig: Codable, Sendable {
                 allowMissing: false
             ))
         }
+        
         let config = ConfigReader(providers: providers)
         return MultitoolConfig(config: config)
     }

@@ -21,6 +21,8 @@ let package = Package(
             traits: [.defaults, "YAML"]
         ),
         .package(url: "https://github.com/mattt/swift-configuration-toml.git", from: "2.0.0"),
+        .package(url: "https://github.com/mattt/swift-toml.git", from: "2.0.0"),
+        .package(url: "https://github.com/jpsim/Yams.git", from: "5.4.0"),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.6.3"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.3.11"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.3.1"),
@@ -44,6 +46,8 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "Configuration", package: "swift-configuration"),
                 .product(name: "ConfigurationTOML", package: "swift-configuration-toml"),
+                .product(name: "TOML", package: "swift-toml"),
+                .product(name: "Yams", package: "Yams"),
                 .product(name: "SystemPackage", package: "swift-system"),
                 .product(name: "SwiftCardanoUtils", package: "swift-cardano-utils"),
                 .product(name: "GnuPG", package: "swift-gnupg"),
@@ -60,7 +64,6 @@ let package = Package(
             path: "Sources/SwiftCardanoMultitool",
             resources: [
                 .embedInCode("Resources/cz.json"),
-                .process("Resources/passwords.txt"),
             ]
         ),
         // Thin executable that just calls into the library.

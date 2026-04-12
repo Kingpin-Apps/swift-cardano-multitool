@@ -1,4 +1,5 @@
 import ArgumentParser
+import SwiftCardanoCore
 import SystemPackage
 
 public enum Mode: String, CaseIterable, CodingKeyRepresentable, Codable, Hashable , Sendable{
@@ -384,4 +385,33 @@ public enum HostType: String, Codable, Sendable, Hashable, CaseIterable, CustomS
     case multi = "multi"
     
     public var description: String { rawValue }
+}
+
+enum ConfigFileType: String, ExpressibleByArgument, CaseIterable, CustomStringConvertible, Sendable {
+    case json
+    case toml
+    case yaml
+
+    var description: String { rawValue }
+    var defaultValueDescription: String { "json" }
+}
+
+enum ConfigNetwork: String, ExpressibleByArgument, CaseIterable, CustomStringConvertible, Sendable {
+    case mainnet
+    case preprod
+    case preview
+    case guildnet
+    case sanchonet
+    
+    var description: String { rawValue }
+    
+    var network: Network {
+        switch self {
+            case .mainnet: return .mainnet
+            case .preprod: return .preprod
+            case .preview: return .preview
+            case .guildnet: return .guildnet
+            case .sanchonet: return .sanchonet
+        }
+    }
 }
