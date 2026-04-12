@@ -24,11 +24,8 @@ public class PasswordUtils {
     }
     
     public func isVulnerable() throws -> Bool {
-        // Locate `passwords.txt` next to the running executable
-        guard let pwFile = Bundle.module.path(forResource: "passwords", ofType: "txt", inDirectory: "Resources") else {
-            throw SwiftCardanoMultitoolError.fileNotFound(FilePath("passwords.txt"))
-        }
-        guard let content = try? String(contentsOfFile: pwFile, encoding: .utf8) else {
+        guard let url = Bundle.module.url(forResource: "passwords", withExtension: "txt"),
+              let content = try? String(contentsOf: url, encoding: .utf8) else {
             return false
         }
         for line in content.split(separator: "\n") {

@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "swift-cardano-multitool",
+    name: "SwiftCardanoMultitool",
     platforms: [
         .macOS(.v15)
     ],
@@ -22,7 +22,7 @@ let package = Package(
         ),
         .package(url: "https://github.com/mattt/swift-configuration-toml.git", from: "2.0.0"),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.6.3"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.3.8"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.3.11"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.3.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "0.2.6"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.1.8"),
@@ -59,7 +59,8 @@ let package = Package(
             ],
             path: "Sources/SwiftCardanoMultitool",
             resources: [
-                .copy("Resources")
+                .embedInCode("Resources/cz.json"),
+                .process("Resources/passwords.txt"),
             ]
         ),
         // Thin executable that just calls into the library.

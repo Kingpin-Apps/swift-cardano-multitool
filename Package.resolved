@@ -1,5 +1,5 @@
 {
-  "originHash" : "1e2934336de619ef177f457050b0d6c4b1a0aae22b6b94a1b14cec9eb9bed360",
+  "originHash" : "18e92cf64ff8b5027b862239d8cb9f5955209d11cb587422f4eebacfc3a51ead",
   "pins" : [
     {
       "identity" : "base32",
@@ -195,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "317027536eec4c6350c204dc867e150f0600cf0b",
-        "version" : "0.3.9"
+        "revision" : "01a1c5006e96b438359d89c26626e80af131560b",
+        "version" : "0.3.11"
       }
     },
     {
@@ -348,8 +348,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-mnemonic.git",
       "state" : {
-        "revision" : "b05972fe91e2fd63a507b73862842724007a35bc",
-        "version" : "0.2.1"
+        "revision" : "af037bfb8964c380e387cac5c413074e6929123c",
+        "version" : "0.2.2"
       }
     },
     {
