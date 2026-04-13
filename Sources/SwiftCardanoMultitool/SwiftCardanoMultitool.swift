@@ -26,7 +26,7 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
     
     var description: String {
         switch self {
-            case .build: return "Build - Build payment and stake address from keys."
+            case .build: return "\(TerminalText.Component.command("Build")) - Build payment and stake address from keys."
             case .certificates: return "Certificates - Create and submit various certificates."
             case .config: return "Config - Manage configuration settings."
             case .download: return "Download - Download necessary files or data."

@@ -8,7 +8,6 @@ struct MainMenuCommand: AsyncParsableCommand {
         let selectedOption: MainCommands = noora.singleChoicePrompt(
             title: "Select Command",
             question: "Select the operation that you would like to perform.",
-            description: "CSPO Tools can help you manage and optimize your Cardano Stake Pool Operations."
         )
         
         spacedPrint(

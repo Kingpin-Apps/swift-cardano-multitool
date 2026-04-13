@@ -18,7 +18,8 @@ extension BuildMainCommand {
             paths to the stake verification key files. If using the address 
             name, the corresponding key files must exist in the current working 
             directory in the format 'name.stake.vkey'.
-            """
+            """,
+            aliases: ["stake"]
         )
         
         @Option(name: .shortAndLong, help: "The name of the address. Address stake verification key file must exist in the current working directory and are in the format 'name.stake.vkey'.")

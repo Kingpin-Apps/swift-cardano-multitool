@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum WorkOfflineCommands: String, CaseIterable, CustomStringConvertible {
+enum WorkOfflineCommands: String, Subcommandable {
     case new
     case info
     case sync
@@ -29,6 +29,17 @@ enum WorkOfflineCommands: String, CaseIterable, CustomStringConvertible {
             case .exit: return "Exit - Leave the program."
         }
     }
+    
+    static var subcommands: [any AsyncParsableCommand.Type] {
+        return Self.allCases.compactMap {
+            switch $0 {
+                case .back, .exit:
+                    return .none
+                default:
+                    return $0.command()
+            }
+        }
+    }
 
     func command() -> any AsyncParsableCommand.Type {
         switch self {
@@ -47,26 +58,23 @@ enum WorkOfflineCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-struct WorkOfflineMainCommand: AsyncParsableCommand {
+struct WorkOfflineMainCommand: AsyncParsableCommand, MainCommandable {
+    typealias E = WorkOfflineCommands
+    
+    var name: String { "Work Offline" }
+    
     static let configuration = CommandConfiguration(
         commandName: "work-offline",
         abstract: "Work offline functions.",
-        subcommands: WorkOfflineCommands.allCases.map { $0.command() },
-        aliases: ["wo"]
+        discussion: """
+        This section provides tools for preparing and managing offline 
+        transactions. You can create an offline transfer file, add UTXO and 
+        rewards information, attach files, and execute transactions when back 
+        online. Use the subcommands to navigate through the available offline 
+        functionalities.
+        """,
+        subcommands: WorkOfflineCommands.subcommands,
+        aliases: ["offline"]
     )
-    
-    func run() async throws {
-        let selectedOption: WorkOfflineCommands = noora.singleChoicePrompt(
-            title: "Select Work-Offline Command",
-            question: "Select the operation that you would like to perform.",
-            description: "Work-Offline Commands to perform offline operations.",
-        )
-        
-        print(noora.format(
-            "Running \(.command(selectedOption.rawValue)) command...\n"
-        ))
-        
-        await selectedOption.command().main([])
-    }
 }
 

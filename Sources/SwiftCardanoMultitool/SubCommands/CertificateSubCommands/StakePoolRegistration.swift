@@ -36,10 +36,13 @@ extension CertificateMainCommand {
         @Option(name: .shortAndLong, help: "The name of the pool. Will look for a file named <poolName>.pool.json in current working directory.")
         var poolName: String? = nil
         
-        @Option(name: .shortAndLong, help: "The path to the pool.json file.")
+        @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")
         var poolJSON: FilePath? = nil
         
-        @Option(name: .shortAndLong, help: "Force registration even if the pool is already registered. Use with caution, as this may lead to unexpected consequences if the pool is already registered.")
+        @Option(
+            name: .long,
+            help: "Force registration even if the pool is already registered. Use with caution, as this may lead to unexpected consequences if the pool is already registered."
+        )
         var force: ForceOption? = nil
         
         // MARK: - CertificateCommandable Arguments

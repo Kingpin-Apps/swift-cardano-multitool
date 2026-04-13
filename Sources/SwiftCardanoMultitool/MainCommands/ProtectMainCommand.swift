@@ -2,7 +2,7 @@ import Foundation
 import ArgumentParser
 import Noora
 
-enum ProtectCommands: String, CaseIterable, CustomStringConvertible {
+enum ProtectCommands: String, Subcommandable {
     case encrypt
     case decrypt
     case back
@@ -17,6 +17,17 @@ enum ProtectCommands: String, CaseIterable, CustomStringConvertible {
         }
     }
     
+    static var subcommands: [any AsyncParsableCommand.Type] {
+        return Self.allCases.compactMap {
+            switch $0 {
+                case .back, .exit:
+                    return .none
+                default:
+                    return $0.command()
+            }
+        }
+    }
+    
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .encrypt: return ProtectMainCommand.Encrypt.self
@@ -27,24 +38,21 @@ enum ProtectCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-struct ProtectMainCommand: AsyncParsableCommand {
+struct ProtectMainCommand: AsyncParsableCommand, MainCommandable {
+    typealias E = ProtectCommands
+    
+    var name: String { "Protect" }
+    
     static let configuration = CommandConfiguration(
         commandName: "protect",
         abstract: "Encrypt/Decrypt operations",
-        subcommands: ProtectCommands.allCases.map { $0.command() },
+        discussion: """
+        Encrypting files allows you to protect sensitive information by 
+        requiring a password to access the contents. Decrypting files allows you 
+        to access the contents of previously encrypted files by providing the 
+        correct password. Select the desired operation to proceed with 
+        encrypting or decrypting your files.
+        """,
+        subcommands: ProtectCommands.subcommands,
     )
-    
-    func run() async throws {                
-        let selectedOption: ProtectCommands = noora.singleChoicePrompt(
-            title: "Select Protect Command",
-            question: "Select the operation that you would like to perform.",
-            description: "Protect your files by encrypting or decrypting them using password-based encryption."
-        )
-        
-        print(noora.format(
-            "Running \(.command(selectedOption.rawValue)) command...\n"
-        ))
-        
-        await selectedOption.command().main([])
-    }
 }

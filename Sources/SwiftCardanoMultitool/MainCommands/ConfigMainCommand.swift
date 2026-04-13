@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum ConfigCommands: String, CaseIterable, CustomStringConvertible {
+enum ConfigCommands: String, Subcommandable {
     case `init`
     case show
     case select
@@ -23,6 +23,17 @@ enum ConfigCommands: String, CaseIterable, CustomStringConvertible {
         }
     }
     
+    static var subcommands: [any AsyncParsableCommand.Type] {
+        return Self.allCases.compactMap {
+            switch $0 {
+                case .back, .exit:
+                    return .none
+                default:
+                    return $0.command()
+            }
+        }
+    }
+    
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .`init`:
@@ -39,24 +50,20 @@ enum ConfigCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-struct ConfigMainCommand: AsyncParsableCommand {
+struct ConfigMainCommand: AsyncParsableCommand, MainCommandable {
+    typealias E = ConfigCommands
+    
+    var name: String { "Config" }
+    
     static let configuration = CommandConfiguration(
         commandName: "config",
-        abstract: "Configure Cardano SPO Tools.",
-        subcommands: ConfigCommands.allCases.map { $0.command() }
+        abstract: "Configure Swift Cardano Multitool.",
+        discussion: """
+        Set up and manage your configuration for Cardano SPO Tools. This 
+        includes initializing the configuration, displaying current settings, 
+        and selecting specific configuration values.
+        """,
+        subcommands: ConfigCommands.subcommands,
+        aliases: ["conf"]
     )
-    
-    func run() async throws {
-        let selectedOption: ConfigCommands = noora.singleChoicePrompt(
-            title: "Select Config Command",
-            question: "Select the operation that you would like to perform.",
-            description: "Config Commands:",
-        )
-        
-        spacedPrint(
-            "Running \(.command(selectedOption.rawValue)) command...\n"
-        )
-        
-        await selectedOption.command().main([])
-    }
 }

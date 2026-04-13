@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum DownloadCommands: String, CaseIterable, CustomStringConvertible {
+enum DownloadCommands: String, Subcommandable {
     case nodeConfigs
     case snapshot
     case back
@@ -16,6 +16,17 @@ enum DownloadCommands: String, CaseIterable, CustomStringConvertible {
         }
     }
     
+    static var subcommands: [any AsyncParsableCommand.Type] {
+        return Self.allCases.compactMap {
+            switch $0 {
+                case .back, .exit:
+                    return .none
+                default:
+                    return $0.command()
+            }
+        }
+    }
+    
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .nodeConfigs: return DownloadMainCommand.ConfigurationFiles.self
@@ -26,24 +37,20 @@ enum DownloadCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-struct DownloadMainCommand: AsyncParsableCommand {
+struct DownloadMainCommand: AsyncParsableCommand, MainCommandable {
+    typealias E = DownloadCommands
+    
+    var name: String { "Download" }
+    
     static let configuration = CommandConfiguration(
         commandName: "download",
         abstract: "Download various files.",
-        subcommands: DownloadCommands.allCases.map { $0.command() }
+        discussion: """
+        Downloading files can be essential for various operations, such as 
+        setting up a node or restoring a wallet. This command provides an easy 
+        way to download necessary files directly from trusted sources. Select 
+        he desired option to proceed with the download process.
+        """,
+        subcommands: DownloadCommands.subcommands
     )
-    
-    func run() async throws {
-        let selectedOption: DownloadCommands = noora.singleChoicePrompt(
-            title: "Select Download Command",
-            question: "Select the operation that you would like to perform.",
-            description: "Choose one of the following options:",
-        )
-        
-        print(noora.format(
-            "Running \(.command(selectedOption.rawValue)) command...\n"
-        ))
-        
-        await selectedOption.command().main([])
-    }
 }

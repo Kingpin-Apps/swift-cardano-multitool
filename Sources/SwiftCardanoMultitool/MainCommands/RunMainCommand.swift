@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum RunCommands: String, CaseIterable, CustomStringConvertible {
+enum RunCommands: String, Subcommandable {
     case cardanoNode
     case cardanoDbSync = "db-sync"
     case cardanoWallet
@@ -24,6 +24,17 @@ enum RunCommands: String, CaseIterable, CustomStringConvertible {
         }
     }
     
+    static var subcommands: [any AsyncParsableCommand.Type] {
+        return Self.allCases.compactMap {
+            switch $0 {
+                case .back, .exit:
+                    return .none
+                default:
+                    return $0.command()
+            }
+        }
+    }
+    
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .cardanoNode: return RunMainCommand.Node.self
@@ -38,11 +49,21 @@ enum RunCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-struct RunMainCommand: AsyncParsableCommand {
+struct RunMainCommand: AsyncParsableCommand, MainCommandable {
+    typealias E = RunCommands
+    
+    var name: String { "Run" }
+    
     static let configuration = CommandConfiguration(
         commandName: "run",
         abstract: "Run various cardano tools.",
-        subcommands: RunCommands.allCases.map { $0.command() }
+        discussion: """
+        Run various Cardano tools such as cardano-node, cardano-db-sync, 
+        cardano-wallet, cardano-submit-api, Ogmios, and Kupo. Select the desired 
+        tool from the options to proceed with running the selected tool. You can 
+        also choose to go back to the main menu
+        """,
+        subcommands: RunCommands.subcommands
     )
     
     func run() async throws {        
@@ -52,9 +73,9 @@ struct RunMainCommand: AsyncParsableCommand {
             description: "Available commands:" ,
         )
         
-        print(noora.format(
+        spacedPrint(
             "Running \(.command(selectedOption.rawValue)) command...\n"
-        ))
+        )
         
         await selectedOption.command().main([])
     }

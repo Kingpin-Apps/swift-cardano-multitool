@@ -37,7 +37,7 @@ extension QueryMainCommand {
         @Option(name: .shortAndLong, help: "The pool name. Searches for <poolName>.vrf.skey and <poolName>.pool.id-bech in the current directory.")
         var poolName: String?
         
-        @Option(name: .shortAndLong, help: "The path to the pool.json file.")
+        @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")
         var poolJSON: FilePath?
         
         @Option(name: [.customShort("o"), .long], help: "The pool operator (PoolOperator). Supports: bech32 (pool1...), hex hash, .node.vkey file.")

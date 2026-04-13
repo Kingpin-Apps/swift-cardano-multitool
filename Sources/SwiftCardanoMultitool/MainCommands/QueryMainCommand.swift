@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum QueryCommands: String, CaseIterable, CustomStringConvertible {
+enum QueryCommands: String, Subcommandable {
     case address
     case epoch
     case era
@@ -28,6 +28,17 @@ enum QueryCommands: String, CaseIterable, CustomStringConvertible {
         }
     }
     
+    static var subcommands: [any AsyncParsableCommand.Type] {
+        return Self.allCases.compactMap {
+            switch $0 {
+                case .back, .exit:
+                    return .none
+                default:
+                    return $0.command()
+            }
+        }
+    }
+    
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .address: return QueryMainCommand.Address.self
@@ -44,25 +55,21 @@ enum QueryCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-struct QueryMainCommand: AsyncParsableCommand {
+struct QueryMainCommand: AsyncParsableCommand, MainCommandable {
+    typealias E = QueryCommands
+    
+    var name: String { "Query" }
+    
     static let configuration = CommandConfiguration(
         commandName: "query",
         abstract: "Query various data from cardano-node.",
-        subcommands: QueryCommands.allCases.map { $0.command() }
+        discussion: """
+        Query various data from the Cardano blockchain, such as addresses, 
+        epochs, eras, protocol parameters, stake pools, and more. This command 
+        provides a user-friendly interface to access on-chain information and 
+        node status.
+        """,
+        subcommands: QueryCommands.subcommands
     )
-    
-    func run() async throws {
-        let selectedOption: QueryCommands = noora.singleChoicePrompt(
-            title: "Select Query Command",
-            question: "Select the operation that you would like to perform.",
-            description: "Query various data from the Cardano blockchain."
-        )
-        
-        print(noora.format(
-            "Running \(.command(selectedOption.rawValue)) command...\n"
-        ))
-        
-        await selectedOption.command().main([])
-    }
 }
 

@@ -2,7 +2,7 @@ import Foundation
 import ArgumentParser
 import Noora
 
-enum BuildCommands: String, CaseIterable, CustomStringConvertible {
+enum BuildCommands: String, Subcommandable {
     case paymentAddress
     case stakeAddress
     case back
@@ -21,6 +21,17 @@ enum BuildCommands: String, CaseIterable, CustomStringConvertible {
         }
     }
     
+   static var subcommands: [any AsyncParsableCommand.Type] {
+        return Self.allCases.compactMap {
+            switch $0 {
+                case .back, .exit:
+                    return .none
+                default:
+                    return $0.command()
+            }
+        }
+    }
+    
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .paymentAddress:
@@ -35,24 +46,21 @@ enum BuildCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-struct BuildMainCommand: AsyncParsableCommand {
+struct BuildMainCommand: AsyncParsableCommand, MainCommandable {
+    typealias E = BuildCommands
+    
+    var name: String { "Build" }
+    
     static let configuration = CommandConfiguration(
         commandName: "build",
-        abstract: "Build operations",
-        subcommands: BuildCommands.allCases.map { $0.command() },
+        abstract: "Build operations for Cardano addresses.",
+        discussion: """
+        Build various types of Cardano addresses from their corresponding 
+        key files. For payment addresses, provide the payment verification 
+        key file and optionally the stake verification key file to build a 
+        base address. For stake addresses, provide the stake verification 
+        key file to build a stake address.
+        """,
+        subcommands: BuildCommands.subcommands,
     )
-    
-    func run() async throws {                
-        let selectedOption: BuildCommands = noora.singleChoicePrompt(
-            title: "Select Build Command",
-            question: "Select the operation that you would like to perform.",
-            description: "Build Commands to build addresses.",
-        )
-        
-        print(noora.format(
-            "Running \(.command(selectedOption.rawValue)) command...\n"
-        ))
-        
-        await selectedOption.command().main([])
-    }
 }

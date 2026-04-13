@@ -624,6 +624,60 @@ public struct Pool: Codable, Sendable {
         self.deregistration = nil
     }
     
+    // MARK: - Pool Operator Generation
+    
+    /// Try all available ways to get a PoolOperator from a Pool object
+    /// - Returns: The PoolOperator object if found, otherwise nil
+    public func toPoolOperator() -> PoolOperator? {
+        // Try idBech string
+        if let idBech = idBech, let op = try? PoolOperator(from: idBech) {
+            return op
+        }
+        
+        // Try idHex string
+        if let idHex = idHex, !idHex.isEmpty, let op = try? PoolOperator(from: idHex.hexStringToData) {
+            return op
+        }
+        
+        // Try idBech file
+        if let idBechFile = idBechFile,
+           FileManager.default.fileExists(atPath: idBechFile.string),
+           let op = try? PoolOperator.load(from: idBechFile.string) {
+            return op
+        }
+        
+        // Try idHex file
+        if let idHexFile = idHexFile,
+           FileManager.default.fileExists(atPath: idHexFile.string),
+           let op = try? PoolOperator.load(from: idHexFile.string) {
+            return op
+        }
+        
+        // Try cold vkey
+        if let coldVkey = coldVkey,
+           FileManager.default.fileExists(atPath: coldVkey.string),
+           let stakePoolVKey = try? StakePoolVerificationKey.load(from: coldVkey.string),
+           let poolKeyHash = try? stakePoolVKey.poolKeyHash() {
+            return PoolOperator(poolKeyHash: poolKeyHash)
+        }
+        
+        // Try fallback with name if available
+        if let name = name {
+            let fileManager = FileManager.default
+            let currentDir = fileManager.currentDirectoryPath
+            
+            // Try node.vkey
+            let nodeVKeyFilePath = FilePath(currentDir).appending("\(name).node.vkey")
+            if fileManager.fileExists(atPath: nodeVKeyFilePath.string),
+               let stakePoolVKey = try? StakePoolVerificationKey.load(from: nodeVKeyFilePath.string),
+               let poolKeyHash = try? stakePoolVKey.poolKeyHash() {
+                return PoolOperator(poolKeyHash: poolKeyHash)
+            }
+        }
+        
+        return nil
+    }
+    
     // MARK: - Metadata Generation
     
     /// Generate the metadata JSON dictionary

@@ -2,7 +2,7 @@ import Foundation
 import Command
 import ArgumentParser
 
-enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
+enum CertificateCommands: String, Subcommandable {
     case stakeDelegation
     case stakeRegistration
     case stakeDeregistration
@@ -66,6 +66,17 @@ enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
         }
     }
     
+    static var subcommands: [any AsyncParsableCommand.Type] {
+        return Self.allCases.compactMap {
+            switch $0 {
+                case .back, .exit:
+                    return .none
+                default:
+                    return $0.command()
+            }
+        }
+    }
+    
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .stakeRegistration:
@@ -110,25 +121,22 @@ enum CertificateCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-struct CertificateMainCommand: AsyncParsableCommand {
+struct CertificateMainCommand: AsyncParsableCommand, MainCommandable {
+    typealias E = CertificateCommands
+    
+    var name: String { "Certificate" }
+    
     static let configuration = CommandConfiguration(
         commandName: "certificate",
         abstract: "Generate various certificate.",
-        subcommands: CertificateCommands.allCases.map { $0.command() },
+        discussion: """
+        Certificates are used to register stake addresses, delegate stake, 
+        register stake pools, and more. This command provides a convenient 
+        interface to generate all the necessary certificates for these 
+        operations. Select the desired certificate type from the options to
+        proceed with the generation process.
+        """,
+        subcommands: CertificateCommands.subcommands,
         aliases: ["cert"]
     )
-    
-    func run() async throws {
-        let selectedOption: CertificateCommands = noora.singleChoicePrompt(
-            title: "Select Certificate Command",
-            question: "Select the operation that you would like to perform.",
-            description: "Available commands:" ,
-        )
-        
-        print(noora.format(
-            "Running \(.command(selectedOption.rawValue)) command...\n"
-        ))
-        
-        await selectedOption.command().main([])
-    }
 }

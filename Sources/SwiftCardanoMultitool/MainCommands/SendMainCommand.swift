@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum SendCommands: String, CaseIterable, CustomStringConvertible {
+enum SendCommands: String, Subcommandable {
     case all
     case assets
     case lovelaces
@@ -18,6 +18,17 @@ enum SendCommands: String, CaseIterable, CustomStringConvertible {
         }
     }
     
+    static var subcommands: [any AsyncParsableCommand.Type] {
+        return Self.allCases.compactMap {
+            switch $0 {
+                case .back, .exit:
+                    return .none
+                default:
+                    return $0.command()
+            }
+        }
+    }
+    
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .all: return SendMainCommand.All.self
@@ -29,24 +40,21 @@ enum SendCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-struct SendMainCommand: AsyncParsableCommand {
+struct SendMainCommand: AsyncParsableCommand, MainCommandable {
+    typealias E = SendCommands
+    
+    var name: String { "Send" }
+    
     static let configuration = CommandConfiguration(
         commandName: "send",
         abstract: "Send Ada and assets.",
+        discussion: """
+        This command allows you to send ADA and native assets from one address 
+        to another. You can choose to send all ADA and assets, specific native 
+        assets, or a specific amount of lovelaces. The command provides 
+        flexibility in how you want to manage your transactions, whether it's 
+        sending everything or just a portion of your holdings.
+        """,
         subcommands: SendCommands.allCases.map { $0.command() }
     )
-    
-    func run() async throws {
-        let selectedOption: SendCommands = noora.singleChoicePrompt(
-            title: "Select Send Command",
-            question: "Select the operation that you would like to perform.",
-            description: "Available Send Commands:",
-        )
-        
-        formatPrint(
-            "Running \(.command(selectedOption.rawValue)) command...\n"
-        )
-        
-        await selectedOption.command().main([])
-    }
 }

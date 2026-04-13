@@ -2,7 +2,7 @@ import Foundation
 import ArgumentParser
 import Noora
 
-enum InstallCommands: String, CaseIterable, CustomStringConvertible {
+enum InstallCommands: String, Subcommandable {
     case cardanoNode
     case cardanoDbSync
     case cardanoCLI
@@ -44,6 +44,17 @@ enum InstallCommands: String, CaseIterable, CustomStringConvertible {
                 return "Exit - Leave the program."
         }
     }
+    
+    static var subcommands: [any AsyncParsableCommand.Type] {
+        return Self.allCases.compactMap {
+            switch $0 {
+                case .back, .exit:
+                    return .none
+                default:
+                    return $0.command()
+            }
+        }
+    }
 
     func command() -> any AsyncParsableCommand.Type {
         switch self {
@@ -63,24 +74,20 @@ enum InstallCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-struct InstallMainCommand: AsyncParsableCommand {
+struct InstallMainCommand: AsyncParsableCommand, MainCommandable {
+    typealias E = InstallCommands
+    
+    var name: String { "Install" }
+    
     static let configuration = CommandConfiguration(
         commandName: "install",
         abstract: "Install Cardano ecosystem tools.",
-        subcommands: InstallCommands.allCases.map { $0.command() }
+        discussion: """
+        Install various components of the Cardano ecosystem, including the 
+        Cardano Node, Cardano CLI, Cardano Wallet, Kupo, Mithril, Ogmios, and 
+        more. Select the tool you would like to install from the options 
+        provided.
+        """,
+        subcommands: InstallCommands.subcommands
     )
-
-    func run() async throws {
-        let selectedOption: InstallCommands = noora.singleChoicePrompt(
-            title: "Select Install Command",
-            question: "Select the tool you would like to install.",
-            description: "Install various components of the Cardano ecosystem."
-        )
-
-        spacedPrint(
-            "Running \(.command(selectedOption.rawValue)) command..."
-        )
-
-        await selectedOption.command().main([])
-    }
 }

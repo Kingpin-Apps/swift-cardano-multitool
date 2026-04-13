@@ -8,6 +8,7 @@ import SwiftCardanoChain
 extension QueryMainCommand {
     struct StakePool: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
+            commandName: "stake-pool",
             abstract: "Query stake pool information.",
             usage: """
             scm query pool <poolId>
@@ -22,14 +23,87 @@ extension QueryMainCommand {
             aliases: ["pool"]
         )
         
-        @Option(name: [.short, .long], help: "The pool operator (PoolOperator) to delegate to. Supports: bech32 (pool1...), hex hash, .node.vkey file.")
+        @Option(name: .shortAndLong, help: "The pool name. Searches for <poolName>.vrf.skey and <poolName>.pool.id-bech in the current directory.")
+        var poolName: String?
+        
+        @Option(name: [.customShort("o"), .long], help: "The pool operator (PoolOperator) to delegate to. Supports: bech32 (pool1...), hex hash, .node.vkey file.")
         var poolOperator: PoolOperator?
+        
+        @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")
+        var poolJSON: FilePath?
+        
+        // MARK: - Input Method Selection
+        
+        enum SelectOption: String, CaseIterable, CustomStringConvertible {
+            case poolName
+            case poolJSON
+            case poolOperator
+            
+            var description: String {
+                switch self {
+                    case .poolName:
+                        return "Use the pool name to find pool details in the current directory."
+                    case .poolJSON:
+                        return "Use a pool.json file to find pool ID"
+                    case .poolOperator:
+                        return "Use any available pool operator (pool id bech32, hex hash, or node.vkey file)"
+                }
+            }
+        }
         
         // MARK: - Wizard
         
         /// Interactive wizard to gather missing parameters
         mutating func wizard() async throws {
-            poolOperator = try await getPoolOperator()
+            let selectedOption: SelectOption = noora.singleChoicePrompt(
+                title: "Select Input Method",
+                question: "How would you like to identify the stake pool for querying KES period information?",
+                description: """
+                    Please select one of the following options:
+                    1. Pool Name: Provide the name of the pool to search in the current directory.
+                    2. Pool JSON: Provide the path to the pool.json file.
+                    3. Pool Operator: Use any available pool operator like pool id bech32 or hex hash, or node.vkey file in the current directory.
+                    """
+            )
+            
+            let cwd = FilePath(FileManager.default.currentDirectoryPath)
+            
+            switch selectedOption {
+                    
+                case .poolName:
+                    poolName = noora.textPrompt(
+                        title: "Pool Name",
+                        prompt: "Enter the name of the pool:",
+                        description: "Searches for the latest <poolName>.node-XXX.opcert.",
+                        collapseOnAnswer: true,
+                        validationRules: [NonEmptyValidationRule(error: "Pool name cannot be empty.")]
+                    ).trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    let pool = try Pool.load(from: cwd.appending("\(poolName!).pool.json"))
+                    
+                    poolOperator = pool.toPoolOperator()
+                    
+                case .poolJSON:
+                    let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+                        .filter { $0.hasSuffix(".json") }
+                    
+                    poolJSON = FilePath(
+                        noora.singleChoicePrompt(
+                            title: "Pool JSON Files",
+                            question: "Select the pool.json file:",
+                            options: files,
+                            filterMode: .enabled
+                        )
+                    )
+                    
+                    let pool = try Pool.load(from: poolJSON!)
+                    
+                    poolOperator = pool.toPoolOperator()
+                    
+                case .poolOperator:
+                    poolOperator = try await getPoolOperator()
+                    
+            }
         }
         
         // MARK: - Run

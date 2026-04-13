@@ -20,7 +20,8 @@ extension BuildMainCommand {
             address name, the corresponding key files must exist in the 
             current working directory in the format 'name.payment.vkey' 
             and 'name.stake.vkey'.
-            """
+            """,
+            aliases: ["payment"]
         )
         
         @Option(

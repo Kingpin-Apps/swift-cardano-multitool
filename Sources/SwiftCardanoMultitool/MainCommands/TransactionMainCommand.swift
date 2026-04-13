@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum TransactionCommands: String, CaseIterable, CustomStringConvertible {
+enum TransactionCommands: String, Subcommandable {
     case build
     case sign
     case assemble
@@ -37,6 +37,17 @@ enum TransactionCommands: String, CaseIterable, CustomStringConvertible {
             case .exit: return "Exit - Leave the program."
         }
     }
+    
+    static var subcommands: [any AsyncParsableCommand.Type] {
+        return Self.allCases.compactMap {
+            switch $0 {
+                case .back, .exit:
+                    return .none
+                default:
+                    return $0.command()
+            }
+        }
+    }
 
     func command() -> any AsyncParsableCommand.Type {
         switch self {
@@ -59,26 +70,16 @@ enum TransactionCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
-struct TransactionMainCommand: AsyncParsableCommand {
+struct TransactionMainCommand: AsyncParsableCommand, MainCommandable {
+    typealias E = TransactionCommands
+    
+    var name: String { "Transaction" }
+    
     static let configuration = CommandConfiguration(
         commandName: "transaction",
         abstract: "Transaction related commands.",
-        subcommands: TransactionCommands.allCases.map { $0.command() },
+        subcommands: TransactionCommands.subcommands,
         aliases: ["tx"]
     )
-    
-    func run() async throws {
-        let selectedOption: TransactionCommands = noora.singleChoicePrompt(
-            title: "Select Transaction Command",
-            question: "Select the operation that you would like to perform.",
-            description: "Available commands:" ,
-        )
-        
-        print(noora.format(
-            "Running \(.command(selectedOption.rawValue)) command...\n"
-        ))
-        
-        await selectedOption.command().main([])
-    }
 }
 
