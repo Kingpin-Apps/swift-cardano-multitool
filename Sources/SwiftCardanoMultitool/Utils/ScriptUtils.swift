@@ -28,19 +28,54 @@ func printDivider(_ char: Character = "-") {
 /// - Returns: An instance of `ChainContext`
 public func getContext(config: MultitoolConfig) async throws -> any ChainContext {
     
-    func getOnlineContext(config: MultitoolConfig) async throws -> CardanoCliChainContext {
+    func getOnlineContext(config: MultitoolConfig) async throws -> any ChainContext {
         let logger = getLogger(config: config)
         
-        let cli = try await CardanoCLI(
-            configuration: Config(cardano: config.cardano),
-            logger: logger
-        )
-        
-        return try await CardanoCliChainContext(cli: cli)
+        if let cardanoConfig = config.cardano {
+            do {
+                let cli = try await CardanoCLI(
+                    configuration: Config(cardano: cardanoConfig),
+                    logger: logger
+                )
+                
+                try await cli.checkOnline()
+                
+                return try await CardanoCliChainContext(cli: cli)
+            } catch SwiftCardanoUtilsError.binaryNotFound {
+                guard let socketPath = cardanoConfig.socket else {
+                    throw SwiftCardanoMultitoolError.invalidConfiguration(
+                        "Cardano node socket path is required for online mode when cardano-cli is not available."
+                    )
+                }
+                
+                return NodeSocketChainContext(
+                    socketPath: socketPath,
+                    network: cardanoConfig.network
+                )
+            } catch SwiftCardanoUtilsError.nodeNotSynced {
+                noora.warning(
+                    .alert(
+                        "\(.danger("The node is not synced."))",
+                        takeaway: "Falling back to \(.primary("Lite")) mode."
+                    )
+                )
+                print()
+                
+                return try await getLiteContext(config: config)
+            }
+        } else if let ogmiosConfig = config.ogmios {
+            return try await OgmiosChainContext(
+                host: ogmiosConfig.host,
+                port: ogmiosConfig.port
+            )
+        } else {
+            throw SwiftCardanoMultitoolError.invalidConfiguration(
+                "No valid online context configuration found. Please provide either 'cardano' or 'ogmios' configuration for online mode."
+            )
+        }
     }
     
     func getLiteContext(config: MultitoolConfig) async throws -> any ChainContext {
-        
         let cardanoConfig = try getCardanoConfig(config: config)
         
         if let blockfrostProjectId = config.blockfrostProjectId {
@@ -60,31 +95,39 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
         }
     }
     
+    func getOfflineContext(config: MultitoolConfig) async throws -> any ChainContext {
+        guard let offlineFile = config.offlineFile else {
+            throw SwiftCardanoMultitoolError.invalidConfiguration(
+                "Offline file path is required for offline mode."
+            )
+        }
+        
+        let cardanoConfig = try getCardanoConfig(config: config)
+        
+        return try OfflineTransferChainContext(
+            filePath: offlineFile,
+            network: cardanoConfig.network
+        )
+    }
+    
     switch config.mode {
         case .auto:
             do {
-                let cliContext = try await getOnlineContext(config: config)
-                try await cliContext.cli.checkOnline()
-                
-                return cliContext
+                return try await getOnlineContext(config: config)
             }
             catch {
-                noora.warning(
-                    .alert(
-                        "\(.danger("The node is not synced."))",
-                        takeaway: "Falling back to \(.primary("Lite")) mode."
-                    )
-                )
-                print()
-                
-                return try await getLiteContext(config: config)
+                do {
+                    return try await getLiteContext(config: config)
+                } catch {
+                    return try await getOfflineContext(config: config)
+                }
             }
         case .online:
             return try await getOnlineContext(config: config)
         case .lite:
             return try await getLiteContext(config: config)
         case .offline:
-            throw SwiftCardanoMultitoolError.notImplemented("Offline mode is not yet implemented.")
+            return try await getOfflineContext(config: config)
             
     }
 }

@@ -419,7 +419,7 @@ public struct MultitoolConfig: Codable, Sendable {
             ogmios: try? OgmiosConfig.default(),
             kupo: try? KupoConfig.default(),
             mode: .auto,
-            offlineFile: cwd.appending("offline_transfer.json"),
+            offlineFile: cwd.appending("offline-transfer.json"),
             tokenMetaServer: TokenMetaServerURLs(),
             blockchainExplorer: .cexplorer,
             adaHandlePolicy: AdaHandlePolicyIds(),
