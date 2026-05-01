@@ -1,7 +1,10 @@
 import Foundation
 import SystemPackage
 
-/// Environment variables
+/// Environment variables recognised by `scm`.
+///
+/// Set these in your shell or CI environment to configure runtime behaviour
+/// without modifying the config file.
 enum Environment: String {
     case blockfrostProjectId = "BLOCKFROST_PROJECT_ID"
     case config = "CARDANO_MULTITOOL_CONFIG"

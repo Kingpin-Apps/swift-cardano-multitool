@@ -58,20 +58,25 @@ enum WorkOfflineCommands: String, Subcommandable {
     }
 }
 
+/// Offline transaction workflow for air-gapped machines.
+///
+/// Uses a portable transfer file to carry chain data to an offline machine
+/// and bring signed transactions back for submission. No private keys ever
+/// leave the offline environment. See <doc:WorkOfflineCommand> for the full
+/// workflow and documentation.
 struct WorkOfflineMainCommand: AsyncParsableCommand, MainCommandable {
     typealias E = WorkOfflineCommands
-    
+
     var name: String { "Work Offline" }
-    
+
     static let configuration = CommandConfiguration(
         commandName: "work-offline",
-        abstract: "Work offline functions.",
+        abstract: "Offline transaction workflows for air-gapped machines.",
         discussion: """
-        This section provides tools for preparing and managing offline 
-        transactions. You can create an offline transfer file, add UTXO and 
-        rewards information, attach files, and execute transactions when back 
-        online. Use the subcommands to navigate through the available offline 
-        functionalities.
+        Manage a portable offline transfer file that carries UTxO data and
+        protocol parameters to an air-gapped machine and returns signed
+        transactions for submission — keeping private keys completely isolated
+        from the internet.
         """,
         subcommands: WorkOfflineCommands.subcommands,
         aliases: ["offline"]

@@ -121,20 +121,24 @@ enum CertificateCommands: String, Subcommandable {
     }
 }
 
+/// Generates all Cardano certificate types.
+///
+/// Covers stake registration/delegation/deregistration, pool registration and
+/// retirement, Conway-era governance (DRep, committee), and legacy genesis
+/// certificates. See <doc:CertificatesCommand> for full documentation.
 struct CertificateMainCommand: AsyncParsableCommand, MainCommandable {
     typealias E = CertificateCommands
-    
+
     var name: String { "Certificate" }
-    
+
     static let configuration = CommandConfiguration(
         commandName: "certificate",
-        abstract: "Generate various certificate.",
+        abstract: "Generate Cardano certificates for stake, pools, and governance.",
         discussion: """
-        Certificates are used to register stake addresses, delegate stake, 
-        register stake pools, and more. This command provides a convenient 
-        interface to generate all the necessary certificates for these 
-        operations. Select the desired certificate type from the options to
-        proceed with the generation process.
+        Create certificate files for on-chain registration and delegation actions:
+        stake address registration/delegation/deregistration, pool registration
+        and retirement, Conway-era vote delegation, DRep registration/update,
+        and constitutional committee authorization/resignation.
         """,
         subcommands: CertificateCommands.subcommands,
         aliases: ["cert"]

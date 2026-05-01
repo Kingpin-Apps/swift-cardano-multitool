@@ -37,19 +37,21 @@ enum DownloadCommands: String, Subcommandable {
     }
 }
 
+/// Downloads Cardano node configuration files and Mithril database snapshots.
+///
+/// See <doc:DownloadCommand> for full documentation.
 struct DownloadMainCommand: AsyncParsableCommand, MainCommandable {
     typealias E = DownloadCommands
-    
+
     var name: String { "Download" }
-    
+
     static let configuration = CommandConfiguration(
         commandName: "download",
-        abstract: "Download various files.",
+        abstract: "Download node configuration files or a Mithril blockchain snapshot.",
         discussion: """
-        Downloading files can be essential for various operations, such as 
-        setting up a node or restoring a wallet. This command provides an easy 
-        way to download necessary files directly from trusted sources. Select 
-        he desired option to proceed with the download process.
+        Download official Cardano network configuration files (config.json,
+        topology.json, genesis files) and Mithril-certified blockchain snapshots
+        for fast node bootstrapping without syncing from genesis.
         """,
         subcommands: DownloadCommands.subcommands
     )

@@ -38,20 +38,22 @@ enum ProtectCommands: String, Subcommandable {
     }
 }
 
+/// Password-based encryption and decryption of sensitive files.
+///
+/// Use to protect private key files (`.skey`) and other sensitive material
+/// at rest. See <doc:ProtectCommand> for full documentation.
 struct ProtectMainCommand: AsyncParsableCommand, MainCommandable {
     typealias E = ProtectCommands
-    
+
     var name: String { "Protect" }
-    
+
     static let configuration = CommandConfiguration(
         commandName: "protect",
-        abstract: "Encrypt/Decrypt operations",
+        abstract: "Encrypt or decrypt sensitive files with a password.",
         discussion: """
-        Encrypting files allows you to protect sensitive information by 
-        requiring a password to access the contents. Decrypting files allows you 
-        to access the contents of previously encrypted files by providing the 
-        correct password. Select the desired operation to proceed with 
-        encrypting or decrypting your files.
+        Protect private key files and other sensitive material using
+        password-based encryption. Decrypt files on demand using the password
+        or the CARDANO_MULTITOOL_DECRYPT_PASSWORD environment variable.
         """,
         subcommands: ProtectCommands.subcommands,
     )

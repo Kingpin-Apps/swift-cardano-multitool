@@ -46,20 +46,22 @@ enum BuildCommands: String, Subcommandable {
     }
 }
 
+/// Derives Cardano addresses from cryptographic verification keys.
+///
+/// Supports enterprise addresses (payment key only) and base addresses
+/// (payment + stake key). See <doc:BuildCommand> for full documentation.
 struct BuildMainCommand: AsyncParsableCommand, MainCommandable {
     typealias E = BuildCommands
-    
+
     var name: String { "Build" }
-    
+
     static let configuration = CommandConfiguration(
         commandName: "build",
-        abstract: "Build operations for Cardano addresses.",
+        abstract: "Build payment or stake addresses from verification key files.",
         discussion: """
-        Build various types of Cardano addresses from their corresponding 
-        key files. For payment addresses, provide the payment verification 
-        key file and optionally the stake verification key file to build a 
-        base address. For stake addresses, provide the stake verification 
-        key file to build a stake address.
+        Derive Cardano addresses from cryptographic verification key files.
+        Use payment-address to build an enterprise or base address, and
+        stake-address to build a rewards address for delegation.
         """,
         subcommands: BuildCommands.subcommands,
     )

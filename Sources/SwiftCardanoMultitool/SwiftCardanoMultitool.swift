@@ -3,6 +3,7 @@ import Noora
 import Foundation
 import Logging
 
+/// Top-level command groups available from the main menu and as CLI subcommands.
 enum MainCommands: String, CaseIterable, CustomStringConvertible {
     case build
     case certificates
@@ -63,6 +64,7 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
     }
 }
 
+/// Entry point called by the thin executable target.
 @available(macOS 10.15, macCatalyst 13, iOS 13, tvOS 13, watchOS 6, *)
 public func runApp() async {
     do {
@@ -85,6 +87,7 @@ public func runApp() async {
     }
 }
 
+/// Root CLI command. When invoked with no subcommand, displays the interactive main menu.
 @available(macOS 10.15, macCatalyst 13, iOS 13, tvOS 13, watchOS 6, *)
 struct SwiftCardanoMultitool: AsyncParsableCommand {
     static let configuration = CommandConfiguration(

@@ -49,19 +49,22 @@ enum RunCommands: String, Subcommandable {
     }
 }
 
+/// Starts Cardano node services using settings from the active config file.
+///
+/// Covers the full Cardano service stack: node, db-sync, wallet, submit API,
+/// Ogmios, and Kupo. See <doc:RunCommand> for full documentation.
 struct RunMainCommand: AsyncParsableCommand, MainCommandable {
     typealias E = RunCommands
-    
+
     var name: String { "Run" }
-    
+
     static let configuration = CommandConfiguration(
         commandName: "run",
-        abstract: "Run various cardano tools.",
+        abstract: "Start Cardano node services (node, db-sync, wallet, ogmios, kupo).",
         discussion: """
-        Run various Cardano tools such as cardano-node, cardano-db-sync, 
-        cardano-wallet, cardano-submit-api, Ogmios, and Kupo. Select the desired 
-        tool from the options to proceed with running the selected tool. You can 
-        also choose to go back to the main menu
+        Launch Cardano services in the foreground using parameters from the
+        active configuration file. Requires the respective binaries to be
+        installed — use `scm install` to download missing tools.
         """,
         subcommands: RunCommands.subcommands
     )

@@ -40,20 +40,22 @@ enum SendCommands: String, Subcommandable {
     }
 }
 
+/// Builds and submits transactions to transfer ADA and native assets.
+///
+/// Wraps the full build–sign–submit pipeline in a single guided workflow.
+/// See <doc:SendCommand> for full documentation.
 struct SendMainCommand: AsyncParsableCommand, MainCommandable {
     typealias E = SendCommands
-    
+
     var name: String { "Send" }
-    
+
     static let configuration = CommandConfiguration(
         commandName: "send",
-        abstract: "Send Ada and assets.",
+        abstract: "Transfer ADA or native assets to another address.",
         discussion: """
-        This command allows you to send ADA and native assets from one address 
-        to another. You can choose to send all ADA and assets, specific native 
-        assets, or a specific amount of lovelaces. The command provides 
-        flexibility in how you want to manage your transactions, whether it's 
-        sending everything or just a portion of your holdings.
+        Send lovelaces, native assets, or your entire wallet balance to a
+        recipient address. Fees are calculated automatically and a confirmation
+        prompt is shown before submission.
         """,
         subcommands: SendCommands.allCases.map { $0.command() }
     )

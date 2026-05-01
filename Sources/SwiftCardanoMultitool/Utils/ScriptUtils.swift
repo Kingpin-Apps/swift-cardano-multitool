@@ -608,8 +608,10 @@ public func getVersionAndInfoText(config: MultitoolConfig) async throws -> (Vers
     return (version, infoString)
 }
 
-/// Display version and network info
-/// - Parameter config: The multitool configuration
+/// Display version and network info for the active tool.
+/// - Parameters:
+///   - config: The multitool configuration
+///   - tool: The backend tool whose version information to display
 public func printToolInfo(
     config: MultitoolConfig,
     tool: Tool
@@ -732,12 +734,11 @@ public func getProtocolParameters(
 
 // MARK: - Chain State Querying
 
-/// Queries chain state for stake address info
+/// Queries the current chain state (tip and TTL).
 /// - Parameters:
 ///   - context: The chain context to use for querying
 ///   - config: The multitool configuration
-///   - protocolParamsFile: The file path to save protocol parameters
-/// - Returns: A tuple containing the current tip, calculated TTL, and protocol parameters
+/// - Returns: A tuple containing the current tip and calculated TTL
 public func queryChainState(
     context: any ChainContext,
     config: MultitoolConfig,

@@ -70,14 +70,24 @@ enum TransactionCommands: String, Subcommandable {
     }
 }
 
+/// Low-level Cardano transaction operations: build, sign, assemble, and submit.
+///
+/// Provides full control over the transaction pipeline for advanced use cases
+/// beyond the high-level `send` command. See <doc:TransactionCommand> for
+/// full documentation.
 struct TransactionMainCommand: AsyncParsableCommand, MainCommandable {
     typealias E = TransactionCommands
-    
+
     var name: String { "Transaction" }
-    
+
     static let configuration = CommandConfiguration(
         commandName: "transaction",
-        abstract: "Transaction related commands.",
+        abstract: "Build, sign, inspect, and submit Cardano transactions.",
+        discussion: """
+        Full control over the Cardano transaction lifecycle: construct balanced
+        transaction bodies, create witnesses, assemble multi-sig transactions,
+        calculate fees and minimum UTxO values, and submit to the network.
+        """,
         subcommands: TransactionCommands.subcommands,
         aliases: ["tx"]
     )

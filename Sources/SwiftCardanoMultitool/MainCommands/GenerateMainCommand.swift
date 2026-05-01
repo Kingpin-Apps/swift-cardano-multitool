@@ -75,18 +75,23 @@ enum GenerateCommands: String, Subcommandable {
     }
 }
 
+/// Generates cryptographic key pairs, addresses, and pool metadata.
+///
+/// Covers all key material needed for stake pool operation (cold, KES, VRF,
+/// operational certificate) as well as wallet address generation and pool
+/// registration metadata. See <doc:GenerateCommand> for full documentation.
 struct GenerateMainCommand: AsyncParsableCommand, MainCommandable {
     typealias E = GenerateCommands
-    
+
     var name: String { "Generate" }
-    
+
     static let configuration = CommandConfiguration(
         commandName: "generate",
-        abstract: "Generate various files.",
+        abstract: "Generate keys, addresses, certificates, and pool metadata.",
         discussion: """
-        Generate various files needed for interacting with the Cardano 
-        blockchain, such as keys, addresses, certificates and pool.json files. 
-        Select the type of file you want to generate and follow the prompts.
+        Generate all cryptographic material needed to operate a Cardano node
+        or wallet: cold/KES/VRF key pairs, operational certificates, payment
+        and stake addresses, KES key rotation, and pool.json metadata files.
         """,
         subcommands: GenerateCommands.subcommands,
         aliases: ["gen"]

@@ -680,9 +680,8 @@ public struct Pool: Codable, Sendable {
     
     // MARK: - Metadata Generation
     
-    /// Generate the metadata JSON dictionary
-    /// - Parameter includeExtendedMetadata: Whether to include the extended metadata URL
-    /// - Returns: The metadata dictionary
+    /// Generate the pool metadata object.
+    /// - Returns: The pool metadata.
     public func toPoolMetadata() throws -> PoolMetadata {
         let poolMetadata = try PoolMetadata(
             name: metaName,

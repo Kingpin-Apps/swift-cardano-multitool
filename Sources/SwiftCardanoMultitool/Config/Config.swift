@@ -114,7 +114,14 @@ extension MultitoolConfigs: Codable {
 
 // MARK: - Configuration Models
 
-/// Main configuration structure for SwiftCardanoMultitool
+/// Main configuration for `scm`.
+///
+/// Load from a JSON, TOML, or YAML file pointed to by the
+/// `CARDANO_MULTITOOL_CONFIG` environment variable, or by calling
+/// `MultitoolConfig.load()`. Individual fields can be overridden by
+/// environment variables (e.g. `BLOCKFROST_PROJECT_ID`).
+///
+/// See <doc:Configuration> for a full field reference and file format examples.
 public struct MultitoolConfig: Codable, Sendable {
     /// Blockfrost project ID for API access
     public var blockfrostProjectId: String?
