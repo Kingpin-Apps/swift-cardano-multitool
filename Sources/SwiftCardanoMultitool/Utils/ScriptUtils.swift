@@ -28,6 +28,19 @@ func printDivider(_ char: Character = "-") {
 /// - Returns: An instance of `ChainContext`
 public func getContext(config: MultitoolConfig) async throws -> any ChainContext {
     
+    func fallbackToLiteMode(config: MultitoolConfig) async throws -> any ChainContext {
+        noora.warning(
+            .alert(
+                "\(.danger("The node is not synced."))",
+                takeaway: "Falling back to \(.primary("Lite")) mode."
+            )
+        )
+        
+        print()
+        
+        return try await getLiteContext(config: config)
+    }
+    
     func getOnlineContext(config: MultitoolConfig) async throws -> any ChainContext {
         let logger = getLogger(config: config)
         
@@ -48,20 +61,27 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
                     )
                 }
                 
-                return NodeSocketChainContext(
+                let nodeSocketContext = NodeSocketChainContext(
                     socketPath: socketPath,
                     network: cardanoConfig.network
                 )
-            } catch SwiftCardanoUtilsError.nodeNotSynced {
-                noora.warning(
-                    .alert(
-                        "\(.danger("The node is not synced."))",
-                        takeaway: "Falling back to \(.primary("Lite")) mode."
-                    )
-                )
-                print()
                 
-                return try await getLiteContext(config: config)
+                let chainTip = try await nodeSocketContext.chainTip()
+                guard let syncProgress = chainTip.syncProgress,
+                      let syncProgressDouble = Double(syncProgress) else {
+                    throw SwiftCardanoUtilsError
+                        .invalidOutput(
+                            "Could not parse syncProgress as Double: \(String(describing: chainTip.syncProgress))"
+                        )
+                }
+                
+                if syncProgressDouble < 100.0 {
+                    return try await fallbackToLiteMode(config: config)
+                } else {
+                    return nodeSocketContext
+                }
+            } catch SwiftCardanoUtilsError.nodeNotSynced {
+                return try await fallbackToLiteMode(config: config)
             }
         } else if let ogmiosConfig = config.ogmios {
             return try await OgmiosChainContext(
@@ -69,9 +89,7 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
                 port: ogmiosConfig.port
             )
         } else {
-            throw SwiftCardanoMultitoolError.invalidConfiguration(
-                "No valid online context configuration found. Please provide either 'cardano' or 'ogmios' configuration for online mode."
-            )
+            return try await fallbackToLiteMode(config: config)
         }
     }
     

@@ -31,7 +31,7 @@ extension QueryMainCommand {
                     errorMessage: "Failed to retrieve the blockchain tip.",
                     showSpinner: true
                 ) { updateMessage in
-                    return try await context.queryChainTip()
+                    return try await context.chainTip()
                 }
                 
                 spacedPrint(

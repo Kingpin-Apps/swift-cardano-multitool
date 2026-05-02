@@ -25,7 +25,7 @@ let package = Package(
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.4.0"),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.6.3"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.3.16"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.3.2"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.3.4"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "0.2.7"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.1.9"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.4.3"),
