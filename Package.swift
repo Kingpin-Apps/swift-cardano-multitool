@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.1
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -24,12 +24,12 @@ let package = Package(
         .package(url: "https://github.com/mattt/swift-toml.git", from: "2.0.0"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.4.0"),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.6.3"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.3.16"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.3.4"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "0.2.7"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.1.9"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.4.3"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.0"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.3.21"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.4.2"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "0.2.10"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.1.10"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.4.6"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.1"),
         .package(url: "https://github.com/tuist/Noora", .upToNextMajor(from: "0.56.0")),
         .package(url: "https://github.com/mxcl/Version.git", from: "2.2.0"),
