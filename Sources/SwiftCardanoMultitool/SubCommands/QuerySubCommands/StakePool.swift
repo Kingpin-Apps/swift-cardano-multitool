@@ -34,19 +34,24 @@ extension QueryMainCommand {
         
         // MARK: - Input Method Selection
         
-        enum SelectOption: String, CaseIterable, CustomStringConvertible {
+        enum SelectOption: String, CaseIterable, AlignedChoiceDescribable {
             case poolName
             case poolJSON
             case poolOperator
-            
-            var description: String {
+
+            var name: String {
                 switch self {
-                    case .poolName:
-                        return "Use the pool name to find pool details in the current directory."
-                    case .poolJSON:
-                        return "Use a pool.json file to find pool ID"
-                    case .poolOperator:
-                        return "Use any available pool operator (pool id bech32, hex hash, or node.vkey file)"
+                    case .poolName: return "Pool Name"
+                    case .poolJSON: return "Pool JSON"
+                    case .poolOperator: return "Pool Operator"
+                }
+            }
+
+            var details: String {
+                switch self {
+                    case .poolName: return "Use the pool name to find pool details in the current directory."
+                    case .poolJSON: return "Use a pool.json file to find pool ID."
+                    case .poolOperator: return "Use any available pool operator (pool id bech32, hex hash, or node.vkey file)."
                 }
             }
         }

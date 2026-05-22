@@ -1,25 +1,30 @@
 import Foundation
 import ArgumentParser
 
-enum ConfigCommands: String, Subcommandable {
+enum ConfigCommands: String, Subcommandable, AlignedChoiceDescribable {
     case `init`
     case show
     case select
     case back
     case exit
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .`init`:
-                return "Initialize - Set up configuration for the first time or reset existing configuration."
-            case .show:
-                return "Show - Display the current configuration."
-            case .select:
-                return "Select - Choose configuration values."
-            case .back:
-                return "Back - Go back to the main menu."
-            case .exit:
-                return "Exit - Leave the program."
+            case .`init`: return "Initialize"
+            case .show: return "Show"
+            case .select: return "Select"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .`init`: return "Set up configuration for the first time or reset existing configuration."
+            case .show: return "Display the current configuration."
+            case .select: return "Choose configuration values."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     

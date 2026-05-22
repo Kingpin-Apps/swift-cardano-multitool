@@ -1,5 +1,4 @@
 import Foundation
-import Version
 import SwiftCardanoChain
 import SwiftCardanoUtils
 import SwiftCardanoCore
@@ -20,7 +19,7 @@ func printDivider(_ char: Character = "-") {
         return 80  // fallback
     }
     let divider = String(repeating: char, count: terminalWidth())
-    spacedPrint("\(divider)")
+    spacedPrint("\n\(divider)")
 }
 
 /// Get the appropriate chain context based on the multitool configuration
@@ -602,9 +601,9 @@ public func utxoSummary(
 /// - Parameter config: The multitool configuration - used to determine network info
 /// - Returns: A tuple containing the version and formatted network info text
 /// - Throws: An error if the version cannot be retrieved or if the configuration is invalid
-public func getVersionAndInfoText(config: MultitoolConfig) async throws -> (Version, TerminalText) {
+public func getVersionAndInfoText(config: MultitoolConfig) async throws -> (String, TerminalText) {
     let infoString: TerminalText
-    
+
     let cardanoConfig = try getCardanoConfig(config: config)
     if cardanoConfig.network == .mainnet {
         infoString = "\(.success("\(cardanoConfig.network.description.capitalized)"))"
@@ -616,14 +615,8 @@ public func getVersionAndInfoText(config: MultitoolConfig) async throws -> (Vers
         }
         infoString = "\(.danger("Testnet: \(cardanoConfig.network.description.capitalized)")) \(.danger("(magic \(testnetMagic))"))"
     }
-    
-    guard let version = SwiftCardanoMultitool.version else {
-        throw SwiftCardanoMultitoolError.invalidConfiguration(
-            "Unable to retrieve SwiftCardanoMultitool version."
-        )
-    }
-    
-    return (version, infoString)
+
+    return (Version.number, infoString)
 }
 
 /// Display version and network info for the active tool.
@@ -654,10 +647,10 @@ public func printToolInfo(
             
         case .swiftCardano:
             let swiftCardanoVersion = SwiftCardanoCore.version!
-            
+
             takeaways
                 .insert(
-                    "SwiftCardanoCore: \(.primary(swiftCardanoVersion.description))",
+                    "SwiftCardanoCore: \(.primary(String(describing: swiftCardanoVersion)))",
                     at: 0
                 )
     }

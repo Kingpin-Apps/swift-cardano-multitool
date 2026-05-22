@@ -48,6 +48,14 @@ extension TransactionMainCommand {
                 try await self.wizard()
             }
             
+            guard (txFile != nil || cborHex != nil) else {
+                noora.error(.alert(
+                    "Missing transaction CBOR hex or tx file.",
+                    takeaways: ["Provide either --tx-file or --cbor-hex."]
+                ))
+                throw ExitCode.validationFailure
+            }
+            
             let tx = try resolveTransaction()
             
             spacedPrint(

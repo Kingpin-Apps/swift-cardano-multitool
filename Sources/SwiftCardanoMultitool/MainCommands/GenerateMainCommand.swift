@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum GenerateCommands: String, Subcommandable {
+enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
     case nodeColdKeys = "node-cold-keys"
     case nodeKesKeys = "node-kes-keys"
     case nodeOperationalCertificate = "node-operational-certificate"
@@ -12,29 +12,34 @@ enum GenerateCommands: String, Subcommandable {
     case poolJSON = "pool-json"
     case back
     case exit
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .nodeColdKeys:
-                return "Cold keys - Generate a new set of cold keys."
-            case .nodeKesKeys:
-                return "KES keys - Generate the node KES keys."
-            case .nodeVrfKeys:
-                return "VRF keys - Generate the node VRF keys."
-            case .nodeOperationalCertificate:
-                return "Operational Certificate - Generate the node operational certificate."
-            case .paymentAddressOnly:
-                return "Payment Address - Generate a payment address only."
-            case .paymentAndStakeAddress:
-                return "Payment and Stake Address - Generate a payment and stake address."
-            case .keyRotation:
-                return "Key Rotation - Rotate KES keys and generate a new operational certificate."
-            case .poolJSON:
-                return "Pool.json - Generate a new pool.json file."
-            case .back:
-                return "Back - Go back to the main menu."
-            case .exit:
-                return "Exit - Leave the program."
+            case .nodeColdKeys: return "Cold keys"
+            case .nodeKesKeys: return "KES keys"
+            case .nodeVrfKeys: return "VRF keys"
+            case .nodeOperationalCertificate: return "Operational Certificate"
+            case .paymentAddressOnly: return "Payment Address"
+            case .paymentAndStakeAddress: return "Payment and Stake Address"
+            case .keyRotation: return "Key Rotation"
+            case .poolJSON: return "Pool.json"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .nodeColdKeys: return "Generate a new set of cold keys."
+            case .nodeKesKeys: return "Generate the node KES keys."
+            case .nodeVrfKeys: return "Generate the node VRF keys."
+            case .nodeOperationalCertificate: return "Generate the node operational certificate."
+            case .paymentAddressOnly: return "Generate a payment address only."
+            case .paymentAndStakeAddress: return "Generate a payment and stake address."
+            case .keyRotation: return "Rotate KES keys and generate a new operational certificate."
+            case .poolJSON: return "Generate a new pool.json file."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     

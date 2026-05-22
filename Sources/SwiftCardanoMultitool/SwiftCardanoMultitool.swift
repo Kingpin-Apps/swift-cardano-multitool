@@ -4,7 +4,7 @@ import Foundation
 import Logging
 
 /// Top-level command groups available from the main menu and as CLI subcommands.
-enum MainCommands: String, CaseIterable, CustomStringConvertible {
+enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
     case build
     case certificates
     case config
@@ -19,31 +19,50 @@ enum MainCommands: String, CaseIterable, CustomStringConvertible {
     case version
     case workOffline = "work-offline"
     case exit
-    
+
     /// The chronological index of this era (0-based)
     public var index: Int {
         MainCommands.allCases.firstIndex(of: self)!
     }
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .build: return "Build - Build payment and stake address from keys."
-            case .certificates: return "Certificates - Create and submit various certificates."
-            case .config: return "Config - Manage configuration settings."
-            case .download: return "Download - Download necessary files or data."
-            case .generate: return "Generate - Create keys, addresses, or other data."
-            case .install: return "Install - Install cli tools or dependencies."
-            case .protect: return "Protect - Secure sensitive data with a password."
-            case .query: return "Query - Get various data from the blockchain."
-            case .run: return "Run - Start various Cardano services."
-            case .send: return "Send - Trasnfer ADA or assets."
-            case .transaction: return "Transaction - Operate on Cardano transactions."
-            case .version: return "Version - Show version information."
-            case .workOffline: return "Work Offline - Operations for working offline."
-            case .exit: return "Exit - Quit the program."
+            case .build: return "Build"
+            case .certificates: return "Certificates"
+            case .config: return "Config"
+            case .download: return "Download"
+            case .generate: return "Generate"
+            case .install: return "Install"
+            case .protect: return "Protect"
+            case .query: return "Query"
+            case .run: return "Run"
+            case .send: return "Send"
+            case .transaction: return "Transaction"
+            case .version: return "Version"
+            case .workOffline: return "Work Offline"
+            case .exit: return "Exit"
         }
     }
-    
+
+    var details: String {
+        switch self {
+            case .build: return "Build payment and stake address from keys."
+            case .certificates: return "Create and submit various certificates."
+            case .config: return "Manage configuration settings."
+            case .download: return "Download necessary files or data."
+            case .generate: return "Create keys, addresses, or other data."
+            case .install: return "Install cli tools or dependencies."
+            case .protect: return "Secure sensitive data with a password."
+            case .query: return "Get various data from the blockchain."
+            case .run: return "Start various Cardano services."
+            case .send: return "Transfer ADA or assets."
+            case .transaction: return "Operate on Cardano transactions."
+            case .version: return "Show version information."
+            case .workOffline: return "Operations for working offline."
+            case .exit: return "Quit the program."
+        }
+    }
+
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .build: return BuildMainCommand.self
@@ -93,7 +112,7 @@ struct SwiftCardanoMultitool: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "scm",
         abstract: "SwiftCardanoMultitool - A collection of tools for Cardano.",
-        version: SwiftCardanoMultitool.version?.description ?? "",
+        version: Version.number,
         subcommands: MainCommands.allCases.map { $0.command() },
         defaultSubcommand: nil
     )

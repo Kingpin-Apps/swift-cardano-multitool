@@ -6,16 +6,24 @@ import Noora
 
 // MARK: - Install Method
 
-enum InstallMethod: String, CaseIterable, CustomStringConvertible {
+enum InstallMethod: String, CaseIterable, AlignedChoiceDescribable {
     case binary
     case docker
     case appleContainer = "apple-container"
 
-    var description: String {
+    var name: String {
         switch self {
-            case .binary: return "Binary - Download and install the pre-built binary for your platform."
-            case .docker: return "Docker - Pull the official Docker image."
-            case .appleContainer: return "Apple Container - Pull using Apple's container CLI (macOS only)."
+            case .binary: return "Binary"
+            case .docker: return "Docker"
+            case .appleContainer: return "Apple Container"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .binary: return "Download and install the pre-built binary for your platform."
+            case .docker: return "Pull the official Docker image."
+            case .appleContainer: return "Pull using Apple's container CLI (macOS only)."
         }
     }
 

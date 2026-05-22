@@ -2,18 +2,27 @@ import Foundation
 import ArgumentParser
 import Noora
 
-enum ProtectCommands: String, Subcommandable {
+enum ProtectCommands: String, Subcommandable, AlignedChoiceDescribable {
     case encrypt
     case decrypt
     case back
     case exit
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .encrypt: return "Encrypt - Encrypt a file with a password."
-            case .decrypt: return "Decrypt - Decrypt a file with a password."
-            case .back: return "Back - Go back to the main menu."
-            case .exit: return "Exit - Leave the program."
+            case .encrypt: return "Encrypt"
+            case .decrypt: return "Decrypt"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .encrypt: return "Encrypt a file with a password."
+            case .decrypt: return "Decrypt a file with a password."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     

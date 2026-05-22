@@ -36,6 +36,7 @@ let package = Package(
         .package(url: "https://github.com/thoven87/icalendar-kit.git", from: "2.1.0"),
         // Provides Crypto compatible APIs on Linux
         .package(url: "https://github.com/apple/swift-crypto.git", from: "3.15.1"),
+        .package(url: "https://github.com/mgacy/swift-version-file-plugin", from: "0.2.1")
     ],
     targets: [
         // Library target containing all application logic — importable by both the executable and test target.
@@ -61,10 +62,7 @@ let package = Package(
                 // Only link Crypto on Linux; on Apple platforms CryptoKit is available.
                 .product(name: "Crypto", package: "swift-crypto", condition: .when(platforms: [.linux])),
             ],
-            path: "Sources/SwiftCardanoMultitool",
-            resources: [
-                .embedInCode("Resources/cz.json"),
-            ]
+            path: "Sources/SwiftCardanoMultitool"
         ),
         // Thin executable that just calls into the library.
         .executableTarget(

@@ -84,7 +84,7 @@ extension SendMainCommand {
 
             amount = noora.textPrompt(
                 title: "Amount",
-                prompt: "Enter amount in lovelaces, or 'min' for protocol minimum:",
+                prompt: "Enter amount (e.g., 100 ADA, 1.5M, 100000000 lovelace) or 'min' for protocol minimum:",
                 collapseOnAnswer: true,
                 validationRules: [NonEmptyValidationRule(error: "Amount cannot be empty.")]
             ).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -149,8 +149,8 @@ extension SendMainCommand {
                     "Protocol minimum UTXO: \(.primary(lovelaceToAdaFormatString(resolvedLovelace))) / \(.primary("\(resolvedLovelace)")) lovelaces"
                 )
             } else {
-                guard let parsed = UInt64(amount), parsed > 0 else {
-                    noora.error(.alert("Invalid amount '\(amount)'. Must be 'min' or a positive integer."))
+                guard let parsed = AdaFormatter(defaultUnit: .ada).toLovelace(amount), parsed > 0 else {
+                    noora.error(.alert("Invalid amount '\(amount)'. Must be 'min', or an ADA or lovelace amount."))
                     throw ExitCode.validationFailure
                 }
                 resolvedLovelace = parsed

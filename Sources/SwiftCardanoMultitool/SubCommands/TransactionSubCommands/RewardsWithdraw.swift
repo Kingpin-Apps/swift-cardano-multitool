@@ -52,12 +52,6 @@ extension TransactionMainCommand {
         @OptionGroup var transactionOptions: SharedTransactionOptions
         
         
-        // MARK: - Validation
-        
-        mutating func validate() throws {
-            try self.validateForTransaction()
-        }
-        
         // MARK: - Wizard
         
         mutating func wizard() async throws {
@@ -110,7 +104,7 @@ extension TransactionMainCommand {
             
             try await self.wizardForTransaction()
             
-            try self.validate()
+            try self.validateForTransaction()
         }
         
         // MARK: - Run

@@ -66,18 +66,27 @@ extension TransactionMainCommand {
 
         // MARK: - Wizard
 
-        enum ScriptDataInputMethod: String, CaseIterable, CustomStringConvertible {
+        enum ScriptDataInputMethod: String, CaseIterable, AlignedChoiceDescribable {
             case cborFile = "cbor-file"
             case jsonFile = "json-file"
             case jsonValue = "json-value"
             case cborHex = "cbor-hex"
 
-            var description: String {
+            var name: String {
                 switch self {
-                    case .cborFile: return "CBOR File - Provide a CBOR-encoded script data file."
-                    case .jsonFile: return "JSON File - Provide a JSON file following the Cardano detailed datum schema."
-                    case .jsonValue: return "JSON Value - Enter a JSON value inline."
-                    case .cborHex: return "CBOR Hex - Enter a raw CBOR hex string."
+                    case .cborFile: return "CBOR File"
+                    case .jsonFile: return "JSON File"
+                    case .jsonValue: return "JSON Value"
+                    case .cborHex: return "CBOR Hex"
+                }
+            }
+
+            var details: String {
+                switch self {
+                    case .cborFile: return "Provide a CBOR-encoded script data file."
+                    case .jsonFile: return "Provide a JSON file following the Cardano detailed datum schema."
+                    case .jsonValue: return "Enter a JSON value inline."
+                    case .cborHex: return "Enter a raw CBOR hex string."
                 }
             }
         }

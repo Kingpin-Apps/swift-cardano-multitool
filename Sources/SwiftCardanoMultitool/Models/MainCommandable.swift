@@ -1,6 +1,8 @@
 import ArgumentParser
 
 protocol Subcommandable: CaseIterable, CustomStringConvertible, Equatable, RawRepresentable where Self.RawValue == String {
+    var name: String { get }
+    var details: String { get }
     static var subcommands: [any AsyncParsableCommand.Type] { get }
 
     func command() -> any AsyncParsableCommand.Type
@@ -25,7 +27,7 @@ extension MainCommandable {
         )
         
         spacedPrint(
-            "Running \(.command(selectedOption.rawValue)) command...\n"
+            "Running \(.command(selectedOption.name)) command...\n"
         )
         
         await selectedOption.command().main([])

@@ -53,21 +53,6 @@ extension TransactionMainCommand {
         @Flag(help: "Submit the transaction to the blockchain")
         var submit = false
         
-        // MARK: - Validation
-        
-        mutating func validate() throws {
-            
-            guard !signingKeys.isEmpty else {
-                throw ValidationError("At least one signing key is required.")
-            }
-            
-            for key in signingKeys {
-                guard FileManager.default.fileExists(atPath: key.string) else {
-                    throw ValidationError("Signing key file does not exist at path: \(key.string)")
-                }
-            }
-        }
-        
         // MARK: - Wizard
         
         mutating func wizard() async throws {
@@ -125,8 +110,6 @@ extension TransactionMainCommand {
                 defaultAnswer: false,
                 description: "Requires network connectivity and sufficient funds."
             )
-            
-            try self.validate()
         }
         
         // MARK: - Run
@@ -134,6 +117,24 @@ extension TransactionMainCommand {
         mutating func run() async throws {
             if (txFile == nil && cborHex == nil) || signingKeys.isEmpty {
                 try await self.wizard()
+            }
+            
+            guard !signingKeys.isEmpty else {
+                noora.error(.alert(
+                    "At least one signing key is required.",
+                    takeaways: ["Provide at least one signing key."]
+                ))
+                throw ExitCode.validationFailure
+            }
+            
+            for key in signingKeys {
+                guard FileManager.default.fileExists(atPath: key.string) else {
+                    noora.error(.alert(
+                        "Signing key file does not exist at path: \(key.string)",
+                        takeaways: ["Check the file path and try again."]
+                    ))
+                    throw ExitCode.validationFailure
+                }
             }
             
             let config = try await MultitoolConfig.load()

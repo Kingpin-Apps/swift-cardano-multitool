@@ -8,16 +8,24 @@ import SwiftCardanoChain
 import SwiftCardanoTxBuilder
 import Path
 
-enum AllSendMode: String, ExpressibleByArgument, CaseIterable, CustomStringConvertible {
+enum AllSendMode: String, ExpressibleByArgument, CaseIterable, AlignedChoiceDescribable {
     case all           = "all"
     case assetsOnly    = "assets-only"
     case lovelacesOnly = "lovelaces-only"
 
-    var description: String {
+    var name: String {
         switch self {
-        case .all:           return "All - Send all ADA and assets to destination."
-        case .assetsOnly:    return "Assets Only - Send all native assets (with minimum ADA) to destination, keeping remaining ADA at source."
-        case .lovelacesOnly: return "Lovelaces Only - Send all available ADA to destination, returning assets with minimum ADA to source."
+        case .all:           return "All"
+        case .assetsOnly:    return "Assets Only"
+        case .lovelacesOnly: return "Lovelaces Only"
+        }
+    }
+
+    var details: String {
+        switch self {
+        case .all:           return "Send all ADA and assets to destination."
+        case .assetsOnly:    return "Send all native assets (with minimum ADA) to destination, keeping remaining ADA at source."
+        case .lovelacesOnly: return "Send all available ADA to destination, returning assets with minimum ADA to source."
         }
     }
 }

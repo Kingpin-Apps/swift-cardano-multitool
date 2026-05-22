@@ -35,14 +35,6 @@ extension TransactionMainCommand {
         @Flag(name: .long, help: "Output as JSON instead of formatted text.")
         var json: Bool = false
 
-        // MARK: - Validation
-
-        mutating func validate() throws {
-            if txFile != nil && cborHex != nil {
-                throw ValidationError("Provide either --tx-file or --cbor-hex, not both.")
-            }
-        }
-
         // MARK: - Wizard
 
         mutating func wizard() async throws {
@@ -65,6 +57,14 @@ extension TransactionMainCommand {
         mutating func run() async throws {
             if txFile == nil && cborHex == nil {
                 try await wizard()
+            }
+            
+            guard (txFile != nil || cborHex != nil) else {
+                noora.error(.alert(
+                    "Missing transaction CBOR hex or tx file.",
+                    takeaways: ["Provide either --tx-file or --cbor-hex."]
+                ))
+                throw ExitCode.validationFailure
             }
             
             let tx = try resolveTransaction()

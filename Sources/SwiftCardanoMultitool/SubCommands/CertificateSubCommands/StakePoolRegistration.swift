@@ -55,30 +55,40 @@ extension CertificateMainCommand {
         
         // MARK: - Input Enums
         
-        enum SelectOption: String, CaseIterable, CustomStringConvertible {
+        enum SelectOption: String, CaseIterable, AlignedChoiceDescribable {
             case poolName
             case poolJSON
-            
-            var description: String {
+
+            var name: String {
                 switch self {
-                    case .poolName:
-                        return "Use the pool name to find pool.json in the current directory"
-                    case .poolJSON:
-                        return "Use a pool.json file path"
+                    case .poolName: return "Pool Name"
+                    case .poolJSON: return "Pool JSON"
+                }
+            }
+
+            var details: String {
+                switch self {
+                    case .poolName: return "Use the pool name to find pool.json in the current directory."
+                    case .poolJSON: return "Use a pool.json file path."
                 }
             }
         }
-        
-        enum ForceOption: String, CaseIterable, CustomStringConvertible, ExpressibleByArgument {
+
+        enum ForceOption: String, CaseIterable, AlignedChoiceDescribable, ExpressibleByArgument {
             case registration
             case reregistration
-            
-            var description: String {
+
+            var name: String {
                 switch self {
-                    case .registration:
-                        return "Force registration even if the pool is already registered (will create a new certificate that can be used for re-registration)"
-                    case .reregistration:
-                        return "Force re-registration by creating a new certificate with the same pool ID (use with caution, as this may lead to unexpected consequences if the pool is already registered)"
+                    case .registration: return "Registration"
+                    case .reregistration: return "Re-registration"
+                }
+            }
+
+            var details: String {
+                switch self {
+                    case .registration: return "Force registration even if the pool is already registered (will create a new certificate that can be used for re-registration)."
+                    case .reregistration: return "Force re-registration by creating a new certificate with the same pool ID (use with caution, as this may lead to unexpected consequences if the pool is already registered)."
                 }
             }
         }

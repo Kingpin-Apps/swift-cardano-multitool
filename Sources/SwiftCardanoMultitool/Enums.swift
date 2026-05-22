@@ -9,52 +9,67 @@ public enum Mode: String, CaseIterable, CodingKeyRepresentable, Codable, Hashabl
     case lite = "lite"
 }
 
-enum GetAddressBy: String, CaseIterable, CustomStringConvertible {
+enum GetAddressBy: String, CaseIterable, AlignedChoiceDescribable {
     case name
     case path
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .name:
-                return "The name of the stem of the file."
-            case .path:
-                return "The path to the address.addr file."
+            case .name: return "Name"
+            case .path: return "Path"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .name: return "The name of the stem of the file."
+            case .path: return "The path to the address.addr file."
         }
     }
 }
 
-enum GetTransactionBy: String, CaseIterable, CustomStringConvertible {
+enum GetTransactionBy: String, CaseIterable, AlignedChoiceDescribable {
     case cborHex
     case path
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .cborHex:
-                return "The CBOR Hex representation of the transaction."
-            case .path:
-                return "The path to the transaction file."
+            case .cborHex: return "CBOR Hex"
+            case .path: return "Path"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .cborHex: return "The CBOR Hex representation of the transaction."
+            case .path: return "The path to the transaction file."
         }
     }
 }
 
-enum EnterAddressBy: String, CaseIterable, CustomStringConvertible {
+enum EnterAddressBy: String, CaseIterable, AlignedChoiceDescribable {
     case adahandle
     case address
     case path
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .adahandle:
-                return "The adahandle associated with the address."
-            case .address:
-                return "The address in Bech32 or Hex format."
-            case .path:
-                return "The path to the file containing the address."
+            case .adahandle: return "Adahandle"
+            case .address: return "Address"
+            case .path: return "Path"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .adahandle: return "The adahandle associated with the address."
+            case .address: return "The address in Bech32 or Hex format."
+            case .path: return "The path to the file containing the address."
         }
     }
 }
 
-enum EnterDRepBy: String, CaseIterable, CustomStringConvertible {
+enum EnterDRepBy: String, CaseIterable, AlignedChoiceDescribable {
     case alwaysAbstain
     case alwaysNoConfidence
     case bech32
@@ -63,127 +78,157 @@ enum EnterDRepBy: String, CaseIterable, CustomStringConvertible {
     case vkey
     case skey
     case mnemonics
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .alwaysAbstain:
-                return "Sets the DRep to always abstain."
-            case .alwaysNoConfidence:
-                return "Sets the DRep to always have no confidence."
-            case .bech32:
-                return "The DRep in Bech32 format."
-            case .hex:
-                return "The DRep in Hex format."
-            case .path:
-                return "The path to the file containing the DRep Id."
-            case .vkey:
-                return "The path to the verification key file."
-            case .skey:
-                return "The path to the signing key file."
-            case .mnemonics:
-                return "The mnemonics used to derive the DRep Id."
+            case .alwaysAbstain: return "Always Abstain"
+            case .alwaysNoConfidence: return "Always No Confidence"
+            case .bech32: return "Bech32"
+            case .hex: return "Hex"
+            case .path: return "Path"
+            case .vkey: return "Vkey"
+            case .skey: return "Skey"
+            case .mnemonics: return "Mnemonics"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .alwaysAbstain: return "Sets the DRep to always abstain."
+            case .alwaysNoConfidence: return "Sets the DRep to always have no confidence."
+            case .bech32: return "The DRep in Bech32 format."
+            case .hex: return "The DRep in Hex format."
+            case .path: return "The path to the file containing the DRep Id."
+            case .vkey: return "The path to the verification key file."
+            case .skey: return "The path to the signing key file."
+            case .mnemonics: return "The mnemonics used to derive the DRep Id."
         }
     }
 }
 
-enum EnterPoolOperatorBy: String, CaseIterable, CustomStringConvertible {
+enum EnterPoolOperatorBy: String, CaseIterable, AlignedChoiceDescribable {
     case bech32
     case hex
     case path
     case vkey
     case skey
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .bech32:
-                return "The Pool Operator ID in Bech32 format."
-            case .hex:
-                return "The Pool Operator ID in Hex format."
-            case .path:
-                return "The path to the file containing the Pool Operator ID."
-            case .vkey:
-                return "The path to the verification key file."
-            case .skey:
-                return "The path to the signing key file."
+            case .bech32: return "Bech32"
+            case .hex: return "Hex"
+            case .path: return "Path"
+            case .vkey: return "Vkey"
+            case .skey: return "Skey"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .bech32: return "The Pool Operator ID in Bech32 format."
+            case .hex: return "The Pool Operator ID in Hex format."
+            case .path: return "The path to the file containing the Pool Operator ID."
+            case .vkey: return "The path to the verification key file."
+            case .skey: return "The path to the signing key file."
         }
     }
 }
 
-enum EnterCommitteeColdCredentialBy: String, CaseIterable, CustomStringConvertible {
+enum EnterCommitteeColdCredentialBy: String, CaseIterable, AlignedChoiceDescribable {
     case bech32
     case hex
     case vkey
     case skey
 
-    var description: String {
+    var name: String {
         switch self {
-            case .bech32:
-                return "The Committee Cold Credential in Bech32 format (cc_cold1...)."
-            case .hex:
-                return "The Committee Cold Credential as a 56-character hex key hash."
-            case .vkey:
-                return "The path to the cold verification key file (.cc-cold.vkey)."
-            case .skey:
-                return "The path to the cold signing key file (.cc-cold.skey)."
+            case .bech32: return "Bech32"
+            case .hex: return "Hex"
+            case .vkey: return "Vkey"
+            case .skey: return "Skey"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .bech32: return "The Committee Cold Credential in Bech32 format (cc_cold1...)."
+            case .hex: return "The Committee Cold Credential as a 56-character hex key hash."
+            case .vkey: return "The path to the cold verification key file (.cc-cold.vkey)."
+            case .skey: return "The path to the cold signing key file (.cc-cold.skey)."
         }
     }
 }
 
-enum EnterCommitteeHotCredentialBy: String, CaseIterable, CustomStringConvertible {
+enum EnterCommitteeHotCredentialBy: String, CaseIterable, AlignedChoiceDescribable {
     case bech32
     case hex
     case vkey
     case skey
 
-    var description: String {
+    var name: String {
         switch self {
-            case .bech32:
-                return "The Committee Hot Credential in Bech32 format (cc_hot1...)."
-            case .hex:
-                return "The Committee Hot Credential as a 56-character hex key hash."
-            case .vkey:
-                return "The path to the hot verification key file (.cc-hot.vkey)."
-            case .skey:
-                return "The path to the hot signing key file (.cc-hot.skey)."
+            case .bech32: return "Bech32"
+            case .hex: return "Hex"
+            case .vkey: return "Vkey"
+            case .skey: return "Skey"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .bech32: return "The Committee Hot Credential in Bech32 format (cc_hot1...)."
+            case .hex: return "The Committee Hot Credential as a 56-character hex key hash."
+            case .vkey: return "The path to the hot verification key file (.cc-hot.vkey)."
+            case .skey: return "The path to the hot signing key file (.cc-hot.skey)."
         }
     }
 }
 
-enum EnterDRepCredentialBy: String, CaseIterable, CustomStringConvertible {
+enum EnterDRepCredentialBy: String, CaseIterable, AlignedChoiceDescribable {
     case bech32
     case hex
     case vkey
     case skey
 
-    var description: String {
+    var name: String {
         switch self {
-            case .bech32:
-                return "The DRep Credential in Bech32 format (drep1...)."
-            case .hex:
-                return "The DRep Credential as a 56-character hex key hash."
-            case .vkey:
-                return "The path to the DRep verification key file (.drep.vkey)."
-            case .skey:
-                return "The path to the DRep signing key file (.drep.skey)."
+            case .bech32: return "Bech32"
+            case .hex: return "Hex"
+            case .vkey: return "Vkey"
+            case .skey: return "Skey"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .bech32: return "The DRep Credential in Bech32 format (drep1...)."
+            case .hex: return "The DRep Credential as a 56-character hex key hash."
+            case .vkey: return "The path to the DRep verification key file (.drep.vkey)."
+            case .skey: return "The path to the DRep signing key file (.drep.skey)."
         }
     }
 }
 
-enum MoveInstantaneousRewardSourceOption: String, CaseIterable, CustomStringConvertible {
+enum MoveInstantaneousRewardSourceOption: String, CaseIterable, AlignedChoiceDescribable {
     case reserves
     case treasury
 
-    var description: String {
+    var name: String {
         switch self {
-            case .reserves:
-                return "Reserves - Transfer from the reserves."
-            case .treasury:
-                return "Treasury - Transfer from the treasury."
+            case .reserves: return "Reserves"
+            case .treasury: return "Treasury"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .reserves: return "Transfer from the reserves."
+            case .treasury: return "Transfer from the treasury."
         }
     }
 }
 
-public enum KeyGenMethod: String, CaseIterable, CustomStringConvertible, ExpressibleByArgument, Sendable, Codable, Hashable {
+public enum KeyGenMethod: String, CaseIterable, AlignedChoiceDescribable, ExpressibleByArgument, Sendable, Codable, Hashable {
 
     case cli = "cli"
     case enc = "enc"
@@ -194,7 +239,7 @@ public enum KeyGenMethod: String, CaseIterable, CustomStringConvertible, Express
     case hybridEnc = "hybrid_enc"
     case hybridMultiEnc = "hybrid_multi_enc"
     case mnemonics = "mnemonics"
-    
+
     public var isEncryptedType: Bool {
         switch self {
             case .enc, .hybridEnc, .hybridMultiEnc:
@@ -203,7 +248,7 @@ public enum KeyGenMethod: String, CaseIterable, CustomStringConvertible, Express
                 return false
         }
     }
-    
+
     public var isHardwareType: Bool {
         switch self {
             case .hw, .hwMulti, .hybrid, .hybridMulti, .hybridEnc, .hybridMultiEnc:
@@ -212,7 +257,7 @@ public enum KeyGenMethod: String, CaseIterable, CustomStringConvertible, Express
                 return false
         }
     }
-    
+
     public var isMultisigType: Bool {
         switch self {
             case .hwMulti, .hybridMulti, .hybridMultiEnc:
@@ -221,7 +266,7 @@ public enum KeyGenMethod: String, CaseIterable, CustomStringConvertible, Express
                 return false
         }
     }
-    
+
     public var isHybridType: Bool {
         switch self {
             case .hybrid, .hybridMulti, .hybridEnc, .hybridMultiEnc:
@@ -230,27 +275,32 @@ public enum KeyGenMethod: String, CaseIterable, CustomStringConvertible, Express
                 return false
         }
     }
-    
-    public var description: String {
+
+    public var name: String {
         switch self {
-            case .cli:
-                return "Keys generated using cardano-cli or SwiftCardano library."
-            case .enc:
-                return "Keys generated using cardano-cli or SwiftCardano library then encrypted using GnuPG."
-            case .hw:
-                return "Keys generated using Ledger/Trezor HW-Keys (Normal-Path 1852H/1815H/<Acc>/0,2/<Idx>)."
-            case .hwMulti:
-                return "Keys generated using Ledger/Trezor HW-Keys (MultiSig-Path 1854H/1815H/<Acc>/0,2/<Idx>)."
-            case .hybrid:
-                return "Payment keys using Ledger/Trezor HW-Keys, Staking keys via cardano-cli or SwiftCardano library (comfort mode for multiowner pools)."
-            case .hybridEnc:
-                return "Payment keys using Ledger/Trezor HW-Keys, Staking keys via cardano-cli or SwiftCardano library and encrypted via a Password."
-            case .hybridMulti:
-                return "Payment keys using Ledger/Trezor HW-Keys (MultiSig-Path 1854H/1815H/<Acc>/0/<Idx>), Staking keys via cliMultiSig hybrid keys generated."
-            case .hybridMultiEnc:
-                return "Payment keys using Ledger/Trezor HW-Keys (MultiSig-Path 1854H/1815H/<Acc>/0/<Idx>), Staking keys via cli and encrypted via a Password."
-            case .mnemonics:
-                return "Payment & Staking keys via cardano-cli or SwiftCardano library and also generates Mnemonics for LightWallet import possibilities."
+            case .cli: return "CLI"
+            case .enc: return "Enc"
+            case .hw: return "HW"
+            case .hwMulti: return "HW Multi"
+            case .hybrid: return "Hybrid"
+            case .hybridMulti: return "Hybrid Multi"
+            case .hybridEnc: return "Hybrid Enc"
+            case .hybridMultiEnc: return "Hybrid Multi Enc"
+            case .mnemonics: return "Mnemonics"
+        }
+    }
+
+    public var details: String {
+        switch self {
+            case .cli: return "Keys generated using cardano-cli or SwiftCardano library."
+            case .enc: return "Keys generated using cardano-cli or SwiftCardano library then encrypted using GnuPG."
+            case .hw: return "Keys generated using Ledger/Trezor HW-Keys (Normal-Path 1852H/1815H/<Acc>/0,2/<Idx>)."
+            case .hwMulti: return "Keys generated using Ledger/Trezor HW-Keys (MultiSig-Path 1854H/1815H/<Acc>/0,2/<Idx>)."
+            case .hybrid: return "Payment keys using Ledger/Trezor HW-Keys, Staking keys via cardano-cli or SwiftCardano library (comfort mode for multiowner pools)."
+            case .hybridEnc: return "Payment keys using Ledger/Trezor HW-Keys, Staking keys via cardano-cli or SwiftCardano library and encrypted via a Password."
+            case .hybridMulti: return "Payment keys using Ledger/Trezor HW-Keys (MultiSig-Path 1854H/1815H/<Acc>/0/<Idx>), Staking keys via cliMultiSig hybrid keys generated."
+            case .hybridMultiEnc: return "Payment keys using Ledger/Trezor HW-Keys (MultiSig-Path 1854H/1815H/<Acc>/0/<Idx>), Staking keys via cli and encrypted via a Password."
+            case .mnemonics: return "Payment & Staking keys via cardano-cli or SwiftCardano library and also generates Mnemonics for LightWallet import possibilities."
         }
     }
 }

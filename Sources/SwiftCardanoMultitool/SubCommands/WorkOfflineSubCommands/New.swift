@@ -56,26 +56,20 @@ extension WorkOfflineMainCommand {
             
             spacedPrint("\nBuilding a fresh new offline transfer JSON at: \(.path(try .init(validating: absolute)))")
             
-            guard let version = SwiftCardanoMultitool.version else {
-                throw SwiftCardanoMultitoolError.invalidConfiguration(
-                    "Unable to retrieve SwiftCardanoMultitool version."
-                )
-            }
-            
             let protocolParameters = try await getProtocolParameters(
                 context: context
             )
-            
+
             let protocolData = try await OfflineTransferProtocolData(
                 protocolParameters: protocolParameters,
                 genesisParameters: context.genesisParameters(),
                 era: context.era(),
                 network: config.cardano?.network ?? .preview
             )
-            
+
             var offlineTransfer = try OfflineTransfer.new(at: outFile)
             offlineTransfer.general = OfflineTransferGeneral(
-                onlineVersion: "SwiftCardanoMultitool v\(version) via \(context.name)",
+                onlineVersion: "SwiftCardanoMultitool v\(Version.number) via \(context.name)",
             )
             offlineTransfer.protocol = protocolData
             

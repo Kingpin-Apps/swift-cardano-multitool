@@ -2,7 +2,7 @@ import Foundation
 import ArgumentParser
 import Noora
 
-enum InstallCommands: String, Subcommandable {
+enum InstallCommands: String, Subcommandable, AlignedChoiceDescribable {
     case cardanoNode
     case cardanoDbSync
     case cardanoCLI
@@ -16,32 +16,37 @@ enum InstallCommands: String, Subcommandable {
     case back
     case exit
 
-    var description: String {
+    var name: String {
         switch self {
-            case .cardanoNode:
-                return "Cardano Node - The backbone of the Cardano blockchain."
-            case .cardanoDbSync:
-                return "Cardano Db Sync - A tool for synchronizing Cardano blockchain data to a PostgreSQL database."
-            case .cardanoCLI:
-                return "Cardano CLI - The command-line interface for Cardano."
-            case .cardanoHWCLI:
-                return "Cardano HW CLI - For managing hardware wallets (Ledger/Trezor)."
-            case .cardanoSigner:
-                return "Cardano Signer - For securely signing transactions and messages."
-            case .cardanoSubmitAPI:
-                return "Cardano Submit API - A lightweight transaction submission service."
-            case .cardanoWallet:
-                return "Cardano Wallet - The Cardano Wallet software for managing your funds."
-            case .kupo:
-                return "Kupo - A lightweight Cardano chain indexer."
-            case .mithril:
-                return "Mithril - For fast Cardano node bootstrapping via certified snapshots."
-            case .ogmios:
-                return "Ogmios - A lightweight bridge interface for the Cardano node."
-            case .back:
-                return "Back - Go back to the main menu."
-            case .exit:
-                return "Exit - Leave the program."
+            case .cardanoNode: return "Cardano Node"
+            case .cardanoDbSync: return "Cardano Db Sync"
+            case .cardanoCLI: return "Cardano CLI"
+            case .cardanoHWCLI: return "Cardano HW CLI"
+            case .cardanoSigner: return "Cardano Signer"
+            case .cardanoSubmitAPI: return "Cardano Submit API"
+            case .cardanoWallet: return "Cardano Wallet"
+            case .kupo: return "Kupo"
+            case .mithril: return "Mithril"
+            case .ogmios: return "Ogmios"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .cardanoNode: return "The backbone of the Cardano blockchain."
+            case .cardanoDbSync: return "A tool for synchronizing Cardano blockchain data to a PostgreSQL database."
+            case .cardanoCLI: return "The command-line interface for Cardano."
+            case .cardanoHWCLI: return "For managing hardware wallets (Ledger/Trezor)."
+            case .cardanoSigner: return "For securely signing transactions and messages."
+            case .cardanoSubmitAPI: return "A lightweight transaction submission service."
+            case .cardanoWallet: return "The Cardano Wallet software for managing your funds."
+            case .kupo: return "A lightweight Cardano chain indexer."
+            case .mithril: return "For fast Cardano node bootstrapping via certified snapshots."
+            case .ogmios: return "A lightweight bridge interface for the Cardano node."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     

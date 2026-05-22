@@ -24,22 +24,27 @@ extension QueryMainCommand {
         @Option(name: [.short, .long], help: "Which KES period to query. If not specified, queries the current KES period.")
         var whichPeriod: WhichPeriod? = nil
         
-        enum SelectOption: String, CaseIterable, CustomStringConvertible {
+        enum SelectOption: String, CaseIterable, AlignedChoiceDescribable {
             case poolName
             case poolJSON
             case poolOperator
             case opCert
-            
-            var description: String {
+
+            var name: String {
                 switch self {
-                    case .poolName:
-                        return "Use the pool name to find the latest opcert file in the current directory"
-                    case .poolJSON:
-                        return "Use the pool.json file to find the latest opcert file in the current directory"
-                    case .poolOperator:
-                        return "Use any available pool operator like pool id bech32 or hex hash, or node.vkey file in the current directory"
-                    case .opCert:
-                        return "Provide the path to the opcert file directly"
+                    case .poolName: return "Pool Name"
+                    case .poolJSON: return "Pool JSON"
+                    case .poolOperator: return "Pool Operator"
+                    case .opCert: return "Op Cert"
+                }
+            }
+
+            var details: String {
+                switch self {
+                    case .poolName: return "Use the pool name to find the latest opcert file in the current directory."
+                    case .poolJSON: return "Use the pool.json file to find the latest opcert file in the current directory."
+                    case .poolOperator: return "Use any available pool operator like pool id bech32 or hex hash, or node.vkey file in the current directory."
+                    case .opCert: return "Provide the path to the opcert file directly."
                 }
             }
         }

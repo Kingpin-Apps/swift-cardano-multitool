@@ -1,20 +1,30 @@
 import Foundation
 import ArgumentParser
 
-enum SendCommands: String, Subcommandable {
+enum SendCommands: String, Subcommandable, AlignedChoiceDescribable {
     case all
     case assets
     case lovelaces
     case back
     case exit
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .all: return "All - Send all ADA and assets, all assets, or all ADA from an address."
-            case .assets: return "Assets - Send a specific native asset (amount, all, or min) to an address."
-            case .lovelaces: return "Lovelaces - Send a lovelace amount (specific or minimum) to an address."
-            case .back: return "Back - Go back to the main menu."
-            case .exit: return "Exit - Leave the program."
+            case .all: return "All"
+            case .assets: return "Assets"
+            case .lovelaces: return "Lovelaces"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .all: return "Send all ADA and assets, all assets, or all ADA from an address."
+            case .assets: return "Send a specific native asset (amount, all, or min) to an address."
+            case .lovelaces: return "Send a lovelace amount (specific or minimum) to an address."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     

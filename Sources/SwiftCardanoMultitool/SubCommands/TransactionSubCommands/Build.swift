@@ -466,11 +466,12 @@ extension TransactionMainCommand {
 
                 let totalColStr = noora.textPrompt(
                     title: "Total Collateral",
-                    prompt: "Enter total collateral amount in lovelace (leave empty to skip):",
+                    prompt: "Enter total collateral amount (e.g., 5 ADA, 5000000 lovelace; leave empty to skip):",
                     collapseOnAnswer: true
                 ).trimmingCharacters(in: .whitespacesAndNewlines)
-                if !totalColStr.isEmpty, let amount = Int(totalColStr) {
-                    txTotalCollateral = amount
+                if !totalColStr.isEmpty,
+                   let lovelace = AdaFormatter(defaultUnit: .ada).toLovelace(totalColStr) {
+                    txTotalCollateral = Int(lovelace)
                 }
             }
 
@@ -663,10 +664,11 @@ extension TransactionMainCommand {
                 spacedPrint("\n\(.primary("━━━ Treasury Donation ━━━"))\n")
                 let donStr = noora.textPrompt(
                     title: "Treasury Donation",
-                    prompt: "Enter donation amount in lovelace:",
+                    prompt: "Enter donation amount (e.g., 100 ADA, 100000000 lovelace):",
                     collapseOnAnswer: true
                 ).trimmingCharacters(in: .whitespacesAndNewlines)
-                if !donStr.isEmpty, let amount = UInt64(donStr) {
+                if !donStr.isEmpty,
+                   let amount = AdaFormatter(defaultUnit: .ada).toLovelace(donStr) {
                     treasuryDonation = amount
                 }
             }

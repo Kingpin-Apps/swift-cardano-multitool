@@ -187,12 +187,13 @@ extension SendMainCommand {
             ).trimmingCharacters(in: .whitespacesAndNewlines)
 
             let lovelaceInput = noora.textPrompt(
-                title: "Lovelace Amount",
-                prompt: "Lovelaces to bundle (leave blank for protocol minimum):",
+                title: "ADA to Bundle",
+                prompt: "ADA/lovelace to bundle with the asset (e.g., 2 ADA, 2000000 lovelace; leave blank for protocol minimum):",
                 collapseOnAnswer: true
             ).trimmingCharacters(in: .whitespacesAndNewlines)
 
-            if !lovelaceInput.isEmpty, let parsed = UInt64(lovelaceInput) {
+            if !lovelaceInput.isEmpty,
+               let parsed = AdaFormatter(defaultUnit: .ada).toLovelace(lovelaceInput) {
                 lovelaceAmount = parsed
             }
 

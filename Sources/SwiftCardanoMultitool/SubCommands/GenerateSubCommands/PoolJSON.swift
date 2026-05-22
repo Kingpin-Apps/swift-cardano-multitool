@@ -138,30 +138,36 @@ extension GenerateMainCommand {
         /// Prompt for pool parameters: pledge, cost, margin
         private func promptPoolParams() -> (pledge: Int, cost: Int, margin: Double) {
             print(noora.format("\n\(.primary("── Pool Parameters ──"))\n"))
-            
+
+            let adaFormatter = AdaFormatter(defaultUnit: .ada)
+
             let pledgeStr = noora.textPrompt(
                 title: "Pledge",
-                prompt: "Enter the pool pledge in lovelace (e.g., 100000000000 = 100K ADA):",
-                description: "The amount of lovelace you commit to hold in your owner wallet(s).",
+                prompt: "Enter the pool pledge (e.g., 100K, 1.5M ADA, 100000000000 lovelace):",
+                description: "The amount you commit to hold in your owner wallet(s). Defaults to ADA; suffix with 'lovelace' or 'L' for lovelace.",
                 collapseOnAnswer: true,
                 validationRules: [
                     NonEmptyValidationRule(error: "Pledge cannot be empty."),
-                    IntegerValidationRule(min: 0, error: "Pledge must be a non-negative integer.")
+                    AdaValidationRule(defaultUnit: .ada, error: "Pledge must be a non-negative ADA amount.")
                 ]
             ).trimmingCharacters(in: .whitespacesAndNewlines)
-            let pledge = Int(pledgeStr)!
-            
+            let pledge = Int(adaFormatter.toLovelace(pledgeStr)!)
+
             let costStr = noora.textPrompt(
                 title: "Cost",
-                prompt: "Enter the pool fixed cost per epoch in lovelace (minimum 170000000 = 170 ADA):",
-                description: "The fixed fee taken from rewards each epoch before distribution.",
+                prompt: "Enter the pool fixed cost per epoch (minimum 170 ADA):",
+                description: "The fixed fee taken from rewards each epoch before distribution. Defaults to ADA; suffix with 'lovelace' or 'L' for lovelace.",
                 collapseOnAnswer: true,
                 validationRules: [
                     NonEmptyValidationRule(error: "Cost cannot be empty."),
-                    IntegerValidationRule(min: 170000000, error: "Cost must be at least 170000000 lovelace (170 ADA).")
+                    AdaValidationRule(
+                        defaultUnit: .ada,
+                        minLovelace: 170_000_000,
+                        error: "Cost must be at least 170 ADA (170000000 lovelace)."
+                    )
                 ]
             ).trimmingCharacters(in: .whitespacesAndNewlines)
-            let cost = Int(costStr)!
+            let cost = Int(adaFormatter.toLovelace(costStr)!)
             
             let marginStr = noora.textPrompt(
                 title: "Margin",
@@ -289,15 +295,15 @@ extension GenerateMainCommand {
                     ]
                 ).trimmingCharacters(in: .whitespacesAndNewlines)
                 
-                let port = noora.textPrompt(
+                let portInput = noora.textPrompt(
                     title: "Relay Port",
-                    prompt: "Enter the relay port (e.g., 3001):",
+                    prompt: "Enter the relay port (default 3001):",
                     collapseOnAnswer: true,
                     validationRules: [
-                        NonEmptyValidationRule(error: "Port cannot be empty."),
-                        IntegerValidationRule(min: 1, max: 65535, error: "Port must be between 1 and 65535.")
+                        PortOrEmptyValidationRule(error: "Port must be empty or between 1 and 65535.")
                     ]
                 ).trimmingCharacters(in: .whitespacesAndNewlines)
+                let port = portInput.isEmpty ? "3001" : portInput
                 
                 let hostType: HostType
                 if relayType == .ip {
@@ -406,13 +412,13 @@ extension GenerateMainCommand {
                     let stakePoolVKey = try StakePoolVerificationKey.load(from: vkeyPath.string)
                     let poolKeyHash = try stakePoolVKey.poolKeyHash()
                     let poolOperator = PoolOperator(poolKeyHash: poolKeyHash)
-                    
+
                     let generatedBech = try poolOperator.toBech32()
                     let generatedHex = try poolOperator.toBytes().toHex
-                    
+
                     idBech = idBech ?? generatedBech
                     idHex = idHex ?? generatedHex
-                    
+
                     // Save generated ID files
                     if !fm.fileExists(atPath: idBechFile.string) {
                         try poolOperator.save(to: idBechFile.string, format: .bech32)
@@ -428,15 +434,79 @@ extension GenerateMainCommand {
                     ))
                 }
             }
-            
+
+            // Still nothing — ask the user for a pool ID in bech32 or hex.
+            if idHex == nil && idBech == nil {
+                if let poolOperator = promptPoolId() {
+                    if let bech = try? poolOperator.toBech32() {
+                        idBech = bech
+                    }
+                    if let hex = try? poolOperator.toBytes().toHex {
+                        idHex = hex
+                    }
+
+                    // Save both files so subsequent runs pick them up automatically.
+                    if !fm.fileExists(atPath: idBechFile.string) {
+                        try? poolOperator.save(to: idBechFile.string, format: .bech32)
+                        noora.success(.alert("Saved pool ID (bech32): \(idBechFile.lastComponent?.string ?? idBechFile.string)"))
+                    }
+                    if !fm.fileExists(atPath: idHexFile.string) {
+                        try? poolOperator.save(to: idHexFile.string, format: .hex)
+                        noora.success(.alert("Saved pool ID (hex): \(idHexFile.lastComponent?.string ?? idHexFile.string)"))
+                    }
+                }
+            }
+
             if let idBech = idBech {
                 spacedPrint("Pool ID (Bech32): \(.primary(idBech))")
             }
             if let idHex = idHex {
                 spacedPrint("Pool ID (Hex): \(.primary(idHex))")
             }
-            
+
             return (coldVkey, coldSkey, nodeCounter, vrfVkey, vrfSkey, idHex, idBech)
+        }
+
+        /// Prompt the user for a pool ID in bech32 or hex format, validating and returning a `PoolOperator`.
+        /// Returns `nil` if the user skips or input cannot be parsed.
+        private func promptPoolId() -> PoolOperator? {
+            spacedPrint("No pool ID files found and no cold verification key available.")
+
+            let provide = noora.yesOrNoChoicePrompt(
+                title: "Pool ID",
+                question: "Would you like to enter a pool ID now?",
+                defaultAnswer: true,
+                description: "Accepts bech32 (pool1…) or 56-character hex. Both .pool.id and .pool.id-bech files will be created."
+            )
+            guard provide else { return nil }
+
+            let input = noora.textPrompt(
+                title: "Pool ID",
+                prompt: "Enter the pool ID (bech32 or hex):",
+                collapseOnAnswer: true,
+                validationRules: [
+                    NonEmptyValidationRule(error: "Pool ID cannot be empty."),
+                    PoolIdValidationRule(error: "Pool ID must be a valid bech32 (pool1…) or 56-character hex string.")
+                ]
+            ).trimmingCharacters(in: .whitespacesAndNewlines)
+
+            return parsePoolId(input)
+        }
+
+        /// Parse a pool ID string accepting either bech32 (`pool1…`) or hex (with optional `0x` prefix).
+        private func parsePoolId(_ input: String) -> PoolOperator? {
+            let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if trimmed.hasPrefix("pool") {
+                return try? PoolOperator(from: trimmed)
+            }
+
+            let hexCandidate = (trimmed.hasPrefix("0x") || trimmed.hasPrefix("0X"))
+                ? String(trimmed.dropFirst(2))
+                : trimmed
+            let data = hexCandidate.hexStringToData
+            guard !data.isEmpty else { return nil }
+            return try? PoolOperator(from: data)
         }
         
         /// Prompt for payment key files
@@ -765,6 +835,8 @@ extension GenerateMainCommand {
             try pool.validate()
             try pool.save(to: poolFile, overwrite: overwrite)
             
+            try await FileUtils.displayJSONFile(poolFile)
+            
             noora.success(.alert(
                 "Pool.json file created successfully.",
                 takeaways: [
@@ -773,8 +845,6 @@ extension GenerateMainCommand {
                     "Fields like registration, KES keys, and opcert are managed by other commands."
                 ]
             ))
-            
-            throw CleanExit.message("Exiting...")
         }
     }
 }

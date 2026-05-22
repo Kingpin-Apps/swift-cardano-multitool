@@ -89,12 +89,7 @@ extension WorkOfflineMainCommand {
             transfer.protocol.era = try await context.era()
             transfer.protocol.network = network
 
-            guard let version = SwiftCardanoMultitool.version else {
-                throw SwiftCardanoMultitoolError.invalidConfiguration(
-                    "Unable to retrieve SwiftCardanoMultitool version."
-                )
-            }
-            transfer.general.onlineVersion = "SwiftCardanoMultitool v\(version) via \(context.name)"
+            transfer.general.onlineVersion = "SwiftCardanoMultitool v\(Version.number) via \(context.name)"
 
             switch addressType {
             case .payment:

@@ -2,22 +2,27 @@ import Foundation
 import ArgumentParser
 import Noora
 
-enum BuildCommands: String, Subcommandable {
+enum BuildCommands: String, Subcommandable, AlignedChoiceDescribable {
     case paymentAddress
     case stakeAddress
     case back
     case exit
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .paymentAddress:
-                return "Payment Address - Build a Cardano payment address from the cli address key files."
-            case .stakeAddress:
-                return "Stake Address - Build a Cardano stake address from the stake verification key file."
-            case .back:
-                return "Back - Go back to the main menu."
-            case .exit:
-                return "Exit - Leave the program."
+            case .paymentAddress: return "Payment Address"
+            case .stakeAddress: return "Stake Address"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .paymentAddress: return "Build a Cardano payment address from the cli address key files."
+            case .stakeAddress: return "Build a Cardano stake address from the stake verification key file."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     

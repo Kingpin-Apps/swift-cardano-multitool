@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum QueryCommands: String, Subcommandable {
+enum QueryCommands: String, Subcommandable, AlignedChoiceDescribable {
     case address
     case epoch
     case era
@@ -12,19 +12,34 @@ enum QueryCommands: String, Subcommandable {
     case tip
     case back
     case exit
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .address: return "Address - Query an address."
-            case .epoch: return "Epoch - Query information about a specific epoch."
-            case .era: return "Era - Query information about a specific era."
-            case .kesPeriodInfo: return "KES Period Info - Check a node opcert KES period information."
-            case .leadershipSchedule: return "Leadership Schedule - Query leadership schedule."
-            case .protocolParameters: return "Protocol Parameters - Query protocol parameters."
-            case .stakePool: return "Stake Pool - Query stake pool information."
-            case .tip: return "Tip - Query the tip of the blockchain."
-            case .back: return "Back - Go back to the main menu."
-            case .exit: return "Exit - Leave the program."
+            case .address: return "Address"
+            case .epoch: return "Epoch"
+            case .era: return "Era"
+            case .kesPeriodInfo: return "KES Period Info"
+            case .leadershipSchedule: return "Leadership Schedule"
+            case .protocolParameters: return "Protocol Parameters"
+            case .stakePool: return "Stake Pool"
+            case .tip: return "Tip"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .address: return "Query an address."
+            case .epoch: return "Query information about a specific epoch."
+            case .era: return "Query information about a specific era."
+            case .kesPeriodInfo: return "Check a node opcert KES period information."
+            case .leadershipSchedule: return "Query leadership schedule."
+            case .protocolParameters: return "Query protocol parameters."
+            case .stakePool: return "Query stake pool information."
+            case .tip: return "Query the tip of the blockchain."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     

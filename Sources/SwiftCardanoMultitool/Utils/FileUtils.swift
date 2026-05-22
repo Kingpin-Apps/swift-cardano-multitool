@@ -19,6 +19,8 @@ import Foundation
 import SystemPackage
 import Darwin
 import ArgumentParser
+import Noora
+import Path
 
 /// Namespace for filesystem helpers used across commands.
 ///
@@ -293,35 +295,33 @@ public struct FileUtils {
     ///   - maxChars: If provided, prints only the leading prefix followed by an indicator.
     public static func displayFile(_ path: FilePath, maxChars: Int? = nil) async throws {
         do {
-            if let max = maxChars {
-                let s = try await loadLockedFile(path)
-                let prefix = String(s.prefix(max))
-                printDivider("─")
-                spacedPrint("\(prefix) ... (cropped)")
-                printDivider("─")
+            let s = try await loadLockedFile(path)
+            printFileMetadata(path)
+            printDivider("─")
+            if let max = maxChars, s.count > max {
+                spacedPrint("\(String(s.prefix(max))) ... (cropped)")
             } else {
-                let s = try await loadLockedFile(path)
-                printDivider("─")
                 spacedPrint("\(s)")
-                printDivider("─")
             }
+            printDivider("─")
         } catch {
             noora.warning(.alert("Error reading file: \(error)"))
         }
     }
-    
+
     /// Pretty-prints a locked JSON file to the terminal.
     /// - Parameter path: JSON file to display.
     public static func displayJSONFile(_ path: FilePath) async throws -> Void {
         do {
             let obj = try await loadLockedJSONFile(path)
-            
+
             let jsonData = try JSONSerialization.data(
                 withJSONObject: obj,
                 options: [.prettyPrinted, .withoutEscapingSlashes]
             )
-            
+
             if let jsonString = String(data: jsonData, encoding: .utf8) {
+                printFileMetadata(path)
                 printDivider("─")
                 print(jsonString)
                 printDivider("─")
@@ -329,6 +329,71 @@ public struct FileUtils {
         } catch {
             noora.warning(.alert("Error reading JSON file: \(error)"))
         }
+    }
+
+    /// Prints a `noora.info` alert summarizing a file's name, path, size, permissions,
+    /// and modification time. Best-effort: any attribute that can't be read is skipped.
+    /// - Parameter path: The file to describe.
+    public static func printFileMetadata(_ path: FilePath) {
+        let fileName = path.lastComponent?.string ?? path.string
+
+        var takeaways: [TerminalText] = []
+
+        let absolutePath: String
+        if path.string.hasPrefix("/") {
+            absolutePath = path.string
+        } else {
+            absolutePath = FilePath(FileManager.default.currentDirectoryPath)
+                .appending(path.string).string
+        }
+        if let validatedPath = try? AbsolutePath(validating: absolutePath) {
+            takeaways.append("Path: \(.path(validatedPath))")
+        } else {
+            takeaways.append("Path: \(.primary(path.string))")
+        }
+
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: path.string) {
+            if let size = attrs[.size] as? NSNumber {
+                takeaways.append("Size: \(.primary(formatByteSize(size.int64Value)))")
+            }
+            if let perms = attrs[.posixPermissions] as? NSNumber {
+                takeaways.append("Permissions: \(.primary(formatPosixPermissions(perms.intValue)))")
+            }
+            if let modified = attrs[.modificationDate] as? Date {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                takeaways.append("Modified: \(.primary(formatter.string(from: modified)))")
+            }
+        }
+        
+        printDivider()
+        noora.info(.alert("File: \(.primary(fileName))", takeaways: takeaways))
+    }
+
+    /// Formats a byte count as a human-readable string (e.g. `"1.2 KB"`).
+    private static func formatByteSize(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        formatter.includesUnit = true
+        formatter.allowedUnits = [.useBytes, .useKB, .useMB, .useGB]
+        return formatter.string(fromByteCount: bytes)
+    }
+
+    /// Formats POSIX permission bits as an `rwxrwxrwx`-style string.
+    /// - Parameter mode: The integer permission bits (e.g. `0o644`).
+    private static func formatPosixPermissions(_ mode: Int) -> String {
+        let triplets: [(Int, Int, Int)] = [
+            (0o400, 0o200, 0o100), // owner
+            (0o040, 0o020, 0o010), // group
+            (0o004, 0o002, 0o001), // other
+        ]
+        var result = ""
+        for (r, w, x) in triplets {
+            result += (mode & r) != 0 ? "r" : "-"
+            result += (mode & w) != 0 ? "w" : "-"
+            result += (mode & x) != 0 ? "x" : "-"
+        }
+        return result
     }
     
     /// Searches the current directory for files matching a pattern and returns the lexicographically latest.

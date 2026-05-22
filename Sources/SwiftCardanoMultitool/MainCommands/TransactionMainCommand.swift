@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum TransactionCommands: String, Subcommandable {
+enum TransactionCommands: String, Subcommandable, AlignedChoiceDescribable {
     case build
     case sign
     case assemble
@@ -18,23 +18,43 @@ enum TransactionCommands: String, Subcommandable {
     case back
     case exit
 
-    var description: String {
+    var name: String {
         switch self {
-            case .build: return "Build - Create a transaction body from provided inputs, outputs, and metadata."
-            case .sign: return "Sign - Sign a transaction."
-            case .assemble: return "Assemble - Assemble a transaction."
-            case .witness: return "Witness - Create a transaction witness."
-            case .submit: return "Submit - Submit a transaction."
-            case .calculateMinFee: return "Calculate Minimum Fee - Calculate minimum transaction fee."
-            case .calculateMinRequiredUtxo: return "Calculate Minimum Required UTXO - Calculate the minimum required UTXO for a transaction."
-            case .hashScriptData: return "Hash Script Data - Generate a hash for script data."
-            case .rewardsWithdraw: return "Rewards Withdraw - Generate a rewards withdraw transaction."
-            case .txid: return "Transaction ID - Calculate transaction ID."
-            case .view: return "View - View transaction details."
-            case .inspect: return "Inspect - Inspect transaction fields."
-            case .validate: return "Validate - Validate a transaction against ledger rules."
-            case .back: return "Back - Go back to the main menu."
-            case .exit: return "Exit - Leave the program."
+            case .build: return "Build"
+            case .sign: return "Sign"
+            case .assemble: return "Assemble"
+            case .witness: return "Witness"
+            case .submit: return "Submit"
+            case .calculateMinFee: return "Calculate Minimum Fee"
+            case .calculateMinRequiredUtxo: return "Calculate Minimum Required UTXO"
+            case .hashScriptData: return "Hash Script Data"
+            case .rewardsWithdraw: return "Rewards Withdraw"
+            case .txid: return "Transaction ID"
+            case .view: return "View"
+            case .inspect: return "Inspect"
+            case .validate: return "Validate"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .build: return "Create a transaction body from provided inputs, outputs, and metadata."
+            case .sign: return "Sign a transaction."
+            case .assemble: return "Assemble a transaction."
+            case .witness: return "Create a transaction witness."
+            case .submit: return "Submit a transaction."
+            case .calculateMinFee: return "Calculate minimum transaction fee."
+            case .calculateMinRequiredUtxo: return "Calculate the minimum required UTXO for a transaction."
+            case .hashScriptData: return "Generate a hash for script data."
+            case .rewardsWithdraw: return "Generate a rewards withdraw transaction."
+            case .txid: return "Calculate transaction ID."
+            case .view: return "View transaction details."
+            case .inspect: return "Inspect transaction fields."
+            case .validate: return "Validate a transaction against ledger rules."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     

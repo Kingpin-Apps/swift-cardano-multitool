@@ -1,18 +1,27 @@
 import Foundation
 import ArgumentParser
 
-enum DownloadCommands: String, Subcommandable {
+enum DownloadCommands: String, Subcommandable, AlignedChoiceDescribable {
     case nodeConfigs
     case snapshot
     case back
     case exit
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .nodeConfigs: return "Node Configs - Download node configurations from https://book.world.dev.cardano.org/."
-            case .snapshot: return "Database Snapshot - Download blockchain snapshot."
-            case .back: return "Back - Go back to the main menu."
-            case .exit: return "Exit - Leave the program."
+            case .nodeConfigs: return "Node Configs"
+            case .snapshot: return "Database Snapshot"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .nodeConfigs: return "Download node configurations from https://book.world.dev.cardano.org/."
+            case .snapshot: return "Download blockchain snapshot."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     

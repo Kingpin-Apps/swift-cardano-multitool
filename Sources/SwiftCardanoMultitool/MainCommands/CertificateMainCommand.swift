@@ -2,12 +2,12 @@ import Foundation
 import Command
 import ArgumentParser
 
-enum CertificateCommands: String, Subcommandable {
+enum CertificateCommands: String, Subcommandable, AlignedChoiceDescribable {
     case stakeDelegation
     case stakeRegistration
     case stakeDeregistration
     case poolRegistration
-    case poolRetirement
+    case poolDeregistration
     case genesisKeyDelegation
     case moveInstantaneousRewards
     case voteDelegate
@@ -22,47 +22,52 @@ enum CertificateCommands: String, Subcommandable {
     case updateDRep
     case back
     case exit
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .stakeDelegation:
-                return "Stake Delegation - Generates `name.deleg.cert to delegate a stake to a stakepool."
-            case .stakeRegistration:
-                return "Stake Address Registration - Generates `name.stake.cert` to register a stake address on the blockchain."
-            case .stakeDeregistration:
-                return "Stake Address Deregistration - Generates  `name.stake.dereg-cert` to deregister a stake address from the blockchain."
-            case .poolRegistration:
-                return "Pool Registration - Generates the certificate poolName.pool.cert to (re)register a stakepool on the blockchain."
-            case .poolRetirement:
-                return "Pool Retirement - Generates the certificate poolName.pool.dereg-cert to retire a stakepool from the blockchain."
-            case .genesisKeyDelegation:
-                return "Genesis Key Delegation - Generates the genesis key delegation certificate to delegate a genesis key to a stake pool."
-            case .moveInstantaneousRewards:
-                return "Move Instantaneous Rewards - Generates the move instantaneous rewards certificate."
-            case .voteDelegate:
-                return "Vote Delegate - Generates the vote delegation certificate."
-            case .stakeVoteDelegate:
-                return "Stake and Vote Delegate - Generates the stake and vote delegation certificate."
-            case .stakeRegisterDelegate:
-                return "Stake Register and Delegate - Generates the stake address registration and stake delegation certificate."
-            case .voteRegisterDelegate:
-                return "Vote Register and Delegate - Generates the stake registration and vote delegation certificate."
-            case .stakeVoteRegisterDelegate:
-                return "Stake and Vote Register and Delegate - Generates the stake address registration and vote delegation certificate."
-            case .authCommitteeHot:
-                return "Auth Committee Hot - Generates the constitutional committee hot key registration certificate."
-            case .resignCommitteeCold:
-                return "Resign Committee Cold - Generates the constitutional committee cold key resignation certificate."
-            case .registerDRep:
-                return "Register DRep - Generates the DRep registration certificate."
-            case .unRegisterDRep:
-                return "Unregister DRep - Generates the DRep retirement certificate."
-            case .updateDRep:
-                return "Update DRep - Generates the DRep update certificate."
-            case .back:
-                return "Back - Go back to the main menu."
-            case .exit:
-                return "Exit - Leave the program."
+            case .stakeDelegation: return "Stake Delegation"
+            case .stakeRegistration: return "Stake Address Registration"
+            case .stakeDeregistration: return "Stake Address Deregistration"
+            case .poolRegistration: return "Pool Registration"
+            case .poolDeregistration: return "Pool Deregistration"
+            case .genesisKeyDelegation: return "Genesis Key Delegation"
+            case .moveInstantaneousRewards: return "Move Instantaneous Rewards"
+            case .voteDelegate: return "Vote Delegate"
+            case .stakeVoteDelegate: return "Stake and Vote Delegate"
+            case .stakeRegisterDelegate: return "Stake Register and Delegate"
+            case .voteRegisterDelegate: return "Vote Register and Delegate"
+            case .stakeVoteRegisterDelegate: return "Stake and Vote Register and Delegate"
+            case .authCommitteeHot: return "Auth Committee Hot"
+            case .resignCommitteeCold: return "Resign Committee Cold"
+            case .registerDRep: return "Register DRep"
+            case .unRegisterDRep: return "Unregister DRep"
+            case .updateDRep: return "Update DRep"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .stakeDelegation: return "Generates `name.deleg.cert` to delegate a stake to a stakepool."
+            case .stakeRegistration: return "Generates `name.stake.cert` to register a stake address on the blockchain."
+            case .stakeDeregistration: return "Generates `name.stake.dereg-cert` to deregister a stake address from the blockchain."
+            case .poolRegistration: return "Generates the certificate poolName.pool.cert to (re)register a stakepool on the blockchain."
+            case .poolDeregistration: return "Generates the certificate poolName.pool.dereg-cert to retire a stakepool from the blockchain."
+            case .genesisKeyDelegation: return "Generates the genesis key delegation certificate to delegate a genesis key to a stake pool."
+            case .moveInstantaneousRewards: return "Generates the move instantaneous rewards certificate."
+            case .voteDelegate: return "Generates the vote delegation certificate."
+            case .stakeVoteDelegate: return "Generates the stake and vote delegation certificate."
+            case .stakeRegisterDelegate: return "Generates the stake address registration and stake delegation certificate."
+            case .voteRegisterDelegate: return "Generates the stake registration and vote delegation certificate."
+            case .stakeVoteRegisterDelegate: return "Generates the stake address registration and vote delegation certificate."
+            case .authCommitteeHot: return "Generates the constitutional committee hot key registration certificate."
+            case .resignCommitteeCold: return "Generates the constitutional committee cold key resignation certificate."
+            case .registerDRep: return "Generates the DRep registration certificate."
+            case .unRegisterDRep: return "Generates the DRep retirement certificate."
+            case .updateDRep: return "Generates the DRep update certificate."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     
@@ -87,7 +92,7 @@ enum CertificateCommands: String, Subcommandable {
                 return CertificateMainCommand.StakeAddressDeregistrationCertificate.self
             case .poolRegistration:
                 return CertificateMainCommand.StakePoolRegistrationCertificate.self
-            case .poolRetirement:
+            case .poolDeregistration:
                 return CertificateMainCommand.StakePoolRegistrationCertificate.self
             case .genesisKeyDelegation:
                 return CertificateMainCommand.GenesisKeyDelegationCertificate.self

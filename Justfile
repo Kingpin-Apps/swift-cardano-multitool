@@ -97,6 +97,15 @@ uninstall:
 changelog:
 	cz ch
 
-# Bump version according to changelog
+# Regenerate Version.swift from the current cz.json version
+version-file:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	VERSION=$(jq -r '.commitizen.version' cz.json)
+	echo "Generating Version.swift for v$VERSION..."
+	swift package --allow-writing-to-package-directory version-file --create "$VERSION"
+
+# Bump version according to changelog and regenerate Version.swift
 bump: changelog
 	cz bump
+	just version-file

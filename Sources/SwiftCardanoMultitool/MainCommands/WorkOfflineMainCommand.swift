@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum WorkOfflineCommands: String, Subcommandable {
+enum WorkOfflineCommands: String, Subcommandable, AlignedChoiceDescribable {
     case new
     case info
     case sync
@@ -14,19 +14,35 @@ enum WorkOfflineCommands: String, Subcommandable {
     case back
     case exit
 
-    var description: String {
+    var name: String {
         switch self {
-            case .new: return "New - Create new offline transfer file."
-            case .info: return "Info - Display contents of the offline transfer file."
-            case .sync: return "Sync - Add UTXO or rewards info from the blockchain."
-            case .execute: return "Execute - Submit a queued transaction."
-            case .attach: return "Attach - Embed a file into the offline transfer file."
-            case .extract: return "Extract - Extract embedded files from the offline transfer file."
-            case .clearTx: return "ClearTx - Remove all queued transactions."
-            case .clearHistory: return "ClearHistory - Clear the history entries."
-            case .clearFiles: return "ClearFiles - Remove all attached files."
-            case .back: return "Back - Go back to the main menu."
-            case .exit: return "Exit - Leave the program."
+            case .new: return "New"
+            case .info: return "Info"
+            case .sync: return "Sync"
+            case .execute: return "Execute"
+            case .attach: return "Attach"
+            case .extract: return "Extract"
+            case .clearTx: return "ClearTx"
+            case .clearHistory: return "ClearHistory"
+            case .clearFiles: return "ClearFiles"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .new: return "Create new offline transfer file."
+            case .info: return "Display contents of the offline transfer file."
+            case .sync: return "Add UTXO or rewards info from the blockchain."
+            case .execute: return "Submit a queued transaction."
+            case .attach: return "Embed a file into the offline transfer file."
+            case .extract: return "Extract embedded files from the offline transfer file."
+            case .clearTx: return "Remove all queued transactions."
+            case .clearHistory: return "Clear the history entries."
+            case .clearFiles: return "Remove all attached files."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     

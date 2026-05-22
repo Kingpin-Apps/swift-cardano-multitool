@@ -51,16 +51,21 @@ extension CertificateMainCommand {
         
         // MARK: - Input Enums
         
-        enum SelectOption: String, CaseIterable, CustomStringConvertible {
+        enum SelectOption: String, CaseIterable, AlignedChoiceDescribable {
             case poolName
             case poolJSON
-            
-            var description: String {
+
+            var name: String {
                 switch self {
-                    case .poolName:
-                        return "Use the pool name to find pool.json in the current directory"
-                    case .poolJSON:
-                        return "Use a pool.json file path"
+                    case .poolName: return "Pool Name"
+                    case .poolJSON: return "Pool JSON"
+                }
+            }
+
+            var details: String {
+                switch self {
+                    case .poolName: return "Use the pool name to find pool.json in the current directory."
+                    case .poolJSON: return "Use a pool.json file path."
                 }
             }
         }

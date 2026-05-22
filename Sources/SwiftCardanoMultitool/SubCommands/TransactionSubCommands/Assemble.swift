@@ -53,21 +53,6 @@ extension TransactionMainCommand {
         @Flag(help: "Submit the transaction to the blockchain")
         var submit = false
         
-        // MARK: - Validation
-        
-        mutating func validate() throws {
-            
-            guard !witnessFiles.isEmpty else {
-                throw ValidationError("At least one witness files is required.")
-            }
-            
-            for key in witnessFiles {
-                guard FileManager.default.fileExists(atPath: key.string) else {
-                    throw ValidationError("Witness file does not exist at path: \(key.string)")
-                }
-            }
-        }
-        
         // MARK: - Wizard
         
         mutating func wizard() async throws {
@@ -134,6 +119,16 @@ extension TransactionMainCommand {
         mutating func run() async throws {
             if (txFile == nil && cborHex == nil) || witnessFiles.isEmpty {
                 try await self.wizard()
+            }
+            
+            guard !witnessFiles.isEmpty else {
+                throw ValidationError("At least one witness files is required.")
+            }
+            
+            for key in witnessFiles {
+                guard FileManager.default.fileExists(atPath: key.string) else {
+                    throw ValidationError("Witness file does not exist at path: \(key.string)")
+                }
             }
             
             let config = try await MultitoolConfig.load()

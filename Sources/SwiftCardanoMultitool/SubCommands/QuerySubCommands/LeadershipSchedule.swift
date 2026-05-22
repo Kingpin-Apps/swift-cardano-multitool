@@ -60,22 +60,27 @@ extension QueryMainCommand {
         
         // MARK: - Input Method Selection
         
-        enum SelectOption: String, CaseIterable, CustomStringConvertible {
+        enum SelectOption: String, CaseIterable, AlignedChoiceDescribable {
             case poolName
             case poolJSON
             case poolOperator
             case vrfSkeyAndPoolId
-            
-            var description: String {
+
+            var name: String {
                 switch self {
-                    case .poolName:
-                        return "Use the pool name to find VRF skey and pool ID in the current directory"
-                    case .poolJSON:
-                        return "Use a pool.json file to find the VRF skey and pool ID"
-                    case .poolOperator:
-                        return "Use any available pool operator (pool id bech32, hex hash, or node.vkey file)"
-                    case .vrfSkeyAndPoolId:
-                        return "Provide the VRF signing key file and pool operator directly"
+                    case .poolName: return "Pool Name"
+                    case .poolJSON: return "Pool JSON"
+                    case .poolOperator: return "Pool Operator"
+                    case .vrfSkeyAndPoolId: return "VRF Skey and Pool ID"
+                }
+            }
+
+            var details: String {
+                switch self {
+                    case .poolName: return "Use the pool name to find VRF skey and pool ID in the current directory."
+                    case .poolJSON: return "Use a pool.json file to find the VRF skey and pool ID."
+                    case .poolOperator: return "Use any available pool operator (pool id bech32, hex hash, or node.vkey file)."
+                    case .vrfSkeyAndPoolId: return "Provide the VRF signing key file and pool operator directly."
                 }
             }
         }

@@ -95,15 +95,20 @@ extension CertificateMainCommand {
             let moveInstantaneousReward: MoveInstantaneousReward
             var cliArguments: [String] = [sourceOption == .reserves ? "--reserves" : "--treasury"]
 
+            let adaFormatter = AdaFormatter(defaultUnit: .ada)
+
             if transferToOtherPot {
                 let amountStr = noora.textPrompt(
                     title: "Transfer Amount",
-                    prompt: "Enter the amount to transfer in lovelaces:",
+                    prompt: "Enter the amount to transfer (e.g., 100 ADA, 1.5M, 100000000 lovelace):",
                     collapseOnAnswer: true,
-                    validationRules: [NonEmptyValidationRule(error: "Amount cannot be empty.")]
+                    validationRules: [
+                        NonEmptyValidationRule(error: "Amount cannot be empty."),
+                        AdaValidationRule(defaultUnit: .ada, error: "Invalid amount.")
+                    ]
                 ).trimmingCharacters(in: .whitespacesAndNewlines)
-                guard let amount = UInt64(amountStr) else {
-                    noora.error(.alert("Invalid amount.", takeaways: ["Enter a valid lovelace amount."]))
+                guard let amount = adaFormatter.toLovelace(amountStr) else {
+                    noora.error(.alert("Invalid amount.", takeaways: ["Enter a valid ADA or lovelace amount."]))
                     throw ExitCode.validationFailure
                 }
                 moveInstantaneousReward = MoveInstantaneousReward(source: source, rewards: nil, coin: amount)
@@ -123,15 +128,19 @@ extension CertificateMainCommand {
 
                     let rewardStr = noora.textPrompt(
                         title: "Reward Amount",
-                        prompt: "Enter the reward amount for \(stakeAddr) in lovelaces:",
+                        prompt: "Enter the reward amount for \(stakeAddr) (e.g., 100 ADA, 1.5M, 100000000 lovelace):",
                         collapseOnAnswer: true,
-                        validationRules: [NonEmptyValidationRule(error: "Reward cannot be empty.")]
+                        validationRules: [
+                            NonEmptyValidationRule(error: "Reward cannot be empty."),
+                            AdaValidationRule(defaultUnit: .ada, error: "Invalid reward amount.")
+                        ]
                     ).trimmingCharacters(in: .whitespacesAndNewlines)
 
-                    guard let reward = Int(rewardStr) else {
-                        noora.error(.alert("Invalid reward amount.", takeaways: ["Enter a valid lovelace amount."]))
+                    guard let rewardLovelace = adaFormatter.toLovelace(rewardStr) else {
+                        noora.error(.alert("Invalid reward amount.", takeaways: ["Enter a valid ADA or lovelace amount."]))
                         throw ExitCode.validationFailure
                     }
+                    let reward = Int(rewardLovelace)
 
                     let deltaCoin = try JSONDecoder().decode(DeltaCoin.self, from: Data("{\"deltaCoin\":\(reward)}".utf8))
                     rewards[stakeAddr] = deltaCoin

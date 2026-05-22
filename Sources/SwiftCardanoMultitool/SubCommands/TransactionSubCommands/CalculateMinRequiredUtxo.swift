@@ -76,18 +76,27 @@ extension TransactionMainCommand {
             )
 
             if hasDatum {
-                enum DatumInputMethod: String, CaseIterable, CustomStringConvertible {
+                enum DatumInputMethod: String, CaseIterable, AlignedChoiceDescribable {
                     case hash = "datum-hash"
                     case hashFile = "datum-hash-file"
                     case inlineFile = "inline-datum-file"
                     case inlineValue = "inline-datum-value"
 
-                    var description: String {
+                    var name: String {
                         switch self {
-                            case .hash: return "Datum Hash - Provide a raw datum hash hex string."
-                            case .hashFile: return "Datum Hash File - Hash the datum from a JSON file."
-                            case .inlineFile: return "Inline Datum File - Embed datum from a JSON file."
-                            case .inlineValue: return "Inline Datum Value - Embed datum as a JSON value."
+                            case .hash: return "Datum Hash"
+                            case .hashFile: return "Datum Hash File"
+                            case .inlineFile: return "Inline Datum File"
+                            case .inlineValue: return "Inline Datum Value"
+                        }
+                    }
+
+                    var details: String {
+                        switch self {
+                            case .hash: return "Provide a raw datum hash hex string."
+                            case .hashFile: return "Hash the datum from a JSON file."
+                            case .inlineFile: return "Embed datum from a JSON file."
+                            case .inlineValue: return "Embed datum as a JSON value."
                         }
                     }
                 }

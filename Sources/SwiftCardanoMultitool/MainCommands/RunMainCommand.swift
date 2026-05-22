@@ -1,7 +1,7 @@
 import Foundation
 import ArgumentParser
 
-enum RunCommands: String, Subcommandable {
+enum RunCommands: String, Subcommandable, AlignedChoiceDescribable {
     case cardanoNode
     case cardanoDbSync = "db-sync"
     case cardanoWallet
@@ -10,17 +10,30 @@ enum RunCommands: String, Subcommandable {
     case kupo
     case back
     case exit
-    
-    var description: String {
+
+    var name: String {
         switch self {
-            case .cardanoNode: return "Cardano Node  - Run cardano-node."
-            case .cardanoDbSync: return "Cardano DB Sync - Run cardano-db-sync."
-            case .cardanoWallet: return "Cardano Wallet - Run cardano-wallet."
-            case .cardanoSubmitAPI: return "Cardano Submit API - Run cardano-submit-api."
-            case .ogmios: return "Ogmios - Run Ogmios."
-            case .kupo: return "Kupo - Run Kupo."
-            case .back: return "Back - Go back to the main menu."
-            case .exit: return "Exit - Leave the program."
+            case .cardanoNode: return "Cardano Node"
+            case .cardanoDbSync: return "Cardano DB Sync"
+            case .cardanoWallet: return "Cardano Wallet"
+            case .cardanoSubmitAPI: return "Cardano Submit API"
+            case .ogmios: return "Ogmios"
+            case .kupo: return "Kupo"
+            case .back: return "Back"
+            case .exit: return "Exit"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .cardanoNode: return "Run cardano-node."
+            case .cardanoDbSync: return "Run cardano-db-sync."
+            case .cardanoWallet: return "Run cardano-wallet."
+            case .cardanoSubmitAPI: return "Run cardano-submit-api."
+            case .ogmios: return "Run Ogmios."
+            case .kupo: return "Run Kupo."
+            case .back: return "Go back to the main menu."
+            case .exit: return "Leave the program."
         }
     }
     
