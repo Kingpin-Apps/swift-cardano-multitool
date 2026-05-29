@@ -1,4 +1,9 @@
-## 0.2.1 (2026-05-22)
+## 0.3.0 (2026-05-29)
+
+### Feat
+
+- widen money/slot/epoch types for core 0.4.x
+- drop Lib suffix from library product
 
 ### Fix
 
