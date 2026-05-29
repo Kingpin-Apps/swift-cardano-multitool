@@ -984,13 +984,13 @@ extension TransactionMainCommand {
                     ))
                     continue
                 }
-                let txOutput = TransactionOutput(address: addr, amount: Value(coin: lovelace))
+                let txOutput = TransactionOutput(address: addr, amount: Value(coin: Int64(lovelace)))
                 try txBuilder.addOutput(txOutput)
             }
 
             // Validity window
-            if let before = invalidBefore { txBuilder.validityStart = before }
-            if let hereafter = invalidHereafter { txBuilder.ttl = hereafter }
+            if let before = invalidBefore { txBuilder.validityStart = SlotNumber(before) }
+            if let hereafter = invalidHereafter { txBuilder.ttl = SlotNumber(hereafter) }
 
             // Witness override
             if let override = witnessOverride { txBuilder.witnessOverride = override }

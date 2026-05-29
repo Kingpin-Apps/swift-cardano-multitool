@@ -184,7 +184,7 @@ extension CertificateMainCommand {
             // Fetch current epoch
             let currentEpoch = try await context.epoch()
             let minRetireEpoch = currentEpoch + 1
-            let maxRetireEpoch = currentEpoch + poolRetireMaxEpoch
+            let maxRetireEpoch = currentEpoch + Int(poolRetireMaxEpoch)
 
             spacedPrint("""
             \n\(.primary("━━━ Epoch Info ━━━"))
@@ -287,7 +287,7 @@ extension CertificateMainCommand {
                 } else {
                     let deregCert = SwiftCardanoCore.PoolRetirement(
                         poolKeyHash: poolKeyHash,
-                        epoch: retireEpoch
+                        epoch: EpochNumber(retireEpoch)
                     )
                     try deregCert.save(to: outFile.string)
                 }

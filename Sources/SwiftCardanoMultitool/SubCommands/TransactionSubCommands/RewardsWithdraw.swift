@@ -220,7 +220,7 @@ extension TransactionMainCommand {
             if !isSame {
                 let txOut = TransactionOutput(
                     address: toAddress.info.address!,
-                    amount: Value(coin: Int(withdrawalsAmount))
+                    amount: Value(coin: Int64(withdrawalsAmount))
                 )
                 try txBuilder.addOutput(txOut)
             }

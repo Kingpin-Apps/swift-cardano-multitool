@@ -106,7 +106,7 @@ extension SendMainCommand {
             )
 
             // Collect available assets: (policyId hex, assetNameHex, total amount)
-            var assetMap: [(policyId: String, assetNameHex: String, totalAmount: Int)] = []
+            var assetMap: [(policyId: String, assetNameHex: String, totalAmount: Int64)] = []
             for utxo in utxos {
                 for (scriptHash, asset) in utxo.output.amount.multiAsset.data {
                     for (assetName, qty) in asset.data {
@@ -243,7 +243,7 @@ extension SendMainCommand {
             let targetAssetNameData = assetNameHex.hexStringToData
             let targetAssetName = try AssetName(payload: targetAssetNameData)
 
-            var totalAvailable = 0
+            var totalAvailable: Int64 = 0
             for utxo in utxos {
                 if let assetUnderPolicy = utxo.output.amount.multiAsset.data[scriptHash],
                    let qty = assetUnderPolicy.data[targetAssetName] {
@@ -264,7 +264,7 @@ extension SendMainCommand {
             }
 
             // Resolve amount
-            let resolvedAmount: Int
+            let resolvedAmount: Int64
             let amountLower = amount.lowercased()
             switch amountLower {
             case "all":
@@ -272,7 +272,7 @@ extension SendMainCommand {
             case "min":
                 resolvedAmount = 1
             default:
-                guard let n = Int(amount), n > 0 else {
+                guard let n = Int64(amount), n > 0 else {
                     noora.error(.alert("Invalid amount '\(amount)'. Must be 'all', 'min', or a positive integer."))
                     throw ExitCode.validationFailure
                 }
@@ -316,7 +316,7 @@ extension SendMainCommand {
 
             let txOut = TransactionOutput(
                 address: toAddress.info.address!,
-                amount: Value(coin: Int(resolvedLovelace), multiAsset: assetOut)
+                amount: Value(coin: Int64(resolvedLovelace), multiAsset: assetOut)
             )
 
             let logger = getLogger(config: config)

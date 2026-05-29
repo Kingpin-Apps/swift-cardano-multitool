@@ -179,7 +179,7 @@ extension SendMainCommand {
 
             let txOut = TransactionOutput(
                 address: toAddress.info.address!,
-                amount: Value(coin: Int(resolvedLovelace))
+                amount: Value(coin: Int64(resolvedLovelace))
             )
 
             let logger = getLogger(config: config)

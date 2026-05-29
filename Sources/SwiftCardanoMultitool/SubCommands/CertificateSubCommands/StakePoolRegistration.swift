@@ -213,7 +213,7 @@ extension CertificateMainCommand {
                 )
                 
                 if updateCost {
-                    pool.cost = minPoolCost
+                    pool.cost = Int(minPoolCost)
                 } else {
                     noora.warning(
                         .alert(

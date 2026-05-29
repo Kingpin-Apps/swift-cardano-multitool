@@ -660,7 +660,7 @@ extension TransactionSendable {
         )
         
         
-        txBuilder.ttl = ttl
+        txBuilder.ttl = SlotNumber(ttl)
         txBuilder.auxiliaryData = auxilliaryData
         
         if transactionOptions.useCardanoCLI {
@@ -673,7 +673,7 @@ extension TransactionSendable {
                 config: config,
                 utxos: utxosToUse,
                 transactionOutputs: txBuilder.outputs,
-                ttl: ttl,
+                ttl: SlotNumber(ttl),
                 protocolParamsFile: protocolParamsFile,
                 assetsOutString: assetsOutString,
                 txRawFile: txRawFile,
@@ -715,7 +715,7 @@ extension TransactionSendable {
         config: MultitoolConfig,
         utxos: [UTxO],
         transactionOutputs: [TransactionOutput],
-        ttl: Int,
+        ttl: SlotNumber,
         protocolParamsFile: FilePath,
         assetsOutString: String,
         txRawFile: FilePath,
@@ -827,7 +827,7 @@ extension TransactionSendable {
         
         let lovelacesToReturn: UInt64
         if isSame {
-            lovelacesToReturn = UInt64(
+            lovelacesToReturn = UInt64(bitPattern:
                 transactionOutputs.reduce(0) {
                     if $1.address == feePaymentAddress.info.address! {
                         return $0 + $1.lovelace
@@ -841,7 +841,7 @@ extension TransactionSendable {
                 "Lovelaces that will be returned to destination Address: \(.primary("\(lovelaceToAdaFormatString(lovelacesToReturn))")) / \(.primary("\(lovelacesToReturn)")) lovelaces "
             )
         } else {
-            lovelacesToReturn = UInt64(
+            lovelacesToReturn = UInt64(bitPattern:
                 transactionOutputs.reduce(0) {
                     if $1.address == feePaymentAddress.info.address! {
                         return $0 + $1.lovelace
@@ -852,7 +852,7 @@ extension TransactionSendable {
             )
             
             if let toAddress = toAddress {
-                let lovelacesToDestination = UInt64(
+                let lovelacesToDestination = UInt64(bitPattern:
                     transactionOutputs.reduce(0) {
                         if $1.address == toAddress.info.address! {
                             return $0 + $1.lovelace
@@ -939,7 +939,7 @@ extension TransactionSendable {
                 
         let lovelacesToReturn: UInt64
         if isSame {
-            lovelacesToReturn = UInt64(
+            lovelacesToReturn = UInt64(bitPattern:
                 txBody.outputs.reduce(0) {
                     if $1.address == feePaymentAddress.info.address! {
                         return $0 + $1.lovelace
@@ -953,7 +953,7 @@ extension TransactionSendable {
                 "\nLovelaces that will be returned to destination Address: \(.primary("\(lovelaceToAdaFormatString(lovelacesToReturn))")) / \(.primary("\(lovelacesToReturn)")) lovelaces "
             )
         } else {
-            lovelacesToReturn = UInt64(
+            lovelacesToReturn = UInt64(bitPattern:
                 txBody.outputs.reduce(0) {
                     if $1.address == feePaymentAddress.info.address! {
                         return $0 + $1.lovelace
@@ -968,7 +968,7 @@ extension TransactionSendable {
             )
             
             if let toAddress = toAddress {
-                let lovelacesToDestination = UInt64(
+                let lovelacesToDestination = UInt64(bitPattern:
                     txBody.outputs.reduce(0) {
                         if $1.address == toAddress.info.address! {
                             return $0 + $1.lovelace

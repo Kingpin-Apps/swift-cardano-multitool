@@ -180,7 +180,7 @@ extension TransactionMainCommand {
                     let lovelace = parseLovelaceFromValueString(valueString)
                     let output = TransactionOutput(
                         address: address,
-                        amount: Value(coin: Int(lovelace))
+                        amount: Value(coin: Int64(lovelace))
                     )
 
                     minUtxo = try await Utils.minLovelacePostAlonzo(output, context)

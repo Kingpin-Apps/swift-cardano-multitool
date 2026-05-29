@@ -321,7 +321,7 @@ public func stakeAddressInfoSummary(
             "👀 Staking Address is used in the following \(govActionDeposits.count) governance action(s):",
             takeaways: try govActionDeposits
                 .map({ (key: String, value: UInt64) in
-                    let govActionID = try GovActionID(from: .list([.string(key), .uint(UInt(value))]))
+                    let govActionID = try GovActionID(from: .list([.string(key), .uint(value)]))
                     return "\(.primary(try govActionID.id())) -> \(.primary("\(lovelaceToAdaString(value)) deposit"))"
                 })
         ))

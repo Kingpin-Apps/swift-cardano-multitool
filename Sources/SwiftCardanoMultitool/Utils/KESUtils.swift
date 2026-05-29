@@ -193,7 +193,7 @@ public struct KESUtils {
         
         // Byron slot calculations (Byron used 20-second slots)
         let byronSlotDuration = 20.0
-        let byronSlots = Double(startTimeSec - startTimeByron) / byronSlotDuration
+        let byronSlots = Double(startTimeSec - Int(startTimeByron)) / byronSlotDuration
         let transSlots = Double(byronToShelleyEpochTransition * epochLength) / byronSlotDuration
         
         // Calculate current slot based on whether we're in or past the transition phase

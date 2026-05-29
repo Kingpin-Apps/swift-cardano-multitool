@@ -233,7 +233,7 @@ extension SendMainCommand {
 
                 let assetTxOut = TransactionOutput(
                     address: toAddress.info.address!,
-                    amount: Value(coin: Int(minLovelace), multiAsset: assetsOut)
+                    amount: Value(coin: Int64(minLovelace), multiAsset: assetsOut)
                 )
                 try txBuilder.addOutput(assetTxOut)
 
@@ -267,7 +267,7 @@ extension SendMainCommand {
 
                     let assetReturnTxOut = TransactionOutput(
                         address: feePaymentAddress.info.address!,
-                        amount: Value(coin: Int(minLovelaceForAssets), multiAsset: assetsOut)
+                        amount: Value(coin: Int64(minLovelaceForAssets), multiAsset: assetsOut)
                     )
                     try txBuilder.addOutput(assetReturnTxOut)
 
