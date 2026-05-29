@@ -1,3 +1,9 @@
+## 0.3.1 (2026-05-29)
+
+### Fix
+
+- regenerate Version.swift after 0.3.0 bump
+
 ## 0.3.0 (2026-05-29)
 
 ### Feat
