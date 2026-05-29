@@ -10,8 +10,8 @@ let package = Package(
     ],
     products: [
         // The executable product name is what users will type in the terminal
-        .executable(name: "scm", targets: ["SwiftCardanoMultitool"]),
-        .library(name: "SwiftCardanoMultitoolLib", targets: ["SwiftCardanoMultitoolLib"]),
+        .executable(name: "scm", targets: ["SwiftCardanoMultitoolApp"]),
+        .library(name: "SwiftCardanoMultitool", targets: ["SwiftCardanoMultitool"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.6.2"),
@@ -24,24 +24,24 @@ let package = Package(
         .package(url: "https://github.com/mattt/swift-toml.git", from: "2.0.0"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.4.0"),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.6.3"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.3.21"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.4.2"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "0.2.10"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.1.10"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.4.6"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.4.3"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.5.0"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "1.0.0"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.2.0"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.5.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.1"),
         .package(url: "https://github.com/tuist/Noora", .upToNextMajor(from: "0.56.0")),
         .package(url: "https://github.com/mxcl/Version.git", from: "2.2.0"),
         .package(url: "https://github.com/thoven87/icalendar-kit.git", from: "2.1.0"),
         // Provides Crypto compatible APIs on Linux
-        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.15.1"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "4.5.0"),
         .package(url: "https://github.com/mgacy/swift-version-file-plugin", from: "0.2.1")
     ],
     targets: [
         // Library target containing all application logic — importable by both the executable and test target.
         .target(
-            name: "SwiftCardanoMultitoolLib",
+            name: "SwiftCardanoMultitool",
             dependencies: [
                 "Noora",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
@@ -66,13 +66,13 @@ let package = Package(
         ),
         // Thin executable that just calls into the library.
         .executableTarget(
-            name: "SwiftCardanoMultitool",
-            dependencies: ["SwiftCardanoMultitoolLib"],
+            name: "SwiftCardanoMultitoolApp",
+            dependencies: ["SwiftCardanoMultitool"],
             path: "Sources/SwiftCardanoMultitoolApp"
         ),
         .testTarget(
             name: "SwiftCardanoMultitoolTests",
-            dependencies: ["SwiftCardanoMultitoolLib"]
+            dependencies: ["SwiftCardanoMultitool"]
         ),
     ]
 )
