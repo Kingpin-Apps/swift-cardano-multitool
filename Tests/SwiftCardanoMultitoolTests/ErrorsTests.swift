@@ -1,7 +1,7 @@
 import Foundation
 import SystemPackage
 import Testing
-@testable import SwiftCardanoMultitoolLib
+@testable import SwiftCardanoMultitool
 
 @Suite("SwiftCardanoMultitoolError")
 struct SwiftCardanoMultitoolErrorTests {

@@ -4,7 +4,7 @@ Obtain a live blockchain connection for querying UTxOs, protocol parameters, and
 
 ## Overview
 
-`SwiftCardanoMultitoolLib` abstracts over multiple Cardano data providers through the `ChainContext` protocol from `SwiftCardanoChain`. Call ``getContext(config:)`` with a loaded ``MultitoolConfig`` and you get back a ready-to-use context — the correct provider is chosen automatically based on your configuration and the active ``Mode``.
+`SwiftCardanoMultitool` abstracts over multiple Cardano data providers through the `ChainContext` protocol from `SwiftCardanoChain`. Call ``getContext(config:)`` with a loaded ``MultitoolConfig`` and you get back a ready-to-use context — the correct provider is chosen automatically based on your configuration and the active ``Mode``.
 
 > Note: `ChainContext` is defined in the `SwiftCardanoChain` module. Add `SwiftCardanoChain` to your target's dependencies to access its types directly.
 
@@ -23,7 +23,7 @@ targets: [
     .target(
         name: "MyTarget",
         dependencies: [
-            .product(name: "SwiftCardanoMultitoolLib", package: "swift-cardano-multitool"),
+            .product(name: "SwiftCardanoMultitool", package: "swift-cardano-multitool"),
         ]
     ),
 ]
@@ -32,7 +32,7 @@ targets: [
 ## Loading a config and obtaining a context
 
 ```swift
-import SwiftCardanoMultitoolLib
+import SwiftCardanoMultitool
 
 // Load config from the path in $CARDANO_MULTITOOL_CONFIG
 let config = try await MultitoolConfig.load()
@@ -61,7 +61,7 @@ The provider returned by ``getContext(config:)`` depends on your ``MultitoolConf
 You can construct a ``MultitoolConfig`` directly without a file:
 
 ```swift
-import SwiftCardanoMultitoolLib
+import SwiftCardanoMultitool
 import SwiftCardanoChain
 
 let config = MultitoolConfig(
@@ -83,7 +83,7 @@ let context = try await getContext(config: config)
 Config files can be JSON, TOML, or YAML. The format is inferred from the file extension:
 
 ```swift
-import SwiftCardanoMultitoolLib
+import SwiftCardanoMultitool
 import SystemPackage
 
 // From the CARDANO_MULTITOOL_CONFIG environment variable
@@ -126,7 +126,7 @@ let chainState = try await queryChainState(context: context, config: config)
 If you just want to run the complete `scm` interactive application inside your own executable, call ``runApp()``:
 
 ```swift
-import SwiftCardanoMultitoolLib
+import SwiftCardanoMultitool
 
 @main
 struct MyApp {

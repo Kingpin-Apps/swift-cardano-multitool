@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import SwiftCardanoMultitoolLib
+@testable import SwiftCardanoMultitool
 
 @Suite("KESUtils")
 struct KESUtilsTests {

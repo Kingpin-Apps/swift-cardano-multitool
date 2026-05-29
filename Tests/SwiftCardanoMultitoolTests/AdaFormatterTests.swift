@@ -1,5 +1,5 @@
 import Testing
-@testable import SwiftCardanoMultitoolLib
+@testable import SwiftCardanoMultitool
 
 @Suite("AdaFormatter")
 struct AdaFormatterTests {

@@ -1,10 +1,10 @@
-# ``SwiftCardanoMultitoolLib``
+# ``SwiftCardanoMultitool``
 
 A Swift library for building Cardano tooling — configuration, chain queries, transaction utilities, and key management.
 
 ## Overview
 
-`SwiftCardanoMultitoolLib` is the library target that backs the `scm` CLI. It exposes a public API for embedding Cardano operations into your own Swift executable or service:
+`SwiftCardanoMultitool` is the library target that backs the `scm` CLI. It exposes a public API for embedding Cardano operations into your own Swift executable or service:
 
 - **Configuration** — load ``MultitoolConfig`` from JSON, TOML, or YAML; resolve network settings, API keys, and node paths at runtime.
 - **Chain context** — obtain a live `ChainContext` for querying UTxOs, protocol parameters, and chain state via Blockfrost, Koios, Ogmios, or a local node socket.
