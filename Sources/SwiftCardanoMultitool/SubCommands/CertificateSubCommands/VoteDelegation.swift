@@ -76,6 +76,11 @@ extension CertificateMainCommand {
                 try await wizard()
             }
             
+            let config = try await MultitoolConfig.load()
+            let cardanoConfig = try getCardanoConfig(config: config)
+            try await resolveAdaHandles(network: cardanoConfig.network)
+            try await resolveStakeAdaHandle(&stakeAddress, network: cardanoConfig.network)
+
             guard let stakeAddress = stakeAddress else {
                 noora.error(.alert(
                     "Stake address is required.",
@@ -83,7 +88,7 @@ extension CertificateMainCommand {
                 ))
                 throw ExitCode.validationFailure
             }
-            
+
             guard let drep = drep else {
                 noora.error(.alert(
                     "DRep is required.",
@@ -91,8 +96,7 @@ extension CertificateMainCommand {
                 ))
                 throw ExitCode.validationFailure
             }
-            
-            let config = try await MultitoolConfig.load()
+
             let context = try await getContext(config: config)
             try await printContextInfo(config: config, context: context)
             
