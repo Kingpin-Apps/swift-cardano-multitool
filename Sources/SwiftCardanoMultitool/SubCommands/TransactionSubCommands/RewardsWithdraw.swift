@@ -120,11 +120,14 @@ extension TransactionMainCommand {
             }
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            
+
             let config = try await MultitoolConfig.load()
+            let cardanoConfig = try getCardanoConfig(config: config)
+            try await resolveAdaHandles(network: cardanoConfig.network)
+            try await resolveStakeAdaHandle(&stakeAddress, network: cardanoConfig.network)
             let context = try await getContext(config: config)
             try await printContextInfo(config: config, context: context)
-            
+
             // Ensure required arguments are present
             guard var stakeAddress = stakeAddress,
                   let toAddress = transactionOptions.toAddress,
