@@ -4,6 +4,7 @@ import Noora
 import SystemPackage
 import SwiftCardanoUtils
 import SwiftCardanoCore
+import SwiftCardanoWallet
 import SwiftMnemonic
 
 extension GenerateMainCommand {
@@ -16,7 +17,7 @@ extension GenerateMainCommand {
         @Option(name: .shortAndLong, help: "The name of the address. The keys and addresses will be saved as <name>.payment.vkey, <name>.payment.skey, <name>.stake.vkey, <name>.stake.skey, <name>.payment.addr and <name>.stake.addr.")
         var addressName: String? = nil
         
-        @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli, enc, hw, hw_multi.")
+        @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli, enc, hw, hw_multi, hybrid, hybrid_multi, hybrid_enc, hybrid_multi_enc, mnemonics.")
         var keyGenMethod: KeyGenMethod? = nil
         
         @Option(name: .shortAndLong, help: "Generates Payment keys using Ledger/Trezor HW-Keys with Index at this number. To be used together with --sub-account.")
@@ -420,68 +421,36 @@ extension GenerateMainCommand {
                         print(noora.format(
                             "Using \(.primary("SwiftCardano")) to generate address keys from mnemonics.")
                         )
-                        
-                        if let mnemonics = mnemonics, mnemonics.isEmpty == false {
-                            print(noora.format(
-                            "Using Mnemonics: \(.primary(mnemonics))"
-                            ))
-                            
-                            let hdWallet = try HDWallet.fromMnemonic(
-                                mnemonic: mnemonics
-                            )
-                            
-                            let hdWalletPayment = try hdWallet.derive(
-                                fromPath: "m/\(hwRootPath)'/1815'/\(subAccount!)'/0/\(index!)"
-                            )
-                            
-                            let paymentExtendedSkey = try ExtendedSigningKey.fromHDWallet(
-                                hdWalletPayment
-                            )
-                            let paymentExtendedVKey: PaymentExtendedVerificationKey = try paymentExtendedSkey.toVerificationKey()
-                            let _paymentVKey: PaymentVerificationKey = try paymentExtendedVKey.toNonExtended()
-                            
-                            try paymentExtendedSkey.save(to: paymentSKey.string)
-                            try _paymentVKey.save(to: paymentVKey.string)
-                            
-                            print(noora.format(
-                                "Keys generated successfully from provided mnemonics."
-                            ))
-                        }
-                        else {
-                            print(noora.format(
-                                "Using \(.primary("cardano-signer")) to generate new mnemonics."
-                            ))
-                            
+
+                        if let existing = mnemonics, !existing.isEmpty {
+                            print(noora.format("Using Mnemonics: \(.primary(existing))"))
+                        } else {
                             mnemonics = try HDWallet.generateMnemonic(
                                 language: language,
                                 wordCount: wordCount
                             ).joined(separator: " ")
-                            
-                            
-                            print(noora.format(
-                                "Created Mnemonics: \(.primary(mnemonics!))"
-                            ))
-                            let hdWallet = try HDWallet.fromMnemonic(
-                                mnemonic: mnemonics!
-                            )
-                            
-                            let hdWalletPayment = try hdWallet.derive(
-                                fromPath: "m/\(hwRootPath)'/1815'/\(subAccount!)'/0/\(index!)"
-                            )
-                            
-                            let paymentExtendedSkey = try ExtendedSigningKey.fromHDWallet(
-                                hdWalletPayment
-                            )
-                            let paymentExtendedVKey: PaymentExtendedVerificationKey = try paymentExtendedSkey.toVerificationKey()
-                            let _paymentVKey: PaymentVerificationKey = try paymentExtendedVKey.toNonExtended()
-                            
-                            try paymentExtendedSkey.save(to: paymentSKey.string)
-                            try _paymentVKey.save(to: paymentVKey.string)
+                            print(noora.format("Created Mnemonics: \(.primary(mnemonics!))"))
                         }
-                    
+
+                        let km = try MnemonicKeyManager(mnemonic: mnemonics!)
+                        let paymentPath = DerivationPath(
+                            purpose: UInt32(hwRootPath)!,
+                            account: UInt32(subAccount!),
+                            role: .external,
+                            index: UInt32(index!)
+                        )
+
+                        let paymentSkeyType = try await km.paymentSigningKeyType(at: paymentPath)
+                        try paymentSkeyType.save(to: paymentSKey.string)
+
+                        let _paymentVKey = try await km.paymentVerificationKey(at: paymentPath)
+                        try _paymentVKey.save(to: paymentVKey.string)
+
+                        print(noora.format("Keys generated successfully from mnemonics."))
+
                         // save memnonics
                         try saveMnemonics(mnemonics!, to: paymentMnemonics)
-                    
+
                     try await FileUtils.fileLock(paymentMnemonics)
                     try await lockAndPrintPaymentKeys()
                 }
@@ -542,50 +511,28 @@ extension GenerateMainCommand {
                 try await lockAndPrintPaymentKeys()
                 
             }
-            else if keyGenMethod == .hw {
+            else if keyGenMethod!.isHardwareType {
                 let hwcli = try await CardanoHWCLI(
                     configuration: config.toSwiftCardanoUtilsConfig()
                 )
-                
+
                 let hwType = try await hwcli.startHardwareWallet()
-                
+
                 noora.info(.alert("Generating payment keys using \(hwType.rawValue)"))
-                
+
                 try await hwcli.address.keyGen(
-                    path: "1852H/1815H/\(subAccount!)H/0/\(index!)",
+                    path: "\(hwRootPath)H/1815H/\(subAccount!)H/0/\(index!)",
                     hwFile: paymentSKey,
                     vkeyFile: paymentVKey
                 )
-                
+
                 var vkey = try TextEnvelope.load(from: paymentVKey.string)
                 vkey.description = "Payment Hardware Verification Key"
-                
-                let extraDescription = " (Account# \(subAccount!), Index# \(index!))"
-                
+
+                let multisigLabel = keyGenMethod!.isMultisigType ? "MultiSig " : ""
+                let extraDescription = " (\(multisigLabel)Account# \(subAccount!), Index# \(index!))"
+
                 try await lockAndPrintPaymentKeys(extraDescription: extraDescription)
-            }
-            else if keyGenMethod == .hwMulti {
-                let hwcli = try await CardanoHWCLI(
-                    configuration: config.toSwiftCardanoUtilsConfig()
-                )
-                
-                let hwType = try await hwcli.startHardwareWallet()
-                
-                noora.info(.alert("Generating keys using \(hwType.rawValue)"))
-                
-                try await hwcli.address.keyGen(
-                    path: "1854H/1815H/\(subAccount!)H/0/\(index!)",
-                    hwFile: paymentSKey,
-                    vkeyFile: paymentVKey
-                )
-                
-                var vkey = try TextEnvelope.load(from: paymentVKey.string)
-                vkey.description = "Payment Hardware Verification Key"
-                
-                let extraDescription = " (MultisSig Account# \(subAccount!), Index# \(index!))"
-                
-                try await lockAndPrintPaymentKeys(extraDescription: extraDescription)
-                
             }
             else {
                 // Should never happen due to validation
@@ -593,14 +540,14 @@ extension GenerateMainCommand {
                     .alert(
                         "Unsupported key generation method.",
                         takeaways: [
-                            "Please choose from: cli, enc, hw, hw_multi.",
+                            "Please choose from: cli, enc, hw, hw_multi, hybrid, hybrid_multi, hybrid_enc, hybrid_multi_enc, mnemonics.",
                             "Re-run the command with the --help flag for more information."
                         ]
                     )
                 )
                 throw ExitCode.failure
             }
-            
+
             noora.success(
                 .alert("\nPayment address keys generated successfully.\n")
             )
@@ -709,24 +656,23 @@ extension GenerateMainCommand {
                         print(noora.format(
                             "\nUsing \(.primary("SwiftCardano")) to generate stake address keys from mnemonics...\n")
                         )
-                        
-                        let hdWallet = try HDWallet.fromMnemonic(
-                            mnemonic: mnemonics!
+
+                        let km = try MnemonicKeyManager(mnemonic: mnemonics!)
+                        let stakePath = DerivationPath(
+                            purpose: UInt32(hwRootPath)!,
+                            account: UInt32(subAccount!),
+                            role: .stake,
+                            index: UInt32(index!)
                         )
-                        
-                        let hdWalletStake = try hdWallet.derive(
-                            fromPath: "m/\(hwRootPath)'/1815'/\(subAccount!)'/2/\(index!)"
-                        )
-                        
-                        let stakeExtendedSkey = try StakeExtendedSigningKey.fromHDWallet(hdWalletStake)
-                        let stakeExtendedVKey: StakeExtendedVerificationKey = try stakeExtendedSkey.toVerificationKey()
-                        let _stakeVKey: StakeVerificationKey = try stakeExtendedVKey.toNonExtended()
-                        
-                        try stakeExtendedSkey.save(to: stakeSKey.string)
+
+                        let stakeSkeyType = try await km.stakeSigningKeyType(at: stakePath)
+                        try stakeSkeyType.save(to: stakeSKey.string)
+
+                        let _stakeVKey = try await km.stakeVerificationKey(at: stakePath)
                         try _stakeVKey.save(to: stakeVKey.string)
-                        
+
                         print(noora.format(
-                            "\nKeys generated successfully from provided mnemonics.\n"
+                            "\nKeys generated successfully from mnemonics.\n"
                         ))
                 }
                 
@@ -820,14 +766,14 @@ extension GenerateMainCommand {
                     .alert(
                         "Unsupported key generation method.",
                         takeaways: [
-                            "Please choose from: cli, enc, hw, hw_multi, hybrid, hybrid_enc, hybrid_multi, hybrid_multi_enc.",
+                            "Please choose from: cli, enc, hw, hw_multi, hybrid, hybrid_multi, hybrid_enc, hybrid_multi_enc, mnemonics.",
                             "Re-run the command with the --help flag for more information."
                         ]
                     )
                 )
                 throw ExitCode.failure
             }
-            
+
             noora.success(
                 .alert("\nStake address keys generated successfully...\n")
             )
