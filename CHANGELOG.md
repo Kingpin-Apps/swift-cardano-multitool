@@ -1,4 +1,4 @@
-## 0.4.0 (2026-05-30)
+## 0.4.1 (2026-05-30)
 
 ### Feat
 
@@ -6,6 +6,7 @@
 
 ### Fix
 
+- add more tests
 - **certs**: resolve $adahandle in pool-registration cert
 - **certs**: resolve $adahandle in pool-deregistration cert
 - **certs**: resolve $adahandle in resign-committee-cold cert
