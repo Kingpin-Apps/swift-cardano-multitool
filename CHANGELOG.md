@@ -1,3 +1,36 @@
+## 0.4.0 (2026-05-30)
+
+### Feat
+
+- **generate**: add mnemonics method to payment-address-only
+
+### Fix
+
+- **certs**: resolve $adahandle in pool-registration cert
+- **certs**: resolve $adahandle in pool-deregistration cert
+- **certs**: resolve $adahandle in resign-committee-cold cert
+- **certs**: resolve $adahandle in update-drep cert
+- **certs**: resolve $adahandle in unregister-drep cert
+- **certs**: resolve $adahandle in register-drep cert
+- **certs**: resolve $adahandle in move-instantaneous-rewards cert
+- **certs**: resolve $adahandle in genesis-key-delegation cert
+- **certs**: resolve $adahandle in auth-committee-hot cert
+- **certs**: resolve $adahandle in vote-register-delegate cert
+- **certs**: resolve $adahandle in stake-vote-register-delegate cert
+- **certs**: resolve $adahandle in stake-vote-delegate cert
+- **certs**: resolve $adahandle in stake-register-delegate cert
+- **certs**: resolve $adahandle in vote-delegation cert
+- **certs**: resolve $adahandle in stake-address-deregistration cert
+- **certs**: resolve $adahandle in stake-address-delegation cert
+- **certs**: resolve $adahandle in stake-address-registration cert
+- **rewards-withdraw**: resolve $adahandle before dereferencing addresses
+- **send**: resolve $adahandle before dereferencing destination/fee address
+
+### Refactor
+
+- **adahandle**: add resolveStakeAdaHandle helper for stake-side arguments
+- **generate**: route mnemonic keygen through wallet pkg; add hybrid payment coverage
+
 ## 0.3.1 (2026-05-29)
 
 ### Fix
