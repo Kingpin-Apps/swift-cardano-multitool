@@ -72,6 +72,8 @@ extension CertificateMainCommand {
             let anchor = try await getOptionalAnchor(purpose: "DRep update")
 
             let config = try await MultitoolConfig.load()
+            let cardanoConfig = try getCardanoConfig(config: config)
+            try await resolveAdaHandles(network: cardanoConfig.network)
             let context = try await getContext(config: config)
             try await printContextInfo(config: config, context: context)
 
