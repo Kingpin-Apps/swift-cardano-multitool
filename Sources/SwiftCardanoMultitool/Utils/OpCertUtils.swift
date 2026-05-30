@@ -244,7 +244,7 @@ public struct OpCertUtils {
     // MARK: - Private Helpers
     
     /// Checks if the KES interval is valid and prints status.
-    private static func checkKESInterval(
+    static func checkKESInterval(
         onDiskKESStart: Int,
         currentKESPeriod: Int,
         maxKESEvolutions: Int,
@@ -297,7 +297,7 @@ public struct OpCertUtils {
     }
     
     /// Checks the opcert counter for NEXT usage.
-    private static func checkOpCertCounterForNext(
+    static func checkOpCertCounterForNext(
         nextChainOpCertCount: Int,
         onChainOpCertCount: Int,
         onDiskOpCertCount: Int,
@@ -335,7 +335,7 @@ public struct OpCertUtils {
     }
     
     /// Checks the opcert counter for CURRENT usage.
-    private static func checkOpCertCounterForCurrent(
+    static func checkOpCertCounterForCurrent(
         nextChainOpCertCount: Int,
         onChainOpCertCount: Int,
         onDiskOpCertCount: Int,
@@ -383,7 +383,7 @@ public struct OpCertUtils {
     }
     
     /// Formats a duration in seconds to a human-readable string.
-    private static func formatDuration(seconds: Int) -> String {
+    static func formatDuration(seconds: Int) -> String {
         let absSeconds = abs(seconds)
         let days = absSeconds / 86400
         let hours = (absSeconds % 86400) / 3600

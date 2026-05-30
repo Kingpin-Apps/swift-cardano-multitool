@@ -67,6 +67,6 @@ struct SendMainCommand: AsyncParsableCommand, MainCommandable {
         recipient address. Fees are calculated automatically and a confirmation
         prompt is shown before submission.
         """,
-        subcommands: SendCommands.allCases.map { $0.command() }
+        subcommands: SendCommands.subcommands
     )
 }

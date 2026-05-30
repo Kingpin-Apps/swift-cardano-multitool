@@ -22,11 +22,25 @@ func printDivider(_ char: Character = "-") {
     spacedPrint("\n\(divider)")
 }
 
+/// Task-local override for the chain context factory.
+///
+/// When set (typically by tests), `getContext(config:)` short-circuits and returns
+/// the override instead of constructing a real chain context from the config.
+/// Production code never sets this; production callers always receive the real
+/// context derived from `config.mode`.
+public enum Contexts {
+    @TaskLocal public static var override: (any ChainContext)?
+}
+
 /// Get the appropriate chain context based on the multitool configuration
 /// - Parameter config: The multitool configuration
 /// - Returns: An instance of `ChainContext`
 public func getContext(config: MultitoolConfig) async throws -> any ChainContext {
-    
+
+    if let override = Contexts.override {
+        return override
+    }
+
     func fallbackToLiteMode(config: MultitoolConfig) async throws -> any ChainContext {
         noora.warning(
             .alert(

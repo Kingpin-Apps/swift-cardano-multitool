@@ -20,10 +20,9 @@ let package = Package(
             from: "1.2.0",
             traits: [.defaults, "YAML"]
         ),
-        .package(url: "https://github.com/mattt/swift-configuration-toml.git", from: "2.0.0"),
-        .package(url: "https://github.com/mattt/swift-toml.git", from: "2.0.0"),
-        .package(url: "https://github.com/jpsim/Yams.git", from: "5.4.0"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "4.5.0"),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.6.3"),
+        .package(url: "https://github.com/jpsim/Yams.git", from: "5.4.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.4.4"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git", from: "0.5.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "1.0.0"),
@@ -32,15 +31,14 @@ let package = Package(
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-wallet.git", from: "1.1.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.1"),
-        .package(url: "https://github.com/tuist/Noora", .upToNextMajor(from: "0.56.0")),
+        .package(url: "https://github.com/mattt/swift-configuration-toml.git", from: "2.0.0"),
+        .package(url: "https://github.com/mattt/swift-toml.git", from: "2.0.0"),
+        .package(url: "https://github.com/mgacy/swift-version-file-plugin", from: "0.2.1"),
         .package(url: "https://github.com/mxcl/Version.git", from: "2.2.0"),
         .package(url: "https://github.com/thoven87/icalendar-kit.git", from: "2.1.0"),
-        // Provides Crypto compatible APIs on Linux
-        .package(url: "https://github.com/apple/swift-crypto.git", from: "4.5.0"),
-        .package(url: "https://github.com/mgacy/swift-version-file-plugin", from: "0.2.1")
+        .package(url: "https://github.com/tuist/Noora", .upToNextMajor(from: "0.56.0")),
     ],
     targets: [
-        // Library target containing all application logic — importable by both the executable and test target.
         .target(
             name: "SwiftCardanoMultitool",
             dependencies: [
@@ -61,7 +59,6 @@ let package = Package(
                 .product(name: "SwiftHandlesAPI", package: "swift-handles-api"),
                 .product(name: "Version", package: "version"),
                 .product(name: "ICalendar", package: "icalendar-kit"),
-                // Only link Crypto on Linux; on Apple platforms CryptoKit is available.
                 .product(name: "Crypto", package: "swift-crypto", condition: .when(platforms: [.linux])),
             ],
             path: "Sources/SwiftCardanoMultitool"

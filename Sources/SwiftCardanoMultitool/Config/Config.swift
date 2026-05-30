@@ -112,6 +112,15 @@ extension MultitoolConfigs: Codable {
 }
 
 
+/// Task-local override for the multitool config.
+///
+/// When set (typically by tests), `MultitoolConfig.load()` short-circuits and returns
+/// the override instead of reading from `CARDANO_MULTITOOL_CONFIG`. Production never
+/// sets this; the env-var path is always used in real runs.
+public enum Configs {
+    @TaskLocal public static var override: MultitoolConfig?
+}
+
 // MARK: - Configuration Models
 
 /// Main configuration for `scm`.
@@ -585,6 +594,9 @@ public struct MultitoolConfig: Codable, Sendable {
     /// - Throws: An error if the file cannot be read or parsed.
     /// - Note: Environment variables will override values in the JSON file.
     static func load(quiet: Bool = false) async throws -> MultitoolConfig {
+        if let override = Configs.override {
+            return override
+        }
         guard let configPath = Environment.getFilePath(.config) else {
             noora.error(.alert("Unable to find configuration path.", takeaways: [
                 "Make sure the \(Environment.config.rawValue) environment variable is set.",

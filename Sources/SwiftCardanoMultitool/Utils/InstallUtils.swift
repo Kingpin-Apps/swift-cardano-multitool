@@ -224,28 +224,19 @@ func processDownloadedAsset(archivePath: URL, binaryName: String, installDir: UR
 }
 
 /// Pull a Docker or Apple Container image using the specified CLI command.
-/// Uses a non-blocking termination handler to avoid stalling the cooperative thread pool.
+///
+/// Routes through `Processes.current` so tests can stub the invocation via
+/// `RecordedProcessRunner`.
 func pullContainerImage(cli: String, image: String) async throws {
-    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = [cli, "pull", image]
-
-        process.terminationHandler = { p in
-            if p.terminationStatus == 0 {
-                continuation.resume()
-            } else {
-                continuation.resume(throwing: SwiftCardanoMultitoolError.operationError(
-                    "\(cli) pull failed (exit \(p.terminationStatus)) for image: \(image)"
-                ))
-            }
-        }
-
-        do {
-            try process.run()
-        } catch {
-            continuation.resume(throwing: error)
-        }
+    let outcome = try await Processes.current.run(
+        URL(fileURLWithPath: "/usr/bin/env"),
+        arguments: [cli, "pull", image],
+        environment: nil
+    )
+    guard outcome.exitCode == 0 else {
+        throw SwiftCardanoMultitoolError.operationError(
+            "\(cli) pull failed (exit \(outcome.exitCode)) for image: \(image)"
+        )
     }
 }
 

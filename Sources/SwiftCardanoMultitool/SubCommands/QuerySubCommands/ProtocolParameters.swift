@@ -22,21 +22,22 @@ extension QueryMainCommand {
         
         /// Wizard to interactively gather missing parameters
         mutating func wizard() async throws {
-            save = noora.yesOrNoChoicePrompt(
+            save = Prompts.current.yesOrNoChoicePrompt(
                 title: "Save to File",
                 question: "Would you like to save the protocol parameters to a file?",
                 defaultAnswer: false,
                 description: "Choose 'yes' to save the protocol parameters to a file, or 'no' to only display them on the console."
             )
-            
+
             if fileName == nil && save {
-                
+
                 let cwd = FilePath(FileManager.default.currentDirectoryPath)
-                
-                let filePathString = noora.textPrompt(
+
+                let filePathString = Prompts.current.textPrompt(
                     title: "File Name",
                     prompt: "Enter the name of the file to save the protocol parameters to:",
-                    description: "The file name where the protocol parameters will be saved. Default is 'protocol-parameters.json'."
+                    description: "The file name where the protocol parameters will be saved. Default is 'protocol-parameters.json'.",
+                    collapseOnAnswer: true
                 )
                 
                 if filePathString.isEmpty {

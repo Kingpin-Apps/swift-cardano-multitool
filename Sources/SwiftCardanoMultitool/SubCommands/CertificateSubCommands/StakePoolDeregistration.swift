@@ -34,11 +34,11 @@ extension CertificateMainCommand {
         
         @Option(name: .shortAndLong, help: "The name of the pool. Will look for a file named <poolName>.pool.json in current working directory.")
         var poolName: String? = nil
-        
-        @Option(name: .shortAndLong, help: "The path to the pool.json file.")
+
+        @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")
         var poolJSON: FilePath? = nil
-        
-        @Option(name: .shortAndLong, help: "The epoch to deregister the stake pool in.")
+
+        @Option(name: [.customShort("e"), .long], help: "The epoch to deregister the stake pool in.")
         var epoch: EpochNumber? = nil
         
         // MARK: - CertificateCommandable Arguments

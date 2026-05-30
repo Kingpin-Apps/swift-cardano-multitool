@@ -35,23 +35,23 @@ extension ConfigMainCommand {
         /// Wizard to interactively gather missing parameters
         mutating func wizard() async throws {
             if self.network == nil {
-                self.network = noora.singleChoicePrompt(
+                self.network = Prompts.current.singleChoicePrompt(
                     title: "Network",
                     question: "Select the Cardano network:",
                     description: nil,
                     filterMode: .disabled
                 )
             }
-            
+
             if self.fileType == nil {
-                self.fileType = noora.singleChoicePrompt(
+                self.fileType = Prompts.current.singleChoicePrompt(
                     title: "File Type",
                     question: "Select the config file format:",
                     description: nil,
                     filterMode: .disabled
                 )
             }
-            
+
         }
 
         mutating func run() async throws {

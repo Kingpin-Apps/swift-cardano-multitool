@@ -287,9 +287,9 @@ public struct Pool: Codable, Sendable {
         self.pledge = pledge
         self.cost = cost
         
-        guard let margin = margin, margin < 1.00 else {
+        guard let margin = margin, margin <= 1.00 else {
             throw SwiftCardanoMultitoolError.valueError(
-                "Margin must be less than 1.00 (100%)!"
+                "Margin must be less than or equal to 1.00 (100%)!"
             )
         }
         
@@ -906,7 +906,7 @@ public struct Pool: Codable, Sendable {
     /// - Parameter poolJson: The path to the poolName.pool.json file
     public static func generateNewPoolJson(at poolJson: FilePath) throws {
         let poolName = poolJson.lastComponent?.string.split(separator: ".").first.map(String.init) ?? "pool"
-        let pool = try Pool(name: poolName.lowercased())
+        let pool = try Pool(name: poolName.lowercased(), margin: 0.10)
         
         let dummyJson = pool.dummyPoolJson()
         let jsonData = try JSONSerialization.data(withJSONObject: dummyJson, options: [.prettyPrinted, .sortedKeys])
