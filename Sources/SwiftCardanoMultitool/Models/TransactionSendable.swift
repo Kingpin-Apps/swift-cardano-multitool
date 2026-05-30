@@ -90,6 +90,20 @@ extension TransactionSendable {
         }
     }
 
+    /// Companion to `resolveAdaHandles` for the optional stake-side argument carried by
+    /// certificate / rewards commands. `StakeAddressInfo.init?(argument:)` accepts
+    /// `$adahandle` syntax and yields an AddressInfo with `address == nil`; downstream
+    /// `stakeAddress.info.address!` then crashes unless we resolve it first.
+    func resolveStakeAdaHandle(_ stakeAddress: inout StakeAddressInfo?, network: Network) async throws {
+        guard var sa = stakeAddress,
+              sa.info.address == nil, sa.info.adaHandle != nil else { return }
+        try await sa.info.checkAdaHandle(network: network)
+        guard sa.info.address != nil else {
+            throw ValidationError("Could not resolve AdaHandle '\(sa.info.adaHandle ?? "?")' for stake address.")
+        }
+        stakeAddress = sa
+    }
+
     // MARK: - Wizard
     
     mutating func wizardForTransaction() async throws {
