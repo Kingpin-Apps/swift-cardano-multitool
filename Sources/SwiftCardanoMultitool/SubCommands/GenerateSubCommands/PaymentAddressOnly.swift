@@ -4,6 +4,8 @@ import Noora
 import SystemPackage
 import SwiftCardanoCore
 import SwiftCardanoUtils
+import SwiftCardanoWallet
+import SwiftMnemonic
 
 extension GenerateMainCommand {
     
@@ -15,29 +17,41 @@ extension GenerateMainCommand {
         @Option(name: .shortAndLong, help: "The name of the address. The payment verification key and address will be saved as <name>.payment.vkey and <name>.payment.addr respectively.")
         var addressName: String? = nil
         
-        @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli, enc, hw, hw_multi.")
+        @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli, enc, hw, hw_multi, mnemonics.")
         var keyGenMethod: KeyGenMethod? = nil
-        
-        @Option(name: .shortAndLong, help: "Generates Payment keys using Ledger/Trezor HW-Keys with SubAccount at this number.")
+
+        @Option(name: .shortAndLong, help: "Sub-account for HW or mnemonic key derivation (CIP-1852 account index).")
         var subAccount: Int? = nil
-        
-        @Option(name: .shortAndLong, help: "Generates Payment keys using Ledger/Trezor HW-Keys with Index at this number. To be used together with --sub-account.")
+
+        @Option(name: .shortAndLong, help: "Leaf index for HW or mnemonic key derivation. To be used together with --sub-account.")
         var index: Int? = nil
-        
+
+        @Option(name: .shortAndLong, help: "The mnemonic phrase to use for generating the keys. If not provided, a new mnemonic will be generated.")
+        var mnemonics: String? = nil
+
+        @Option(name: .shortAndLong, help: "The language for the mnemonic phrase. Options are: \(Language.allCases.map { $0.rawValue }.joined(separator: ", ")).")
+        var language: Language = .english
+
+        @Option(
+            name: .shortAndLong,
+            help: "The word count for the mnemonic phrase. Options are: \(WordCount.allCases.map { $0.defaultValueDescription }.joined(separator: ", "))."
+        )
+        var wordCount: WordCount = .twentyFour
+
         @Option(name: .shortAndLong, help: "Whether to use the cardano-cli or SwiftCardano to generate the address.")
         var tool: Tool? = nil
         
         mutating func validate() throws {
             switch keyGenMethod {
-                case .hw, .hwMulti:
-                    if  subAccount == nil{
+                case .hw, .hwMulti, .mnemonics:
+                    if subAccount == nil {
                         subAccount = 0
                     }
                     if index == nil {
                         index = 0
                     }
                 case .hybrid, .hybridMulti, .hybridEnc, .hybridMultiEnc:
-                    throw ValidationError("Unsupported key generation method. Please choose from: cli, enc, hw, hw_multi.")
+                    throw ValidationError("Hybrid methods generate both payment and stake keys; use `scm generate payment-and-stake-address` instead.")
                 default:
                     break
             }
@@ -77,26 +91,59 @@ extension GenerateMainCommand {
                 question: "Select the key generation method to use.",
                 options: KeyGenMethod.allCases
                     .filter {
-                        [.cli, .enc, .hw, .hwMulti].contains($0)
+                        [.cli, .enc, .hw, .hwMulti, .mnemonics].contains($0)
                     },
-                description: "Options are:\n- cli: Use cardano-cli to generate keys.\n- enc: Generate keys and encrypt the signing key with a password.\n- hw: Use a hardware wallet (Ledger/Trezor) to generate keys.\n- hw_multi: Use a hardware wallet (Ledger/Trezor) to generate multisig keys."
+                description: "Options are:\n- cli: Use cardano-cli to generate keys.\n- enc: Generate keys and encrypt the signing key with a password.\n- hw: Use a hardware wallet (Ledger/Trezor) to generate keys.\n- hw_multi: Use a hardware wallet (Ledger/Trezor) to generate multisig keys.\n- mnemonics: Derive a payment key from a BIP-39 mnemonic (CIP-1852)."
             )
-            
+
+            if keyGenMethod == .mnemonics {
+                let shouldGenerateMnemonics = noora.yesOrNoChoicePrompt(
+                    title: "Mnemonics",
+                    question: "Do you want to generate a new mnemonic phrase?",
+                    defaultAnswer: false,
+                    description: "If no, you will be prompted to enter an existing mnemonic phrase.",
+                )
+
+                if !shouldGenerateMnemonics {
+                    mnemonics = noora.textPrompt(
+                        title: "Mnemonic Phrase",
+                        prompt: "Enter your existing mnemonic phrase:",
+                        description: "The mnemonic phrase to use for generating the keys.",
+                        collapseOnAnswer: true,
+                        validationRules: [NonEmptyValidationRule(error: "Mnemonic phrase cannot be empty.")]
+                    ).trimmingCharacters(in: .whitespacesAndNewlines)
+                } else {
+                    language = noora.singleChoicePrompt(
+                        title: "Mnemonic Language",
+                        question: "Select the language for the mnemonic phrase.",
+                        description: "The language to use for the mnemonic phrase.",
+                        filterMode: .enabled
+                    )
+
+                    wordCount = noora.singleChoicePrompt(
+                        title: "Mnemonic Word Count",
+                        question: "Select the word count for the mnemonic phrase.",
+                        description: "The word count to use for the mnemonic phrase.",
+                        filterMode: .enabled
+                    )
+                }
+            }
+
             switch keyGenMethod {
-                case .hw, .hwMulti:
+                case .hw, .hwMulti, .mnemonics:
                     subAccount = Int(noora.textPrompt(
                         title: "Sub-Account",
                         prompt: "Enter the sub-account number (default 0):",
-                        description: "The sub-account number for the hardware wallet.",
+                        description: "The sub-account number for key derivation.",
                         collapseOnAnswer: true,
-                        validationRules: [NonEmptyValidationRule(error: "Sub-Account name cannot be empty.")]
+                        validationRules: [NonEmptyValidationRule(error: "Sub-Account cannot be empty.")]
                     ).trimmingCharacters(in: .whitespacesAndNewlines))
                     index = Int(noora.textPrompt(
                         title: "Index",
                         prompt: "Enter the index number (default 0):",
-                        description: "TThe index number for the hardware wallet.",
+                        description: "The leaf index for key derivation.",
                         collapseOnAnswer: true,
-                        validationRules: [NonEmptyValidationRule(error: "Index name cannot be empty.")]
+                        validationRules: [NonEmptyValidationRule(error: "Index cannot be empty.")]
                     ).trimmingCharacters(in: .whitespacesAndNewlines))
                 default:
                     break
@@ -131,20 +178,42 @@ extension GenerateMainCommand {
             func lockAndPrintKeys(extraDescription: String = "") async throws {
                 try await FileUtils.fileLock(paymentVKey)
                 try await FileUtils.fileLock(paymentSKey)
-                
+
                 print(noora.format(
                     "\nPaymentOnly(Enterprise)-Verification-Key\(extraDescription): \(.path(try .init(validating: paymentVKey.string)))\n"
                 ))
                 try await FileUtils.displayFile(paymentVKey)
-                
+
                 print(noora.format(
                     "\nPaymentOnly(Enterprise)-Signing-Key\(extraDescription): \(.path(try .init(validating: paymentSKey.string)))\n"
                 ))
                 try await FileUtils.displayFile(paymentSKey)
-                
+
                 print("\n")
             }
-            
+
+            func saveMnemonics(_ phrase: String, to path: FilePath) throws {
+                do {
+                    try phrase.toData.write(
+                        to: URL(fileURLWithPath: path.string),
+                        options: .atomic
+                    )
+                    print(noora.format(
+                        "Mnemonics written to file: \(.path(try .init(validating: path.string)))"
+                    ))
+                } catch {
+                    noora.error(
+                        .alert(
+                            "Could not write file: \(path.string). \(error)",
+                            takeaways: [
+                                "Make sure you have write permissions to the file path"
+                            ]
+                        )
+                    )
+                    throw ExitCode.failure
+                }
+            }
+
             if keyGenMethod == .cli {
                 switch tool {
                     case .cardanoCLI:
@@ -172,7 +241,52 @@ extension GenerateMainCommand {
                 }
                 
                 try await lockAndPrintKeys()
-                
+
+            }
+            else if keyGenMethod == .mnemonics {
+                let paymentMnemonics = cwd.appending("\(addressName!).payment.mnemonics")
+                try await FileUtils.checkFile(paymentMnemonics)
+
+                print(noora.format(
+                    "Generating Payment-Key via Derivation-Path: \(.primary("1852H/1815H/\(subAccount!)H/0/\(index!)"))"
+                ))
+
+                if tool == .cardanoCLI {
+                    print(noora.format(
+                        "Note: \(.primary("--tool cardano-cli")) is not wired up for mnemonics in payment-only mode; using \(.primary("SwiftCardano")) instead."
+                    ))
+                }
+                print(noora.format(
+                    "Using \(.primary("SwiftCardano")) to generate payment key from mnemonics."
+                ))
+
+                if let existing = mnemonics, !existing.isEmpty {
+                    print(noora.format("Using Mnemonics: \(.primary(existing))"))
+                } else {
+                    mnemonics = try HDWallet.generateMnemonic(
+                        language: language,
+                        wordCount: wordCount
+                    ).joined(separator: " ")
+                    print(noora.format("Created Mnemonics: \(.primary(mnemonics!))"))
+                }
+
+                let km = try MnemonicKeyManager(mnemonic: mnemonics!)
+                let paymentPath = DerivationPath(
+                    purpose: DerivationPath.standardPurpose,
+                    account: UInt32(subAccount!),
+                    role: .external,
+                    index: UInt32(index!)
+                )
+
+                let paymentSkeyType = try await km.paymentSigningKeyType(at: paymentPath)
+                try paymentSkeyType.save(to: paymentSKey.string)
+
+                let _paymentVKey = try await km.paymentVerificationKey(at: paymentPath)
+                try _paymentVKey.save(to: paymentVKey.string)
+
+                try saveMnemonics(mnemonics!, to: paymentMnemonics)
+                try await FileUtils.fileLock(paymentMnemonics)
+                try await lockAndPrintKeys()
             }
             else if keyGenMethod == .enc {
                 var skey: TextEnvelope
@@ -281,7 +395,7 @@ extension GenerateMainCommand {
                     .alert(
                         "Unsupported key generation method.",
                         takeaways: [
-                            "Please choose from: cli, enc, hw, hw_multi.",
+                            "Please choose from: cli, enc, hw, hw_multi, mnemonics.",
                             "Re-run the command with the --help flag for more information."
                         ]
                     )
