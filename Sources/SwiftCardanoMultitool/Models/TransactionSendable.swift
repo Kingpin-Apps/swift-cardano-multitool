@@ -63,7 +63,33 @@ extension TransactionSendable {
             }
         }
     }
-    
+
+    // MARK: - AdaHandle Resolution
+
+    /// Resolve any pending `$adahandle` on `feePaymentAddress` / `toAddress` against the
+    /// chain. PaymentAddressInfo.init?(argument:) and getDestinationAddress's `.adahandle`
+    /// branch both produce an AddressInfo with `adaHandle != nil` and `address == nil`;
+    /// without this step, downstream code force-unwraps `.address!` and crashes.
+    mutating func resolveAdaHandles(network: Network) async throws {
+        if var to = transactionOptions.toAddress,
+           to.info.address == nil, to.info.adaHandle != nil {
+            try await to.info.checkAdaHandle(network: network)
+            guard to.info.address != nil else {
+                throw ValidationError("Could not resolve AdaHandle '\(to.info.adaHandle ?? "?")' for destination address.")
+            }
+            transactionOptions.toAddress = to
+        }
+
+        if var fee = transactionOptions.feePaymentAddress,
+           fee.info.address == nil, fee.info.adaHandle != nil {
+            try await fee.info.checkAdaHandle(network: network)
+            guard fee.info.address != nil else {
+                throw ValidationError("Could not resolve AdaHandle '\(fee.info.adaHandle ?? "?")' for fee payment address.")
+            }
+            transactionOptions.feePaymentAddress = fee
+        }
+    }
+
     // MARK: - Wizard
     
     mutating func wizardForTransaction() async throws {

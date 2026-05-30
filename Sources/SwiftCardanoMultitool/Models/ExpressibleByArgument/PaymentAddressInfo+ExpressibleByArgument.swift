@@ -6,9 +6,9 @@ import SystemPackage
 /// A struct that represents payment address information and conforms to `ExpressibleByArgument`.
 /// It can be initialized from various input formats including AdaHandle, Bech32 address, or file paths.
 public struct PaymentAddressInfo: ExpressibleByArgument {
-    let info: AddressInfo
+    var info: AddressInfo
     // MARK: ExpressibleByArgument
-    
+
     public init (info: AddressInfo) {
         self.info = info
     }
