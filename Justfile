@@ -108,4 +108,3 @@ version-file:
 # Bump version according to changelog and regenerate Version.swift
 bump: changelog
 	cz bump
-	just version-file
