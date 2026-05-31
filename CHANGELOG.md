@@ -1,4 +1,4 @@
-## 0.4.1 (2026-05-30)
+## 0.4.2 (2026-05-31)
 
 ### Feat
 
@@ -6,6 +6,7 @@
 
 ### Fix
 
+- update dependencies to remove OpenSSL linking error
 - add more tests
 - **certs**: resolve $adahandle in pool-registration cert
 - **certs**: resolve $adahandle in pool-deregistration cert
