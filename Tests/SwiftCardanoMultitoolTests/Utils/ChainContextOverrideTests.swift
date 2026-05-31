@@ -26,7 +26,7 @@ struct ChainContextOverrideTests {
         // We don't run that real logic here (it requires cardano-cli/network), but
         // confirm the override is nil after the withValue scope exits.
         let mock = MockChainContext(name: "Inside", type: .offline, networkId: .testnet)
-        try await Contexts.$override.withValue(mock) {
+        Contexts.$override.withValue(mock) {
             #expect(Contexts.override?.name == "Inside")
         }
         #expect(Contexts.override == nil)
