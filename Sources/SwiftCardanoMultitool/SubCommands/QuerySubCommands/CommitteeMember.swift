@@ -86,7 +86,7 @@ extension QueryMainCommand {
                 ) { _ in
                     switch credential {
                         case .cold(let cold):
-                            return try await context.committeeMemberInfo(committeeMember: cold)
+                            return try await context.committeeMemberInfo(cold: cold)
                         case .hot(let hot):
                             return try await context.committeeMemberInfo(hot: hot)
                         case .ambiguousHash(let data):
@@ -94,7 +94,7 @@ extension QueryMainCommand {
                             // behavior — a bare hex hash could be either side.
                             do {
                                 return try await context.committeeMemberInfo(
-                                    committeeMember: CommitteeColdCredential(
+                                    cold: CommitteeColdCredential(
                                         credential: .verificationKeyHash(
                                             VerificationKeyHash(payload: data))
                                     )
