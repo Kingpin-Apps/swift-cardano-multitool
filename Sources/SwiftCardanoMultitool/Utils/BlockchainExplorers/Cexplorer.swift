@@ -125,5 +125,37 @@ public struct Cexplorer: BlockchainExplorable {
             .appendingPathComponent("tx")
             .appendingPathComponent(transactionId.payload.toHex)
     }
+    
+    /// Returns a URL to view the given DRep on Cexplorer.
+    ///
+    /// - Parameter drep: The DRep identifier to look up.
+    /// - Returns: A URL pointing to the DRep page on Cexplorer.
+    public func viewDRep(drep: DRep) throws -> URL {
+        return try baseURL
+            .appendingPathComponent("drep")
+            .appendingPathComponent(drep.id((.bech32, .cip105)))
+    }
+    
+    /// Returns a URL to view the given governance action on Cexplorer.
+    ///
+    /// - Parameter govActionID: The governance action identifier to look up.
+    /// - Returns: A URL pointing to the governance action page on Cexplorer.
+    public func viewGovernanceAction(govActionID: GovActionID) throws -> URL {
+        return try baseURL
+            .appendingPathComponent("gov")
+            .appendingPathComponent("action")
+            .appendingPathComponent(govActionID.id(.hex))
+    }
+    
+    /// Returns a URL to view the given Committee Member on Cexplorer.
+    ///
+    /// - Parameter committeeColdCredential: The committee member's cold credential.
+    /// - Returns: A URL pointing to the committee member page on Cexplorer.
+    public func viewCommitteeMember(committeeColdCredential: CommitteeColdCredential) throws -> URL {
+        return try baseURL
+            .appendingPathComponent("gov")
+            .appendingPathComponent("cc")
+            .appendingPathComponent(committeeColdCredential.id())
+    }
 }
 

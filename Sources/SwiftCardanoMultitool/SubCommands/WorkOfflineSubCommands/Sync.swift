@@ -105,8 +105,6 @@ extension WorkOfflineMainCommand {
                     addressFile: addressInfo.addressFile,
                     name: addressInfo.name,
                     address: addressInfo.address,
-                    era: addressInfo.era,
-                    type: addressInfo.type,
                     totalAmount: total,
                     utxos: addressInfo.utxos
                 )
@@ -153,8 +151,6 @@ extension WorkOfflineMainCommand {
                     addressFile: addressInfo.addressFile,
                     name: addressInfo.name,
                     address: addressInfo.address,
-                    era: addressInfo.era,
-                    type: addressInfo.type,
                     totalAmount: Int(totalRewards),
                     stakeAddressInfo: addressInfo.stakeAddressInfo
                 )

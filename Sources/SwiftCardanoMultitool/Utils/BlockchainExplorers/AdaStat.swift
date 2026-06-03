@@ -117,4 +117,24 @@ public struct AdaStat: BlockchainExplorable {
             .appendingPathComponent("transactions")
             .appendingPathComponent(transactionId.payload.toHex)
     }
+
+    /// Returns a URL to view the given DRep on AdaStat.
+    ///
+    /// - Parameter drep: The DRep identifier to look up.
+    /// - Returns: A URL pointing to the DRep page on AdaStat.
+    public func viewDRep(drep: DRep) throws -> URL {
+        return try baseURL
+            .appendingPathComponent("dreps")
+            .appendingPathComponent(drep.id((.bech32, .cip105)))
+    }
+    
+    /// Returns a URL to view the given governance action on AdaStat.
+    ///
+    /// - Parameter govActionID: The governance action identifier to look up.
+    /// - Returns: A URL pointing to the governance action page on AdaStat.
+    public func viewGovernanceAction(govActionID: GovActionID) throws -> URL {
+        return try baseURL
+            .appendingPathComponent("governances")
+            .appendingPathComponent(govActionID.id(.hex))
+    }
 }

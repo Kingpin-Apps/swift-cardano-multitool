@@ -1,5 +1,5 @@
 {
-  "originHash" : "551c794c8a3fe874569cd0a628adf63a56fd239a373a46fa593ad33b3608ec7f",
+  "originHash" : "5d691efa3f969d9d89ff6ad1e2033f1756d1c0fc23e3c97d2b223aedf5e004e5",
   "pins" : [
     {
       "identity" : "base32",
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tuist/Command.git",
       "state" : {
-        "revision" : "a18d2d908d587323bce781bdb7c6f66081ae2285",
-        "version" : "0.14.7"
+        "revision" : "0f20ccf9f80cafe8485c5630bca390449744cd7b",
+        "version" : "0.14.8"
       }
     },
     {
@@ -159,8 +159,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-blockfrost-api.git",
       "state" : {
-        "revision" : "1e4db8c4e4af8c59085e06f18c4185c47fac1a19",
-        "version" : "0.2.0"
+        "revision" : "b7ade6420034b41606c8a55753588cf0a765f67a",
+        "version" : "0.2.1"
       }
     },
     {
@@ -177,8 +177,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
       "state" : {
-        "revision" : "b8885515eed6c48cdc546ba1c162f777fef06a82",
-        "version" : "0.5.0"
+        "revision" : "52c5d85c61085e3806c06c062ce4dc89e7e74e8d",
+        "version" : "0.5.3"
       }
     },
     {
@@ -195,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "23fa9ffc2b011405425e4ff5f781de5af325feb0",
-        "version" : "0.4.4"
+        "revision" : "45afa3871128b5581ffc2ee1598ba5c53a5b572b",
+        "version" : "0.4.5"
       }
     },
     {
@@ -240,8 +240,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-utils.git",
       "state" : {
-        "revision" : "131019429e2d918891928944997799ee060f4113",
-        "version" : "0.5.1"
+        "revision" : "5396251b61ed2b786caa394f7fa2b2349e4b7444",
+        "version" : "0.5.2"
       }
     },
     {

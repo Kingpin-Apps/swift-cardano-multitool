@@ -85,6 +85,24 @@ public protocol BlockchainExplorable: Sendable {
     /// - Returns: A URL pointing to the transaction page on the explorer.
     /// - Throws: ``SwiftCardanoMultitoolError`` if the operation is unsupported.
     func viewTransaction(transactionId: TransactionId) throws -> URL
+
+    /// Returns a URL to view the given DRep on the explorer.
+    /// - Parameter drep: The delegate representative to look up.
+    /// - Returns: A URL pointing to the DRep page on the explorer.
+    /// - Throws: ``SwiftCardanoMultitoolError`` if the DRep ID cannot be encoded or the operation is unsupported.
+    func viewDRep(drep: DRep) throws -> URL
+
+    /// Returns a URL to view the given governance action on the explorer.
+    /// - Parameter govActionID: The governance action identifier to look up.
+    /// - Returns: A URL pointing to the governance action page on the explorer.
+    /// - Throws: ``SwiftCardanoMultitoolError`` if the governance action ID cannot be encoded or the operation is unsupported.
+    func viewGovernanceAction(govActionID: GovActionID) throws -> URL
+
+    /// Returns a URL to view the given constitutional committee member on the explorer.
+    /// - Parameter committeeColdCredential: The cold credential identifying the committee member.
+    /// - Returns: A URL pointing to the committee-member page on the explorer.
+    /// - Throws: ``SwiftCardanoMultitoolError`` if the credential cannot be encoded or the operation is unsupported.
+    func viewCommitteeMember(committeeColdCredential: CommitteeColdCredential) throws -> URL
 }
 
 extension BlockchainExplorable {
@@ -146,6 +164,24 @@ extension BlockchainExplorable {
     public func viewTransaction(transactionId: TransactionId) throws -> URL {
         throw SwiftCardanoMultitoolError
             .notImplemented("viewTransaction not implemented for this explorer: \(self)")
+    }
+
+    /// Default implementation that throws ``SwiftCardanoMultitoolError/notImplemented(_:)``.
+    public func viewDRep(drep: DRep) throws -> URL {
+        throw SwiftCardanoMultitoolError
+            .notImplemented("viewDRep not implemented for this explorer: \(self)")
+    }
+
+    /// Default implementation that throws ``SwiftCardanoMultitoolError/notImplemented(_:)``.
+    public func viewGovernanceAction(govActionID: GovActionID) throws -> URL {
+        throw SwiftCardanoMultitoolError
+            .notImplemented("viewGovernanceAction not implemented for this explorer: \(self)")
+    }
+
+    /// Default implementation that throws ``SwiftCardanoMultitoolError/notImplemented(_:)``.
+    public func viewCommitteeMember(committeeColdCredential: CommitteeColdCredential) throws -> URL {
+        throw SwiftCardanoMultitoolError
+            .notImplemented("viewCommitteeMember not implemented for this explorer: \(self)")
     }
 }
 

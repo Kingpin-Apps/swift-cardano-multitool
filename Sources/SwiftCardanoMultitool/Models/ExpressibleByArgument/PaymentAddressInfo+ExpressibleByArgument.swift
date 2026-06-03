@@ -33,8 +33,8 @@ public struct PaymentAddressInfo: ExpressibleByArgument {
             // Case 3: File path or name (e.g., owner.payment, owner, or /full/path/to/file.addr)
             let addressFileName = trimmed
             let fileManager = FileManager.default
-            
-            // Try direct file first (handles both absolute and relative paths)
+
+            // Try the path as given (handles absolute and cwd-relative paths)
             if fileManager.fileExists(atPath: addressFileName) {
                 guard let info = try? AddressInfo(fromFile: FilePath(addressFileName)) else {
                     return nil
@@ -42,43 +42,23 @@ public struct PaymentAddressInfo: ExpressibleByArgument {
                 self.init(info: info)
                 return
             }
-            
-            // If not found as-is, try relative to current directory
-            let currentDir = fileManager.currentDirectoryPath
-            let filePath = currentDir.appending(addressFileName)
-            
-            if fileManager.fileExists(atPath: filePath) {
-                guard let info = try? AddressInfo(fromFile: FilePath(filePath)) else {
-                    return nil
-                }
-                self.init(info: info)
-                return
-            }
-            
-            // Try common file name variations
+
+            // Try common file name variations in the current directory
             let variations = [
                 "\(addressFileName).payment.addr",
                 "\(addressFileName).addr"
             ]
-            
-            var foundFiles: [String] = []
-            for fileName in variations {
-                let filePath = currentDir.appending(fileName)
-                if fileManager.fileExists(atPath: filePath) {
-                    foundFiles.append(fileName)
-                }
-            }
-            
-            // Handle results
-            if !foundFiles.isEmpty, foundFiles.count == 1, let firstFile = foundFiles.first {
-                let filePath = currentDir.appending(firstFile)
-                guard let info = try? AddressInfo(fromFile: FilePath(filePath)) else {
-                    return nil
-                }
-                self.init(info: info)
-            } else {
+
+            let foundFiles = variations.filter { fileManager.fileExists(atPath: $0) }
+
+            guard foundFiles.count == 1, let firstFile = foundFiles.first else {
                 return nil
             }
+
+            guard let info = try? AddressInfo(fromFile: FilePath(firstFile)) else {
+                return nil
+            }
+            self.init(info: info)
         }
     }
     

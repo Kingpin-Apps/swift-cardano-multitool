@@ -67,8 +67,7 @@ extension QueryMainCommand {
                 try await wizard()
             }
             
-            guard var addressInfo = address,
-                  let address = addressInfo.address else {
+            guard var addressInfo = address else {
                 noora.error(
                     .alert(
                         "Address information is missing.",
@@ -80,15 +79,11 @@ extension QueryMainCommand {
                 )
                 throw ExitCode.validationFailure
             }
-            
+
             let config = try await MultitoolConfig.load()
-            
-            let context = try await getContext(config: config)
-            
-            try await printContextInfo(config: config, context: context)
-            
+
             let cardanoConfig = try getCardanoConfig(config: config)
-            
+
             if addressInfo.adaHandle != nil, addressInfo.address == nil {
                 do {
                     try await addressInfo.checkAdaHandle(network: cardanoConfig.network)
@@ -105,7 +100,24 @@ extension QueryMainCommand {
                     throw ExitCode.failure
                 }
             }
-            
+
+            guard let address = addressInfo.address else {
+                noora.error(
+                    .alert(
+                        "Address could not be resolved.",
+                        takeaways: [
+                            "Ensure the adahandle resolves to a valid address.",
+                            "Try a different adahandle or pass a Bech32 address directly."
+                        ]
+                    )
+                )
+                throw ExitCode.validationFailure
+            }
+
+            let context = try await getContext(config: config)
+
+            try await printContextInfo(config: config, context: context)
+
             guard let addressType = addressInfo.type else {
                 noora.error(
                     .alert(

@@ -1,5 +1,6 @@
 import Foundation
 import SwiftCardanoChain
+import SwiftCardanoCIPs
 import SwiftCardanoUtils
 import SwiftCardanoCore
 import Logging
@@ -238,6 +239,13 @@ public func stakeAddressInfoSummary(
         
         let cardanoConfig = try getCardanoConfig(config: config)
         
+        let blockchainExplorer = config.blockchainExplorer.explorer(
+            network: cardanoConfig.network
+        )
+        let poolURL = try blockchainExplorer.viewPool(pool: poolOperator)
+        
+        spacedPrint("\(.link(title:poolURL.absoluteString, href: poolURL.absoluteString))")
+        
         let koiosContext = try await KoiosChainContext(
             apiKey: config.koiosApiKey,
             network: cardanoConfig.network
@@ -393,13 +401,19 @@ public func utxoSummary(
         }
         
         var fingerprint: String {
-            // Simple representation - full implementation would need bech32 encoding
-            return "\(policyId).\(assetName)"
+            let encoded = try? CIP14.encodeAsset(
+                policyId: .hexString(policyId),
+                assetName: .hexString(assetName)
+            )
+            return encoded.flatMap { $0 } ?? ""
         }
     }
     
     var allAssets: [AssetInfo] = []
     var allPolicyIds: Set<String> = []
+    
+    // Track assets per UTxO for detailed listing
+    var assetsPerUtxo: [(index: UInt16, txHash: String, ada: String, datumHash: String?, assets: [AssetInfo])] = []
     
     // Build UTxO table data
     let utxoHeaders: [TableCellStyle] = [
@@ -421,33 +435,25 @@ public func utxoSummary(
         var amountDisplay = lovelaceToAdaFormatString(UInt64(output.amount.coin))
         
         // Add datum hash info if present
-        if let datumHash = output.datumHash {
-            amountDisplay += "\nDatumHash: \(datumHash.description)"
+        if output.datumHash != nil {
+            amountDisplay += " [Datum]"
         }
         
         let amount = output.amount
         
-        // Process multi-assets
+        // Process multi-assets and collect asset info
+        var utxoAssetCount = 0
+        var utxoAssets: [AssetInfo] = []
         if !amount.multiAsset.isEmpty {
             for (policyId, assets) in amount.multiAsset.data {
                 let policyIdHex = policyId.description
                 allPolicyIds.insert(policyIdHex)
                 
                 for (assetName, assetAmount) in assets.data.elements {
-                    let assetNameHex = assetName.description
-                    let assetNameBytes = assetName.payload
-                    let assetNameStr: String
-                    
-                    // Try to decode as UTF-8, otherwise use hex
-                    if let decoded = String(data: assetNameBytes, encoding: .utf8) {
-                        assetNameStr = decoded
-                    } else {
-                        assetNameStr = assetNameHex
-                    }
+                    let assetNameHex = assetName.payload.toHex
                     
                     // Detect asset type and handle ADA Handle variants
                     let assetType: AssetInfo.AssetType
-                    var displayText = ""
                     
                     if let adaHandlePolicyId = config.adaHandlePolicy.forNetwork(
                         cardanoConfig.network
@@ -463,10 +469,8 @@ public func utxoSummary(
                             let handleBytes = Data(hex: handleName)
                             if let handleStr = String(data: handleBytes, encoding: .utf8) {
                                 assetType = .adaHandleCIP68(handleStr)
-                                displayText = "\nAsset: \(policyIdHex).\(assetNameHex)  \(assetType.displayName)"
                             } else {
                                 assetType = .standard
-                                displayText = "\nAsset: \(policyIdHex).\(assetNameHex)  Amount: \(assetAmount) \(assetNameStr)"
                             }
                             
                         case "00000000":  // Virtual
@@ -474,10 +478,8 @@ public func utxoSummary(
                             let handleBytes = Data(hex: handleName)
                             if let handleStr = String(data: handleBytes, encoding: .utf8) {
                                 assetType = .adaHandleVirtual(handleStr)
-                                displayText = "\nAsset: \(policyIdHex).\(assetNameHex)  \(assetType.displayName)"
                             } else {
                                 assetType = .standard
-                                displayText = "\nAsset: \(policyIdHex).\(assetNameHex)  Amount: \(assetAmount) \(assetNameStr)"
                             }
                             
                         case "000643b0":  // Reference
@@ -485,38 +487,50 @@ public func utxoSummary(
                             let handleBytes = Data(hex: handleName)
                             if let handleStr = String(data: handleBytes, encoding: .utf8) {
                                 assetType = .adaHandleReference(handleStr)
-                                displayText = "\nAsset: \(policyIdHex).\(assetNameHex)  \(assetType.displayName)"
                             } else {
                                 assetType = .standard
-                                displayText = "\nAsset: \(policyIdHex).\(assetNameHex)  Amount: \(assetAmount) \(assetNameStr)"
                             }
                             
                         default:  // CIP-25 (standard ADA Handle)
                             let handleBytes = Data(hex: assetNameHex)
                             if let handleStr = String(data: handleBytes, encoding: .utf8) {
                                 assetType = .adaHandleCIP25(handleStr)
-                                displayText = "\nAsset: \(policyIdHex).\(assetNameHex)  \(assetType.displayName)"
                             } else {
                                 assetType = .standard
-                                displayText = "\nAsset: \(policyIdHex).\(assetNameHex)  Amount: \(assetAmount) \(assetNameStr)"
                             }
                         }
                     } else {
                         // Regular asset
                         assetType = .standard
-                        displayText = "\nAsset: \(policyIdHex).\(assetNameHex)  Amount: \(assetAmount) \(assetNameStr)"
                     }
                     
-                    allAssets.append(AssetInfo(
+                    let assetInfo = AssetInfo(
                         policyId: policyIdHex,
                         assetName: assetNameHex,
                         amount: Int(assetAmount),
                         assetType: assetType
-                    ))
+                    )
+                    allAssets.append(assetInfo)
+                    utxoAssets.append(assetInfo)
                     
-                    amountDisplay += displayText
+                    utxoAssetCount += 1
                 }
             }
+            
+            // Append compact asset count to the amount display
+            let assetLabel = utxoAssetCount == 1 ? "asset" : "assets"
+            amountDisplay += " + \(utxoAssetCount) \(assetLabel)"
+        }
+        
+        // Track per-UTxO assets for detailed listing
+        if !utxoAssets.isEmpty {
+            assetsPerUtxo.append((
+                index: index,
+                txHash: txHash,
+                ada: lovelaceToAdaFormatString(UInt64(output.amount.coin)),
+                datumHash: output.datumHash?.description,
+                assets: utxoAssets
+            ))
         }
         
         // Build transaction explorer URL
@@ -548,65 +562,63 @@ public func utxoSummary(
         "Total ADA on the Address: \(.success("\(lovelaceToAdaString(totalLovelaces)) / \(totalLovelaces) lovelaces"))"
     )
     
-    // Display asset summary if any assets found
+    // Display a detailed asset table for each UTxO that has assets,
+    // titled with the UTxO summary.
     if !allAssets.isEmpty {
         spacedPrint(
             "\(.success("\(allAssets.count) Asset-Type(s) / \(allPolicyIds.count) different PolicyIDs")) found on the Address!"
         )
         
-        // Build asset table data
         let assetHeaders: [TableCellStyle] = [
             .primary("PolicyID"),
             .primary("Asset-Name"),
-            .primary("Total-Amount"),
+            .primary("Amount"),
             .primary("Fingerprint")
         ]
         
-        var assetRows: [StyledTableRow] = []
-        
-        for asset in allAssets {
-            let assetNameDisplay: String
-            let cellStyle: TableCellStyle
+        for utxoEntry in assetsPerUtxo {
+            let assetLabel = utxoEntry.assets.count == 1 ? "asset" : "assets"
             
-            // Display asset name based on type
-            switch asset.assetType {
-            case .adaHandleCIP68(let handle):
-                assetNameDisplay = "$\(handle)"
-                cellStyle = .accent("\(assetNameDisplay) - \(asset.assetType.displayName)")
+            var heading: TerminalText = "\(utxoEntry.txHash)#\(utxoEntry.index) — \(.success(utxoEntry.ada)) — \(utxoEntry.assets.count) \(assetLabel)"
+            if let datumHash = utxoEntry.datumHash {
+                heading = "\(heading)  [DatumHash: \(.muted(datumHash))]"
+            }
+            print("\n\(heading)")
+            
+            var assetRows: [StyledTableRow] = []
+            
+            for asset in utxoEntry.assets {
+                let assetNameDisplay: String
+                let cellStyle: TableCellStyle
                 
-            case .adaHandleVirtual(let handle):
-                assetNameDisplay = "$\(handle)"
-                cellStyle = .accent("\(assetNameDisplay) - \(asset.assetType.displayName)")
-                
-            case .adaHandleReference(let handle):
-                assetNameDisplay = "$\(handle)"
-                cellStyle = .accent("\(assetNameDisplay) - \(asset.assetType.displayName)")
-                
-            case .adaHandleCIP25(let handle):
-                assetNameDisplay = "$\(handle)"
-                cellStyle = .accent("\(assetNameDisplay) - \(asset.assetType.displayName)")
-                
-            case .standard:
-                let assetNameBytes = asset.assetName.hexStringToData
-                if let decoded = String(data: assetNameBytes, encoding: .utf8) {
-                    assetNameDisplay = decoded
-                } else {
-                    assetNameDisplay = asset.assetName
+                // Display asset name based on type
+                switch asset.assetType {
+                    case .adaHandleCIP68(_),
+                         .adaHandleVirtual(_),
+                         .adaHandleReference(_),
+                         .adaHandleCIP25(_):
+                        cellStyle = .accent("\(asset.assetType.displayName)")
+                        
+                    case .standard:
+                        let assetNameBytes = asset.assetName.hexStringToData
+                        if let decoded = String(data: assetNameBytes, encoding: .utf8) {
+                            assetNameDisplay = decoded
+                        } else {
+                            assetNameDisplay = asset.assetName
+                        }
+                        cellStyle = .plain(assetNameDisplay)
                 }
-                cellStyle = .plain(assetNameDisplay)
+                
+                assetRows.append([
+                    .muted(asset.policyId),
+                    cellStyle,
+                    .success("\(asset.amount)"),
+                    .muted(asset.fingerprint)
+                ])
             }
             
-            assetRows.append([
-                .muted(asset.policyId),
-                cellStyle,
-                .success("\(asset.amount)"),
-                .muted(asset.fingerprint)
-            ])
+            noora.table(headers: assetHeaders, rows: assetRows)
         }
-        
-        // Display asset table
-        print()
-        noora.table(headers: assetHeaders, rows: assetRows)
         print()
     }
 }

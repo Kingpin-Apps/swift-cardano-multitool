@@ -3,8 +3,11 @@ import ArgumentParser
 
 enum QueryCommands: String, Subcommandable, AlignedChoiceDescribable {
     case address
+    case committeeMember = "committee-member"
+    case drep
     case epoch
     case era
+    case governanceAction = "governance-action"
     case kesPeriodInfo = "kes-period-info"
     case leadershipSchedule = "leadership-schedule"
     case protocolParameters = "protocol-parameters"
@@ -16,8 +19,11 @@ enum QueryCommands: String, Subcommandable, AlignedChoiceDescribable {
     var name: String {
         switch self {
             case .address: return "Address"
+            case .committeeMember: return "Committee Member"
+            case .drep: return "DRep"
             case .epoch: return "Epoch"
             case .era: return "Era"
+            case .governanceAction: return "Governance Action"
             case .kesPeriodInfo: return "KES Period Info"
             case .leadershipSchedule: return "Leadership Schedule"
             case .protocolParameters: return "Protocol Parameters"
@@ -31,8 +37,11 @@ enum QueryCommands: String, Subcommandable, AlignedChoiceDescribable {
     var details: String {
         switch self {
             case .address: return "Query an address."
+            case .committeeMember: return "Query on-chain state for a constitutional-committee member."
+            case .drep: return "Query on-chain DRep state and verify anchor metadata."
             case .epoch: return "Query information about a specific epoch."
             case .era: return "Query information about a specific era."
+            case .governanceAction: return "Query on-chain state for a governance action."
             case .kesPeriodInfo: return "Check a node opcert KES period information."
             case .leadershipSchedule: return "Query leadership schedule."
             case .protocolParameters: return "Query protocol parameters."
@@ -57,8 +66,11 @@ enum QueryCommands: String, Subcommandable, AlignedChoiceDescribable {
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .address: return QueryMainCommand.Address.self
+            case .committeeMember: return QueryMainCommand.CommitteeMember.self
+            case .drep: return QueryMainCommand.DRep.self
             case .epoch: return QueryMainCommand.Epoch.self
             case .era: return QueryMainCommand.Era.self
+            case .governanceAction: return QueryMainCommand.GovernanceAction.self
             case .kesPeriodInfo: return QueryMainCommand.KesPeriodInfo.self
             case .leadershipSchedule: return QueryMainCommand.LeadershipSchedule.self
             case .protocolParameters: return QueryMainCommand.ProtocolParameters.self
