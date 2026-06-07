@@ -69,6 +69,21 @@ func enterPoolOperatorBy(title: TerminalText? = nil) async throws -> EnterPoolOp
     )
 }
 
+/// Prompt user to choose how they want to identify an asset for metadata lookup.
+/// - Parameter title: Optional title for the prompt.
+/// - Returns: EnterAssetMetaBy enum value.
+func enterAssetMetaBy(title: TerminalText? = nil) async throws -> EnterAssetMetaBy {
+    return noora.singleChoicePrompt(
+        title: title ?? "Asset",
+        question: "Enter asset by:",
+        description: """
+            Accepted formats:
+            \n  • Hex Subject: 56-120 hex characters (policyId || assetNameHex)
+            \n  • File Path: a .asset JSON file with a top-level `subject` field
+            """,
+    )
+}
+
 /// Prompt user to select a stake address from the current directory.
 /// - Parameter title: Optional title for the prompt.
 /// - Returns: StakeAddressInfo of the selected stake address.
@@ -827,4 +842,92 @@ func getToolToUse() async throws -> Tool {
                 """
         )
     }
+}
+
+func enterVoterBy(title: TerminalText? = nil) async throws -> EnterVoterBy {
+    return noora.singleChoicePrompt(
+        title: title ?? "Voter filter",
+        question: "Filter votes by voter?",
+        description: "Choose 'No voter filter' to see all votes, or pick a class to narrow to one voter."
+    )
+}
+
+/// Resolve a voter through the wizard. Reuses `getDRep`, `getPoolOperator`,
+/// `getCommitteeColdCredential`, `getCommitteeHotCredential`.
+func getVoter(title: TerminalText? = nil) async throws -> VoterFilter {
+    switch try await enterVoterBy(title: title) {
+        case .none:
+            return .none
+        case .drep:
+            return .drep(try await getDRep(title: "Voter (DRep)"))
+        case .spo:
+            return .spo(try await getPoolOperator(title: "Voter (SPO)"))
+        case .ccCold:
+            return .ccCold(try await getCommitteeColdCredential(title: "Voter (CC cold)"))
+        case .ccHot:
+            return .ccHot(try await getCommitteeHotCredential(title: "Voter (CC hot)"))
+    }
+}
+
+/// Parse a raw `--voter` CLI argument. Dispatches by bech32 prefix / file extension.
+/// Returns `.none` for empty input. Throws if the input format is unrecognized.
+func parseVoterArgument(_ raw: String) throws -> VoterFilter {
+    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty { return .none }
+
+    // File paths first.
+    if trimmed.hasSuffix(".drep") || trimmed.hasSuffix(".drep.id") || trimmed.hasSuffix(".drep.vkey") {
+        let drep = try DRep.load(from: trimmed)
+        return .drep(drep)
+    }
+    if trimmed.hasSuffix(".pool.id") || trimmed.hasSuffix(".node.vkey") {
+        let raw = try String(contentsOfFile: trimmed, encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return .spo(try PoolOperator(from: .string(raw)))
+    }
+
+    // Bech32 prefixes.
+    if trimmed.hasPrefix("drep1") || trimmed.hasPrefix("drep_script1") {
+        return .drep(try DRep(from: trimmed))
+    }
+    if trimmed.hasPrefix("pool1") {
+        return .spo(try PoolOperator(from: .string(trimmed)))
+    }
+    if trimmed.hasPrefix("cc_cold1") || trimmed.hasPrefix("cc_cold_script1") {
+        return .ccCold(try CommitteeColdCredential(from: trimmed))
+    }
+    if trimmed.hasPrefix("cc_hot1") || trimmed.hasPrefix("cc_hot_script1") {
+        return .ccHot(try CommitteeHotCredential(from: trimmed))
+    }
+    if trimmed.hasPrefix("stake1") || trimmed.hasPrefix("stake_test1") {
+        let addr = try Address(from: .string(trimmed))
+        guard let staking = addr.stakingPart else {
+            throw ValidationError("Stake address \(raw) has no staking part.")
+        }
+        let cred: CredentialType
+        switch staking {
+        case .verificationKeyHash(let h): cred = .verificationKeyHash(h)
+        case .scriptHash(let h):          cred = .scriptHash(h)
+        case .pointerAddress:
+            throw ValidationError("Pointer stake addresses are not supported as voter filters.")
+        }
+        return .stakeAddress(StakeCredential(credential: cred))
+    }
+
+    // Bare 28-byte hex hash — bash accepts this without forcing a class.
+    if trimmed.count == 56, let bytes = Data(hexString: trimmed.lowercased()), bytes.count == 28 {
+        return .unknownHex(bytes)
+    }
+
+    throw ValidationError(
+        "Unrecognized --voter format: \(raw). Expected bech32 (drep1…/pool1…/cc_cold1…/cc_hot1…/stake1…), a 56-char hex key/script hash, or a key file (.drep.id, .pool.id, .drep.vkey, .node.vkey)."
+    )
+}
+
+func getActionTypeFilter(title: TerminalText? = nil) async throws -> VoteActionTypeFilter {
+    return noora.singleChoicePrompt(
+        title: title ?? "Action type filter",
+        question: "Filter by governance action type?",
+        description: "Pick 'any' to include every type."
+    )
 }

@@ -209,6 +209,25 @@ enum EnterDRepCredentialBy: String, CaseIterable, AlignedChoiceDescribable {
     }
 }
 
+enum EnterAssetMetaBy: String, CaseIterable, AlignedChoiceDescribable {
+    case hexSubject
+    case path
+
+    var name: String {
+        switch self {
+            case .hexSubject: return "Hex Subject"
+            case .path: return "File Path"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .hexSubject: return "The asset subject as 56-120 hex characters (policyId || assetNameHex)."
+            case .path: return "The path to a .asset JSON file containing a top-level `subject` field."
+        }
+    }
+}
+
 enum MoveInstantaneousRewardSourceOption: String, CaseIterable, AlignedChoiceDescribable {
     case reserves
     case treasury
@@ -462,6 +481,193 @@ enum ConfigNetwork: String, ExpressibleByArgument, CaseIterable, CustomStringCon
             case .preview: return .preview
             case .guildnet: return .guildnet
             case .sanchonet: return .sanchonet
+        }
+    }
+}
+
+enum EnterVoterBy: String, CaseIterable, AlignedChoiceDescribable {
+    case none
+    case drep
+    case spo
+    case ccCold = "cc-cold"
+    case ccHot = "cc-hot"
+
+    var name: String {
+        switch self {
+            case .none: return "No voter filter"
+            case .drep: return "DRep"
+            case .spo: return "Stake Pool Operator"
+            case .ccCold: return "Committee Member (cold)"
+            case .ccHot: return "Committee Member (hot)"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .none: return "Show all votes without filtering by voter."
+            case .drep: return "Filter to votes cast by a specific DRep."
+            case .spo: return "Filter to votes cast by a specific stake pool."
+            case .ccCold: return "Filter to votes cast by a constitutional committee member (by cold credential)."
+            case .ccHot: return "Filter to votes cast by a constitutional committee member (by authorized hot credential)."
+        }
+    }
+}
+
+enum VoteActionTypeFilter: String, CaseIterable, ExpressibleByArgument, AlignedChoiceDescribable {
+    case any = "any"
+    case parameterChange = "parameter-change"
+    case hardFork = "hard-fork"
+    case treasuryWithdrawal = "treasury-withdrawal"
+    case noConfidence = "no-confidence"
+    case updateCommittee = "update-committee"
+    case newConstitution = "new-constitution"
+    case infoAction = "info"
+
+    var name: String {
+        switch self {
+            case .any: return "Any"
+            case .parameterChange: return "Parameter Change"
+            case .hardFork: return "Hard Fork Initiation"
+            case .treasuryWithdrawal: return "Treasury Withdrawal"
+            case .noConfidence: return "No Confidence"
+            case .updateCommittee: return "Update Committee"
+            case .newConstitution: return "New Constitution"
+            case .infoAction: return "Info Action"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .any: return "Include actions of every type."
+            case .parameterChange: return "Protocol parameter update actions."
+            case .hardFork: return "Hard-fork initiation actions."
+            case .treasuryWithdrawal: return "Treasury withdrawal actions."
+            case .noConfidence: return "No-confidence motions against the constitutional committee."
+            case .updateCommittee: return "Actions that update the constitutional committee."
+            case .newConstitution: return "Actions that propose a new constitution."
+            case .infoAction: return "Non-binding informational actions."
+        }
+    }
+}
+
+/// Role of the voter casting a Conway-era vote. CC-Cold is intentionally absent — the
+/// cold credential authorizes the hot credential, the hot credential votes.
+enum VoterRole: String, CaseIterable, ExpressibleByArgument, AlignedChoiceDescribable {
+    case drep
+    case spo
+    case ccHot = "cc-hot"
+
+    var name: String {
+        switch self {
+            case .drep: return "DRep"
+            case .spo: return "Stake Pool Operator"
+            case .ccHot: return "Committee Member (hot)"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .drep: return "Cast the vote as a registered DRep (.drep.vkey/.drep.skey)."
+            case .spo: return "Cast the vote as a stake pool operator (.node.vkey/.node.skey)."
+            case .ccHot: return "Cast the vote as a constitutional committee member's hot key (.cc-hot.vkey/.cc-hot.skey)."
+        }
+    }
+
+    /// File-extension suffix used in the codebase's key-file naming convention. The
+    /// matching signing key is `<stem>.<suffix>.skey` (or `.hwsfile`).
+    var keyFileSuffix: String {
+        switch self {
+            case .drep: return "drep"
+            case .spo: return "node"
+            case .ccHot: return "cc-hot"
+        }
+    }
+}
+
+/// Conway-era governance action type. Mirrors `SwiftCardanoCore.GovActionCode` (which is the
+/// CDDL tag) but uses bash-script-style hyphenated names so CLI args match `25a_genAction.sh`.
+enum GovernanceActionType: String, CaseIterable, ExpressibleByArgument, AlignedChoiceDescribable {
+    case infoAction = "info"
+    case treasuryWithdrawal = "treasury-withdrawal"
+    case noConfidence = "no-confidence"
+    case newConstitution = "new-constitution"
+    case hardForkInitiation = "hard-fork-initiation"
+    case updateCommittee = "update-committee"
+    case parameterChange = "parameter-change"
+
+    var name: String {
+        switch self {
+            case .infoAction: return "Info Action"
+            case .treasuryWithdrawal: return "Treasury Withdrawal"
+            case .noConfidence: return "No Confidence"
+            case .newConstitution: return "New Constitution"
+            case .hardForkInitiation: return "Hard Fork Initiation"
+            case .updateCommittee: return "Update Committee"
+            case .parameterChange: return "Parameter Change"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .infoAction:
+                return "Non-binding informational action (no on-chain effect, just records the anchor)."
+            case .treasuryWithdrawal:
+                return "Withdraw lovelace from the treasury to one or more stake addresses."
+            case .noConfidence:
+                return "Motion of no-confidence against the current constitutional committee."
+            case .newConstitution:
+                return "Propose a new on-chain constitution document."
+            case .hardForkInitiation:
+                return "Trigger a hard fork at a new protocol major/minor version."
+            case .updateCommittee:
+                return "Add/remove constitutional committee members and adjust the threshold."
+            case .parameterChange:
+                return "Update one or more protocol parameters."
+        }
+    }
+
+    /// Filename infix used when deriving default output paths, e.g. `mywallet_info_<ts>.action`.
+    /// Matches the slugs used by the bash script for parity.
+    var fileSlug: String {
+        switch self {
+            case .infoAction: return "info"
+            case .treasuryWithdrawal: return "treasury-withdrawal"
+            case .noConfidence: return "no-confidence"
+            case .newConstitution: return "new-constitution"
+            case .hardForkInitiation: return "hardfork"
+            case .updateCommittee: return "update-committee"
+            case .parameterChange: return "parameter-change"
+        }
+    }
+}
+
+/// User-facing vote choice. Maps 1:1 to `SwiftCardanoCore.Vote` via `asCoreVote`.
+enum VoteChoice: String, CaseIterable, ExpressibleByArgument, AlignedChoiceDescribable {
+    case yes
+    case no
+    case abstain
+
+    var name: String {
+        switch self {
+            case .yes: return "Yes"
+            case .no: return "No"
+            case .abstain: return "Abstain"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .yes: return "Vote YES to ratify the governance action."
+            case .no: return "Vote NO to reject the governance action."
+            case .abstain: return "Abstain — vote does not count toward the ratio numerator but still records participation."
+        }
+    }
+
+    var asCoreVote: SwiftCardanoCore.Vote {
+        switch self {
+            case .yes: return .yes
+            case .no: return .no
+            case .abstain: return .abstain
         }
     }
 }

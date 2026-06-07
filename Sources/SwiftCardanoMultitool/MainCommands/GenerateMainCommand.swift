@@ -11,6 +11,8 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
     case keyRotation = "key-rotation"
     case poolJSON = "pool-json"
     case dRep = "drep"
+    case policy = "policy"
+    case assetMeta = "asset-meta"
     case back
     case exit
 
@@ -25,6 +27,8 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .keyRotation: return "Key Rotation"
             case .poolJSON: return "Pool.json"
             case .dRep: return "DRep Keys"
+            case .policy: return "Policy"
+            case .assetMeta: return "Asset Meta"
             case .back: return "Back"
             case .exit: return "Exit"
         }
@@ -41,6 +45,8 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .keyRotation: return "Rotate KES keys and generate a new operational certificate."
             case .poolJSON: return "Generate a new pool.json file."
             case .dRep: return "Generate Cardano governance DRep (Delegated Representative) keys."
+            case .policy: return "Generate a Cardano native-script minting policy."
+            case .assetMeta: return "Generate signed off-chain asset metadata for the Cardano Token Registry."
             case .back: return "Go back to the main menu."
             case .exit: return "Leave the program."
         }
@@ -77,6 +83,10 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
                 return GenerateMainCommand.PoolJSON.self
             case .dRep:
                 return GenerateMainCommand.DRepKeys.self
+            case .policy:
+                return GenerateMainCommand.Policy.self
+            case .assetMeta:
+                return GenerateMainCommand.AssetMeta.self
             case .back:
                 return MainMenuCommand.self
             case .exit:

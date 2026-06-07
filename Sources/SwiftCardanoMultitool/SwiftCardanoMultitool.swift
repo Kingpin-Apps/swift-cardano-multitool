@@ -5,11 +5,13 @@ import Logging
 
 /// Top-level command groups available from the main menu and as CLI subcommands.
 enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
+    case asset
     case build
     case certificates
     case config
     case download
     case generate
+    case governance
     case install
     case protect
     case query
@@ -27,11 +29,13 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
 
     var name: String {
         switch self {
+            case .asset: return "Asset"
             case .build: return "Build"
             case .certificates: return "Certificates"
             case .config: return "Config"
             case .download: return "Download"
             case .generate: return "Generate"
+            case .governance: return "Governance"
             case .install: return "Install"
             case .protect: return "Protect"
             case .query: return "Query"
@@ -46,11 +50,13 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
 
     var details: String {
         switch self {
+            case .asset: return "Mint and burn native assets."
             case .build: return "Build payment and stake address from keys."
             case .certificates: return "Create and submit various certificates."
             case .config: return "Manage configuration settings."
             case .download: return "Download necessary files or data."
             case .generate: return "Create keys, addresses, or other data."
+            case .governance: return "Cast votes and (later) submit governance-action proposals."
             case .install: return "Install cli tools or dependencies."
             case .protect: return "Secure sensitive data with a password."
             case .query: return "Get various data from the blockchain."
@@ -65,11 +71,13 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
 
     func command() -> any AsyncParsableCommand.Type {
         switch self {
+            case .asset: return AssetMainCommand.self
             case .build: return BuildMainCommand.self
             case .certificates: return CertificateMainCommand.self
             case .config: return ConfigMainCommand.self
             case .download: return DownloadMainCommand.self
             case .generate: return GenerateMainCommand.self
+            case .governance: return GovernanceMainCommand.self
             case .install: return InstallMainCommand.self
             case .protect: return ProtectMainCommand.self
             case .query: return QueryMainCommand.self

@@ -1,5 +1,5 @@
 {
-  "originHash" : "f5b443c8360c9b4953472e48630fda8f53329a23fa77f162e54edac85138f295",
+  "originHash" : "ff761d372b1532e32200d2e8eff0fa982e36d8037c7788d08b811a4491caa50a",
   "pins" : [
     {
       "identity" : "base32",
@@ -177,8 +177,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
       "state" : {
-        "revision" : "52c5d85c61085e3806c06c062ce4dc89e7e74e8d",
-        "version" : "0.5.3"
+        "revision" : "4c2e7c06bd9bcbb484973d6c035c63385af4927d",
+        "version" : "0.6.0"
       }
     },
     {
@@ -195,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "45afa3871128b5581ffc2ee1598ba5c53a5b572b",
-        "version" : "0.4.5"
+        "revision" : "5cb18cb2665a7ca5cf99c98d95f432dcd607427d",
+        "version" : "0.4.6"
       }
     },
     {
@@ -206,6 +206,15 @@
       "state" : {
         "revision" : "53019f0ea3673448dc63f9cd3261d2b2f785f6b8",
         "version" : "1.1.1"
+      }
+    },
+    {
+      "identity" : "swift-cardano-token-registry",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kingpin-Apps/swift-cardano-token-registry.git",
+      "state" : {
+        "revision" : "48e365b8e3be2487539e78bb6adb37b285bffd17",
+        "version" : "0.2.0"
       }
     },
     {
@@ -429,8 +438,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-nacl.git",
       "state" : {
-        "revision" : "23df3eed6c4a9ac8f906260253604fdb74f7ed7f",
-        "version" : "1.0.1"
+        "revision" : "31015115313f476e068ea57765fb295a2c1a6f01",
+        "version" : "1.0.2"
       }
     },
     {

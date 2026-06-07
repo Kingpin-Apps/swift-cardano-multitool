@@ -119,13 +119,32 @@ public func drepInfoSummary(
     }
 }
 
+/// Distinguishes the call-site of `verifyAnchor` so temp-file labels and (in the future) any
+/// kind-specific warnings can vary. The verification itself — blake2b hash check + CIP-100
+/// signature verification via cardano-signer — is identical for every CIP-100 anchor.
+public enum AnchorKind: String, Sendable {
+    case drepRegistration = "DRepAnchor"
+    case voteRationale    = "VoteAnchor"
+    case committeeMetadata = "CommitteeAnchor"
+    case governanceAction = "GovActionAnchor"
+}
+
+/// Back-compat forwarder. Prefer `verifyAnchor(anchor:config:kind:)`.
+public func verifyDRepAnchor(
+    anchor: Anchor,
+    config: MultitoolConfig
+) async throws {
+    try await verifyAnchor(anchor: anchor, config: config, kind: .drepRegistration)
+}
+
 /// Download the anchor URL, verify the blake2b-256 hash matches the on-chain hash, then optionally
 /// run `cardano-signer verify --cip100` for per-author CIP-100 JSON-LD signature verification.
 ///
 /// Skips silently (with a `noora.warning`) when `cardano-signer` is not configured / installed.
-public func verifyDRepAnchor(
+public func verifyAnchor(
     anchor: Anchor,
-    config: MultitoolConfig
+    config: MultitoolConfig,
+    kind: AnchorKind = .drepRegistration
 ) async throws {
     // Rewrite ipfs:// URLs through the public ipfs.io gateway, mirroring the bash script.
     let originalUrl = anchor.anchorUrl.absoluteString
@@ -200,7 +219,7 @@ public func verifyDRepAnchor(
 
     // Write to a temp file so cardano-signer can read it.
     let tmpDir = FileManager.default.temporaryDirectory
-    let tmpFile = tmpDir.appendingPathComponent("DRepAnchorURLContent-\(UUID().uuidString).tmp")
+    let tmpFile = tmpDir.appendingPathComponent("\(kind.rawValue)URLContent-\(UUID().uuidString).tmp")
     do {
         try downloadedData.write(to: tmpFile)
     } catch {

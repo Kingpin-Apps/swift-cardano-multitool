@@ -697,12 +697,12 @@ public func printToolInfo(
 /// - Throws: An error if the version cannot be retrieved or if the configuration is invalid
 public func printContextInfo(
     config: MultitoolConfig,
-    context: any ChainContext
+    context: (any ChainContext)? = nil
 ) async throws -> Void {
     let (version, infoString) = try await getVersionAndInfoText(config: config)
     
     var takeaways: [TerminalText] = [
-        "Chain Context: \(.primary("\(context.name)"))",
+        context?.name != nil ? "Chain Context: \(.primary("\(context!.name)"))" : "No Chain Context",
         "Scripts-Mode: \(.accent("\(config.mode.rawValue.capitalized)"))",
         "Platform: \(.info(ProcessInfo.processInfo.operatingSystemVersionString))",
         infoString
