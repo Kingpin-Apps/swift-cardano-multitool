@@ -17,7 +17,9 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
     case query
     case run
     case send
+    case sign
     case transaction
+    case verify
     case version
     case workOffline = "work-offline"
     case exit
@@ -41,7 +43,9 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
             case .query: return "Query"
             case .run: return "Run"
             case .send: return "Send"
+            case .sign: return "Sign"
             case .transaction: return "Transaction"
+            case .verify: return "Verify"
             case .version: return "Version"
             case .workOffline: return "Work Offline"
             case .exit: return "Exit"
@@ -62,7 +66,9 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
             case .query: return "Get various data from the blockchain."
             case .run: return "Start various Cardano services."
             case .send: return "Transfer ADA or assets."
+            case .sign: return "Sign messages, governance metadata, and registrations."
             case .transaction: return "Operate on Cardano transactions."
+            case .verify: return "Verify signatures and signed metadata."
             case .version: return "Show version information."
             case .workOffline: return "Operations for working offline."
             case .exit: return "Quit the program."
@@ -83,7 +89,9 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
             case .query: return QueryMainCommand.self
             case .run: return RunMainCommand.self
             case .send: return SendMainCommand.self
+            case .sign: return SignMainCommand.self
             case .transaction: return TransactionMainCommand.self
+            case .verify: return VerifyMainCommand.self
             case .version: return VersionMainCommand.self
             case .workOffline: return WorkOfflineMainCommand.self
             case .exit: return ExitCommand.self
