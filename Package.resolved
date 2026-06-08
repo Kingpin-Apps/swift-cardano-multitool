@@ -1,5 +1,5 @@
 {
-  "originHash" : "ff761d372b1532e32200d2e8eff0fa982e36d8037c7788d08b811a4491caa50a",
+  "originHash" : "6ee3099903700f16606c7d51bef7d98c6975fe8de9889219f1d36f48228e284a",
   "pins" : [
     {
       "identity" : "base32",
@@ -173,21 +173,12 @@
       }
     },
     {
-      "identity" : "swift-cardano-chain",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
-      "state" : {
-        "revision" : "4c2e7c06bd9bcbb484973d6c035c63385af4927d",
-        "version" : "0.6.0"
-      }
-    },
-    {
       "identity" : "swift-cardano-cips",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-cips.git",
       "state" : {
-        "revision" : "abed21cc00e672fdcc105fc7b730783ec39c01ec",
-        "version" : "0.3.3"
+        "revision" : "92f6b6ae653bd954aceaafb55012571dbecdd770",
+        "version" : "0.3.7"
       }
     },
     {
@@ -206,6 +197,15 @@
       "state" : {
         "revision" : "53019f0ea3673448dc63f9cd3261d2b2f785f6b8",
         "version" : "1.1.1"
+      }
+    },
+    {
+      "identity" : "swift-cardano-signer",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kingpin-Apps/swift-cardano-signer.git",
+      "state" : {
+        "revision" : "dde1c1da6ec101c7d3d75a7a8c517ce9008d95c5",
+        "version" : "0.1.1"
       }
     },
     {
@@ -312,8 +312,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cose.git",
       "state" : {
-        "revision" : "d5b53e378e7143514eabcb10486595415fcce787",
-        "version" : "1.3.0"
+        "revision" : "8fe15e652bd33d9373fcc9695a3b1e5c35983076",
+        "version" : "1.3.1"
       }
     },
     {
@@ -357,8 +357,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-goldilocks.git",
       "state" : {
-        "revision" : "ae27bd2b74963107909f9bd5c9d1fbd4d0e0acbe",
-        "version" : "0.1.0"
+        "revision" : "44a49050ca59c32d974af84d5828b70cea596e3f",
+        "version" : "0.1.1"
       }
     },
     {
@@ -386,6 +386,15 @@
       "state" : {
         "revision" : "45eb0224913ea070ec4fba17291b9e7ecf4749ca",
         "version" : "1.5.1"
+      }
+    },
+    {
+      "identity" : "swift-jsonld",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kingpin-Apps/swift-jsonld.git",
+      "state" : {
+        "revision" : "035741f377f59448de1480751ad59682ae9061cb",
+        "version" : "0.1.3"
       }
     },
     {
@@ -472,7 +481,7 @@
     {
       "identity" : "swift-nio-ssl",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-nio-ssl.git",
+      "location" : "https://github.com/apple/swift-nio-ssl",
       "state" : {
         "revision" : "3f337058ccd7243c4cac7911477d8ad4c598d4da",
         "version" : "2.37.0"
@@ -530,6 +539,15 @@
       "state" : {
         "revision" : "576a65b4ffb8c12ddad4950dc21eea2ef071bec2",
         "version" : "1.3.0"
+      }
+    },
+    {
+      "identity" : "swift-rdf-canonize",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kingpin-Apps/swift-rdf-canonize.git",
+      "state" : {
+        "revision" : "8c0c4cca908e323f88a2b91bcd985144101c6a80",
+        "version" : "0.2.2"
       }
     },
     {
@@ -616,7 +634,7 @@
     {
       "identity" : "yams",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/jpsim/Yams",
+      "location" : "https://github.com/jpsim/Yams.git",
       "state" : {
         "revision" : "3d6871d5b4a5cd519adf233fbb576e0a2af71c17",
         "version" : "5.4.0"

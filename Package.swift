@@ -29,7 +29,9 @@ let package = Package(
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-token-registry.git", from: "0.2.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "1.0.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.2.1"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-signer.git", from: "0.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.5.2"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-koios.git", from: "0.2.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-wallet.git", from: "1.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.1"),
@@ -57,23 +59,23 @@ let package = Package(
                 .product(name: "SwiftCardanoChain", package: "swift-cardano-chain"),
                 .product(name: "SwiftCardanoCore", package: "swift-cardano-core"),
                 .product(name: "SwiftCardanoCIPs", package: "swift-cardano-cips"),
+                .product(name: "SwiftCardanoSigner", package: "swift-cardano-signer"),
                 .product(name: "SwiftCardanoTokenRegistry", package: "swift-cardano-token-registry"),
                 .product(name: "SwiftCardanoTxBuilder", package: "swift-cardano-txbuilder"),
                 .product(name: "SwiftCardanoTxValidator", package: "swift-cardano-txvalidator"),
                 .product(name: "SwiftCardanoWallet", package: "swift-cardano-wallet"),
+                .product(name: "SwiftKoios", package: "swift-koios"),
                 .product(name: "SwiftHandlesAPI", package: "swift-handles-api"),
                 .product(name: "SwiftNaCl", package: "swift-nacl"),
                 .product(name: "Version", package: "version"),
                 .product(name: "ICalendar", package: "icalendar-kit"),
                 .product(name: "Crypto", package: "swift-crypto", condition: .when(platforms: [.linux])),
-            ],
-            path: "Sources/SwiftCardanoMultitool"
+            ]
         ),
         // Thin executable that just calls into the library.
         .executableTarget(
             name: "SwiftCardanoMultitoolApp",
-            dependencies: ["SwiftCardanoMultitool"],
-            path: "Sources/SwiftCardanoMultitoolApp"
+            dependencies: ["SwiftCardanoMultitool"]
         ),
         .testTarget(
             name: "SwiftCardanoMultitoolTests",
