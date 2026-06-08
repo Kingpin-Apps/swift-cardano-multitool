@@ -1,6 +1,7 @@
 import Foundation
 import SystemPackage
 import Testing
+import Configuration
 @testable import SwiftCardanoMultitool
 
 @Suite("Pool init")
@@ -195,5 +196,170 @@ struct PoolDummyJsonTests {
         let parsed = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         #expect(parsed?["name"] as? String == stem)
         #expect(parsed?["margin"] as? Double == 0.10)
+    }
+}
+
+// MARK: - Pool.save / Pool.load
+
+@Suite("Pool.save and Pool.load")
+struct PoolSaveLoadTests {
+
+    private func makeTempDir() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("scm-pool-saveload-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    @Test("save writes a JSON file that can be read back via Pool.load")
+    func saveLoadRoundTrip() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let path = FilePath(dir.appendingPathComponent("round.pool.json").path)
+
+        var pool = try Pool(margin: 0.05)
+        pool.name = "my_pool"
+        pool.metaTicker = "ABC"
+        try pool.save(to: path)
+
+        #expect(FileManager.default.fileExists(atPath: path.string))
+
+        let loaded = try Pool.load(from: path)
+        #expect(loaded.name == "my_pool")
+        #expect(loaded.metaTicker == "ABC")
+        #expect(loaded.margin == 0.05)
+    }
+
+    @Test("save with overwrite: false throws when the file already exists")
+    func saveRejectsExistingWithoutOverwrite() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let path = FilePath(dir.appendingPathComponent("existing.pool.json").path)
+
+        let pool = try Pool(margin: 0.05)
+        try pool.save(to: path)
+
+        #expect(throws: SwiftCardanoMultitoolError.self) {
+            try pool.save(to: path, overwrite: false)
+        }
+    }
+
+    @Test("save with overwrite: true replaces an existing file")
+    func saveOverwriteReplaces() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let path = FilePath(dir.appendingPathComponent("overwrite.pool.json").path)
+
+        var first = try Pool(margin: 0.05)
+        first.metaTicker = "AAA"
+        try first.save(to: path)
+
+        var second = try Pool(margin: 0.10)
+        second.metaTicker = "ZZZ"
+        try second.save(to: path, overwrite: true)
+
+        let reloaded = try Pool.load(from: path)
+        #expect(reloaded.metaTicker == "ZZZ")
+        #expect(reloaded.margin == 0.10)
+    }
+
+    @Test("load throws on a missing file")
+    func loadThrowsOnMissingFile() {
+        let bogusPath = FilePath("/tmp/scm-pool-load-missing-\(UUID().uuidString).pool.json")
+        #expect(throws: (any Error).self) {
+            _ = try Pool.load(from: bogusPath)
+        }
+    }
+
+    @Test("load throws on malformed JSON")
+    func loadThrowsOnMalformedJSON() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let path = dir.appendingPathComponent("bad.pool.json")
+        try Data("{ this is not json".utf8).write(to: path)
+
+        #expect(throws: (any Error).self) {
+            _ = try Pool.load(from: FilePath(path.path))
+        }
+    }
+}
+
+// MARK: - Pool.init(config:)
+
+@Suite("Pool.init(config:)")
+struct PoolInitFromConfigTests {
+
+    @Test("populates representative string + int + double fields from the provider")
+    func populatesRepresentativeKeys() {
+        let provider = InMemoryProvider(
+            name: "pool-test",
+            values: [
+                "name": "test_pool",
+                "pledge": 1_000_000,
+                "cost": 340_000_000,
+                "margin": 0.05,
+                "meta_ticker": "TEST"
+            ]
+        )
+        let reader = ConfigReader(provider: provider)
+        let pool = Pool(config: reader)
+
+        #expect(pool.name == "test_pool")
+        #expect(pool.pledge == 1_000_000)
+        #expect(pool.cost == 340_000_000)
+        #expect(pool.margin == 0.05)
+        #expect(pool.metaTicker == "TEST")
+    }
+
+    @Test("unset config keys leave the property nil")
+    func unsetKeysAreNil() {
+        let provider = InMemoryProvider(
+            name: "pool-test",
+            values: ["name": "x"]
+        )
+        let reader = ConfigReader(provider: provider)
+        let pool = Pool(config: reader)
+
+        #expect(pool.metaTicker == nil)
+        #expect(pool.metaDescription == nil)
+        #expect(pool.pledge == nil)
+    }
+}
+
+// MARK: - Pool.toPoolMetadata
+
+@Suite("Pool.toPoolMetadata")
+struct PoolToPoolMetadataTests {
+
+    @Test("happy path builds a PoolMetadata with homepage URL")
+    func happyPath() throws {
+        var pool = try Pool(margin: 0.05)
+        pool.metaName = "Test Pool"
+        pool.metaDescription = "For unit tests"
+        pool.metaTicker = "TEST"
+        pool.metaHomepage = URL(string: "https://example.com")
+        let meta = try pool.toPoolMetadata()
+        #expect(meta.homepage?.absoluteString == "https://example.com")
+        #expect(meta.name == "Test Pool")
+        #expect(meta.desc == "For unit tests")
+        #expect(meta.ticker == "TEST")
+    }
+
+    @Test("builds metadata when only homepage is set (other meta fields are optional)")
+    func minimalWithJustHomepage() throws {
+        var pool = try Pool(margin: 0.05)
+        pool.metaHomepage = URL(string: "https://example.com/min")
+        let meta = try pool.toPoolMetadata()
+        #expect(meta.homepage?.absoluteString == "https://example.com/min")
+        #expect(meta.url == nil)
+    }
+
+    @Test("includes optional metadata URL when meta_url is set")
+    func includesOptionalUrl() throws {
+        var pool = try Pool(margin: 0.05)
+        pool.metaHomepage = URL(string: "https://example.com")
+        pool.metaUrl = URL(string: "https://example.com/meta.json")
+        let meta = try pool.toPoolMetadata()
+        #expect(meta.url?.absoluteString == "https://example.com/meta.json")
     }
 }
