@@ -22,6 +22,8 @@ public final class MockChainContext: ChainContext, @unchecked Sendable {
     public var stubLastBlockSlot: (@Sendable () throws -> Int)?
     public var stubProtocolParameters: (@Sendable () throws -> ProtocolParameters)?
     public var stubGenesisParameters: (@Sendable () throws -> GenesisParameters)?
+    public var stubUtxos: (@Sendable (Address) throws -> [UTxO])?
+    public var stubStakeAddressInfo: (@Sendable (Address) throws -> [SwiftCardanoCore.StakeAddressInfo])?
 
     public init(
         name: String = "Mock",
@@ -66,5 +68,19 @@ public final class MockChainContext: ChainContext, @unchecked Sendable {
             throw CardanoChainError.notImplemented("MockChainContext.lastBlockSlot: no stub set")
         }
         return try stub()
+    }
+
+    public func utxos(address: Address) async throws -> [UTxO] {
+        guard let stub = stubUtxos else {
+            throw CardanoChainError.notImplemented("MockChainContext.utxos: no stub set")
+        }
+        return try stub(address)
+    }
+
+    public func stakeAddressInfo(address: Address) async throws -> [SwiftCardanoCore.StakeAddressInfo] {
+        guard let stub = stubStakeAddressInfo else {
+            throw CardanoChainError.notImplemented("MockChainContext.stakeAddressInfo: no stub set")
+        }
+        return try stub(address)
     }
 }
