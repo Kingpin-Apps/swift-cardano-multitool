@@ -13,6 +13,11 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
     case dRep = "drep"
     case policy = "policy"
     case assetMeta = "asset-meta"
+    case ed25519
+    case derivedKey = "derived-key"
+    case voteKey = "vote-key"
+    case calidusKey = "calidus-key"
+    case byronKey = "byron-key"
     case back
     case exit
 
@@ -29,6 +34,11 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .dRep: return "DRep Keys"
             case .policy: return "Policy"
             case .assetMeta: return "Asset Meta"
+            case .ed25519: return "Ed25519 Key"
+            case .derivedKey: return "BIP-32 Derived Key"
+            case .voteKey: return "CIP-36 Vote Key"
+            case .calidusKey: return "Calidus Pool Key"
+            case .byronKey: return "Byron Key"
             case .back: return "Back"
             case .exit: return "Exit"
         }
@@ -47,11 +57,16 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .dRep: return "Generate Cardano governance DRep (Delegated Representative) keys."
             case .policy: return "Generate a Cardano native-script minting policy."
             case .assetMeta: return "Generate signed off-chain asset metadata for the Cardano Token Registry."
+            case .ed25519: return "Generate a random Ed25519 keypair (no derivation tree)."
+            case .derivedKey: return "Derive a BIP-32 key for any Cardano role from a mnemonic."
+            case .voteKey: return "Generate a CIP-36 Catalyst voting keypair from a mnemonic."
+            case .calidusKey: return "Generate a CIP-151 Calidus pool-operator keypair from a mnemonic."
+            case .byronKey: return "Generate a Byron-era (Daedalus) keypair from a mnemonic."
             case .back: return "Go back to the main menu."
             case .exit: return "Leave the program."
         }
     }
-    
+
     static var subcommands: [any AsyncParsableCommand.Type] {
         return Self.allCases.compactMap {
             switch $0 {
@@ -62,7 +77,7 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
             }
         }
     }
-    
+
     func command() -> any AsyncParsableCommand.Type {
         switch self {
             case .nodeColdKeys:
@@ -87,6 +102,16 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
                 return GenerateMainCommand.Policy.self
             case .assetMeta:
                 return GenerateMainCommand.AssetMeta.self
+            case .ed25519:
+                return GenerateMainCommand.Ed25519Key.self
+            case .derivedKey:
+                return GenerateMainCommand.DerivedKey.self
+            case .voteKey:
+                return GenerateMainCommand.VoteKey.self
+            case .calidusKey:
+                return GenerateMainCommand.CalidusKey.self
+            case .byronKey:
+                return GenerateMainCommand.ByronKey.self
             case .back:
                 return MainMenuCommand.self
             case .exit:
