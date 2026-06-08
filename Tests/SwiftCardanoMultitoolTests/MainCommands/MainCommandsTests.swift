@@ -12,6 +12,13 @@ import Testing
 @Suite("MainCommands smoke tests")
 struct MainCommandsTests {
 
+    @Test("AssetMainCommand has commandName 'asset' and matching subcommands")
+    func assetCommand() {
+        #expect(AssetMainCommand.configuration.commandName == "asset")
+        #expect(AssetMainCommand.configuration.subcommands.count == AssetCommands.subcommands.count)
+        #expect(AssetMainCommand.configuration.subcommands.count > 0)
+    }
+
     @Test("BuildMainCommand has commandName 'build' and matching subcommands")
     func buildCommand() {
         #expect(BuildMainCommand.configuration.commandName == "build")
@@ -47,6 +54,13 @@ struct MainCommandsTests {
         #expect(GenerateMainCommand.configuration.subcommands.count > 0)
     }
 
+    @Test("GovernanceMainCommand has commandName 'governance' and matching subcommands")
+    func governanceCommand() {
+        #expect(GovernanceMainCommand.configuration.commandName == "governance")
+        #expect(GovernanceMainCommand.configuration.subcommands.count == GovernanceCommands.subcommands.count)
+        #expect(GovernanceMainCommand.configuration.subcommands.count > 0)
+    }
+
     @Test("InstallMainCommand has commandName 'install' and matching subcommands")
     func installCommand() {
         #expect(InstallMainCommand.configuration.commandName == "install")
@@ -80,6 +94,20 @@ struct MainCommandsTests {
         #expect(SendMainCommand.configuration.commandName == "send")
         #expect(SendMainCommand.configuration.subcommands.count == SendCommands.subcommands.count)
         #expect(SendMainCommand.configuration.subcommands.count > 0)
+    }
+
+    @Test("SignMainCommand has commandName 'sign' and matching subcommands")
+    func signCommand() {
+        #expect(SignMainCommand.configuration.commandName == "sign")
+        #expect(SignMainCommand.configuration.subcommands.count == SignCommands.subcommands.count)
+        #expect(SignMainCommand.configuration.subcommands.count > 0)
+    }
+
+    @Test("VerifyMainCommand has commandName 'verify' and matching subcommands")
+    func verifyCommand() {
+        #expect(VerifyMainCommand.configuration.commandName == "verify")
+        #expect(VerifyMainCommand.configuration.subcommands.count == VerifyCommands.subcommands.count)
+        #expect(VerifyMainCommand.configuration.subcommands.count > 0)
     }
 
     @Test("TransactionMainCommand has commandName 'transaction' and matching subcommands")
