@@ -65,3 +65,81 @@ struct InstallCommandsTests {
         #expect(InstallMainCommand.Mithril.configuration.commandName == "mithril")
     }
 }
+
+// MARK: - parse() smoke tests for each Install subcommand (improves option-decoder coverage)
+
+@Suite("InstallMainCommand parse() smoke tests")
+struct InstallCommandsParseTests {
+
+    @Test("CardanoCLI parses with no args (every option defaults to nil)")
+    func cardanoCLIDefaults() throws {
+        let cmd = try InstallMainCommand.CardanoCLI.parse([])
+        #expect(cmd.installDir == nil)
+        #expect(cmd.method == nil)
+        #expect(cmd.image == nil)
+    }
+
+    @Test("CardanoCLI parses --image option")
+    func cardanoCLIImage() throws {
+        let cmd = try InstallMainCommand.CardanoCLI.parse([
+            "--image", "ghcr.io/test/cli:latest"
+        ])
+        #expect(cmd.image == "ghcr.io/test/cli:latest")
+    }
+
+    @Test("CardanoHWCLI parses with no args")
+    func cardanoHWCLIDefaults() throws {
+        let cmd = try InstallMainCommand.CardanoHWCLI.parse([])
+        #expect(cmd.installDir == nil)
+        #expect(cmd.method == nil)
+    }
+
+    @Test("CardanoSigner parses with no args")
+    func cardanoSignerDefaults() throws {
+        let cmd = try InstallMainCommand.CardanoSigner.parse([])
+        #expect(cmd.installDir == nil)
+        #expect(cmd.method == nil)
+    }
+
+    @Test("CardanoSubmitAPI parses with no args")
+    func cardanoSubmitAPIDefaults() throws {
+        let cmd = try InstallMainCommand.CardanoSubmitAPI.parse([])
+        #expect(cmd.installDir == nil)
+        #expect(cmd.method == nil)
+    }
+
+    @Test("CardanoDbSync parses with no args")
+    func cardanoDbSyncDefaults() throws {
+        let cmd = try InstallMainCommand.CardanoDbSync.parse([])
+        #expect(cmd.installDir == nil)
+        #expect(cmd.method == nil)
+    }
+
+    @Test("CardanoWallet parses with no args")
+    func cardanoWalletDefaults() throws {
+        let cmd = try InstallMainCommand.CardanoWallet.parse([])
+        #expect(cmd.installDir == nil)
+        #expect(cmd.method == nil)
+    }
+
+    @Test("Kupo parses with no args")
+    func kupoDefaults() throws {
+        let cmd = try InstallMainCommand.Kupo.parse([])
+        #expect(cmd.installDir == nil)
+        #expect(cmd.method == nil)
+    }
+
+    @Test("Ogmios parses with no args")
+    func ogmiosDefaults() throws {
+        let cmd = try InstallMainCommand.Ogmios.parse([])
+        #expect(cmd.installDir == nil)
+        #expect(cmd.method == nil)
+    }
+
+    @Test("Mithril parses with no args")
+    func mithrilDefaults() throws {
+        let cmd = try InstallMainCommand.Mithril.parse([])
+        #expect(cmd.installDir == nil)
+        #expect(cmd.method == nil)
+    }
+}
