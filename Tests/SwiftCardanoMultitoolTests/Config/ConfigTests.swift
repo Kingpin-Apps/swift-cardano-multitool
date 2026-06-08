@@ -1,6 +1,9 @@
 import Foundation
 import SystemPackage
 import Testing
+import Configuration
+import SwiftCardanoCore
+import SwiftCardanoChain
 @testable import SwiftCardanoMultitool
 
 @Suite("MultitoolConfigs")
@@ -176,5 +179,104 @@ struct MultitoolConfigByronToShelleyEpochTests {
         let cfg = try JSONDecoder().decode(MultitoolConfig.self, from: Data(json.utf8))
         let epoch = try cfg.byronToShelleyEpoch
         #expect(epoch == 999)
+    }
+}
+
+// MARK: - NetworkDependable.forNetwork mapping
+
+@Suite("NetworkDependable.forNetwork")
+struct NetworkDependableForNetworkTests {
+
+    @Test("NetworkURLs returns the matching url for each network")
+    func networkURLsMapping() throws {
+        let main = URL(string: "https://main.example.com")!
+        let pre = URL(string: "https://preprod.example.com")!
+        let urls = NetworkURLs(mainnet: main, preprod: pre, preview: nil, guildnet: nil)
+        #expect(urls.forNetwork(.mainnet) == main)
+        #expect(urls.forNetwork(.preprod) == pre)
+        #expect(urls.forNetwork(.preview) == nil)
+        #expect(urls.forNetwork(.guildnet) == nil)
+    }
+
+    @Test("TokenMetaServerURLs uses the documented IOG defaults")
+    func tokenMetaServerDefaults() {
+        let urls = TokenMetaServerURLs()
+        #expect(urls.mainnet.absoluteString == "https://tokens.cardano.org/metadata/")
+        #expect(urls.preprod?.absoluteString == "https://metadata.cardano-testnet.iohkdev.io/metadata/")
+        #expect(urls.preview?.absoluteString == "https://metadata.cardano-testnet.iohkdev.io/metadata/")
+        #expect(urls.guildnet == nil)
+    }
+
+    @Test("AdaHandlePolicyIds defaults to the production policyId for every named network")
+    func adaHandlePolicyDefaults() {
+        let ids = AdaHandlePolicyIds()
+        let prodPolicy = "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a"
+        #expect(ids.mainnet == prodPolicy)
+        #expect(ids.preprod == prodPolicy)
+        #expect(ids.preview == prodPolicy)
+        #expect(ids.guildnet == nil)
+    }
+
+    @Test("AdaHandlePolicyIds.forNetwork maps each network to the matching policyId")
+    func adaHandleMapping() {
+        let ids = AdaHandlePolicyIds()
+        let prodPolicy = "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a"
+        #expect(ids.forNetwork(.mainnet) == prodPolicy)
+        #expect(ids.forNetwork(.preprod) == prodPolicy)
+        #expect(ids.forNetwork(.preview) == prodPolicy)
+        #expect(ids.forNetwork(.guildnet) == nil)
+    }
+}
+
+// MARK: - MultitoolConfig.init(config:) via ConfigReader
+
+@Suite("MultitoolConfig.init(config:) ConfigReader path")
+struct MultitoolConfigInitFromConfigTests {
+
+    @Test("empty provider produces a config with mode defaulting to .auto")
+    func emptyProviderDefaultsMode() {
+        let provider = InMemoryProvider(name: "test", values: [:])
+        let reader = ConfigReader(provider: provider)
+        let cfg = MultitoolConfig(config: reader)
+        #expect(cfg.mode == .auto)
+        #expect(cfg.blockfrostProjectId == nil)
+        #expect(cfg.koiosApiKey == nil)
+    }
+
+    @Test("explicit mode is read from the provider")
+    func modeReadFromProvider() {
+        let provider = InMemoryProvider(
+            name: "test",
+            values: ["mode": "online"]
+        )
+        let reader = ConfigReader(provider: provider)
+        let cfg = MultitoolConfig(config: reader)
+        #expect(cfg.mode == Mode.online)
+    }
+
+    @Test("blockfrost_project_id and koios_api_key are picked up")
+    func projectIdAndApiKey() {
+        let provider = InMemoryProvider(
+            name: "test",
+            values: [
+                "blockfrost_project_id": "bf-test-123",
+                "koios_api_key": "koios-test-key"
+            ]
+        )
+        let reader = ConfigReader(provider: provider)
+        let cfg = MultitoolConfig(config: reader)
+        #expect(cfg.blockfrostProjectId == "bf-test-123")
+        #expect(cfg.koiosApiKey == "koios-test-key")
+    }
+
+    @Test("token_meta_server.mainnet overrides the default mainnet URL")
+    func tokenMetaServerOverride() {
+        let provider = InMemoryProvider(
+            name: "test",
+            values: ["token_meta_server.mainnet": "https://custom.tokens.example.com/metadata/"]
+        )
+        let reader = ConfigReader(provider: provider)
+        let cfg = MultitoolConfig(config: reader)
+        #expect(cfg.tokenMetaServer.mainnet.absoluteString == "https://custom.tokens.example.com/metadata/")
     }
 }
