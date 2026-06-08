@@ -79,7 +79,10 @@ let package = Package(
         ),
         .testTarget(
             name: "SwiftCardanoMultitoolTests",
-            dependencies: ["SwiftCardanoMultitool"]
+            dependencies: ["SwiftCardanoMultitool"],
+            resources: [
+                .copy("Support/Fixtures"),
+            ]
         ),
     ]
 )
