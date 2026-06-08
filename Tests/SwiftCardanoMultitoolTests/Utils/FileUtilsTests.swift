@@ -219,3 +219,186 @@ struct FileUtilsTests {
         #expect(FileUtils.fileSize(missing) == nil)
     }
 }
+
+// MARK: - Lock / unlock and locked variants
+
+@Suite("FileUtils locking")
+struct FileUtilsLockingTests {
+
+    private func makeTempDir() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("scm-tests-locking-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    private func posixPerms(_ path: String) throws -> Int? {
+        let attrs = try FileManager.default.attributesOfItem(atPath: path)
+        return (attrs[.posixPermissions] as? NSNumber)?.intValue
+    }
+
+    @Test("fileLock then fileUnlock round-trip flips perms 0600 ↔ 0400")
+    func lockUnlockRoundTrip() async throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("locked.txt")
+        try Data("hello".utf8).write(to: url)
+        let path = FilePath(url.path)
+
+        try await FileUtils.fileLock(path)
+        #expect(try posixPerms(path.string) == 0o400)
+
+        try await FileUtils.fileUnlock(path)
+        #expect(try posixPerms(path.string) == 0o600)
+    }
+
+    @Test("fileUnlock is a no-op for a missing file (does not throw)")
+    func unlockMissingFileNoThrow() async throws {
+        let bogus = FilePath("/tmp/scm-lock-noop-\(UUID().uuidString).bin")
+        try await FileUtils.fileUnlock(bogus)
+    }
+
+    @Test("unlockIfExists unlocks an existing locked file")
+    func unlockIfExistsUnlocks() async throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("conditional.txt")
+        try Data("x".utf8).write(to: url)
+        let path = FilePath(url.path)
+
+        try await FileUtils.fileLock(path)
+        #expect(try posixPerms(path.string) == 0o400)
+
+        try await FileUtils.unlockIfExists(path)
+        #expect(try posixPerms(path.string) == 0o600)
+    }
+
+    @Test("unlockIfExists is a no-op for a missing file")
+    func unlockIfExistsMissingIsNoop() async throws {
+        let bogus = FilePath("/tmp/scm-uife-noop-\(UUID().uuidString).bin")
+        try await FileUtils.unlockIfExists(bogus)
+    }
+
+    @Test("dumpLockedFile then loadLockedFile round-trip a UTF-8 string")
+    func lockedFileRoundTrip() async throws {
+        let dir = try makeTempDir()
+        defer {
+            // Need to unlock before delete (chmod restores write perm to the user).
+            try? FileManager.default.removeItem(at: dir)
+        }
+        let url = dir.appendingPathComponent("locked-content.txt")
+        let path = FilePath(url.path)
+
+        try await FileUtils.dumpLockedFile(path, data: "hello round-trip")
+        // The dumpLockedFile leaves the file locked (0400) at rest.
+        #expect(try posixPerms(path.string) == 0o400)
+
+        let loaded = try await FileUtils.loadLockedFile(path)
+        #expect(loaded == "hello round-trip")
+        // After load, the file is re-locked.
+        #expect(try posixPerms(path.string) == 0o400)
+    }
+
+    @Test("dumpLockedJSONFile then loadLockedJSONFile preserves keys")
+    func lockedJSONRoundTrip() async throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("locked.json")
+        let path = FilePath(url.path)
+        let payload: [String: Any] = ["alpha": 1, "beta": "two"]
+
+        try await FileUtils.dumpLockedJSONFile(path, data: payload)
+        let loaded = try await FileUtils.loadLockedJSONFile(path)
+        #expect(loaded["alpha"] as? Int == 1)
+        #expect(loaded["beta"] as? String == "two")
+    }
+}
+
+// MARK: - cleanupFile
+
+@Suite("FileUtils.cleanupFile")
+struct FileUtilsCleanupTests {
+
+    private func makeTempDir() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("scm-tests-cleanup-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    @Test("cleanupFile removes an existing file")
+    func removesExistingFile() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("to-clean.txt")
+        try Data("x".utf8).write(to: url)
+        let path = FilePath(url.path)
+
+        try FileUtils.cleanupFile(path)
+        #expect(!FileManager.default.fileExists(atPath: path.string))
+    }
+
+    @Test("cleanupFile throws for a missing file (Foundation error surfaces)")
+    func throwsForMissingFile() {
+        let bogus = FilePath("/tmp/scm-cleanup-missing-\(UUID().uuidString).bin")
+        #expect(throws: (any Error).self) {
+            try FileUtils.cleanupFile(bogus)
+        }
+    }
+}
+
+// MARK: - searchLatestFile
+
+@Suite("FileUtils.searchLatestFile")
+struct FileUtilsSearchLatestFileTests {
+
+    /// `searchLatestFile` scans the *current working directory*. Tests must chdir
+    /// into a temp dir to exercise it deterministically.
+    private final class Chdir {
+        let original: String
+        init(_ target: String) {
+            self.original = FileManager.default.currentDirectoryPath
+            _ = FileManager.default.changeCurrentDirectoryPath(target)
+        }
+        deinit {
+            _ = FileManager.default.changeCurrentDirectoryPath(original)
+        }
+    }
+
+    private func makeTempDir() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("scm-tests-latest-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    @Test("returns the lexicographically latest match")
+    func returnsLatestMatch() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        for name in ["pool.a-2026.tx", "pool.b-2025.tx", "pool.c-2027.tx", "other.txt"] {
+            try Data("x".utf8).write(to: dir.appendingPathComponent(name))
+        }
+        let chdir = Chdir(dir.path)
+        defer { _ = chdir.self }
+
+        let latest = try FileUtils.searchLatestFile(
+            startswith: "pool", contains: "-", endswith: "tx"
+        )
+        #expect(latest?.lastComponent?.string == "pool.c-2027.tx")
+    }
+
+    @Test("returns nil and warns when no file matches the pattern")
+    func returnsNilWhenNoMatch() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try Data("x".utf8).write(to: dir.appendingPathComponent("other.txt"))
+        let chdir = Chdir(dir.path)
+        defer { _ = chdir.self }
+
+        let latest = try FileUtils.searchLatestFile(
+            startswith: "pool", contains: "-", endswith: "tx"
+        )
+        #expect(latest == nil)
+    }
+}
