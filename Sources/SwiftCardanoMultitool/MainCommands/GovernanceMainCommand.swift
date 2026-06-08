@@ -11,6 +11,8 @@ enum GovernanceCommands: String, Subcommandable, AlignedChoiceDescribable {
     case updateCommittee = "update-committee"
     case parameterChange = "parameter-change"
     case submitAction = "submit-action"
+    case canonize
+    case cip129
     case back
     case exit
 
@@ -25,6 +27,8 @@ enum GovernanceCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .updateCommittee: return "Create Update-Committee Action"
             case .parameterChange: return "Create Parameter-Change Action"
             case .submitAction: return "Submit Pre-Built Action File"
+            case .canonize: return "Canonize CIP-100 Metadata"
+            case .cip129: return "CIP-129 ID Encode / Decode"
             case .back: return "Back"
             case .exit: return "Exit"
         }
@@ -50,6 +54,10 @@ enum GovernanceCommands: String, Subcommandable, AlignedChoiceDescribable {
                 return "Build + submit a protocol-parameter-update action."
             case .submitAction:
                 return "Submit one or more previously generated .action files as a single transaction."
+            case .canonize:
+                return "Compute the URDNA2015 canonical form and blake2b-256 hash of a CIP-100 JSON-LD document."
+            case .cip129:
+                return "Encode or decode CIP-129 / CIP-151 bech32 governance identifiers (drep, cc_cold, cc_hot, calidus)."
             case .back:
                 return "Go back to the main menu."
             case .exit:
@@ -79,6 +87,8 @@ enum GovernanceCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .updateCommittee: return GovernanceMainCommand.UpdateCommittee.self
             case .parameterChange: return GovernanceMainCommand.ParameterChange.self
             case .submitAction: return GovernanceMainCommand.SubmitAction.self
+            case .canonize: return GovernanceMainCommand.Canonize.self
+            case .cip129: return GovernanceMainCommand.CIP129Command.self
             case .back: return MainMenuCommand.self
             case .exit: return ExitCommand.self
         }
