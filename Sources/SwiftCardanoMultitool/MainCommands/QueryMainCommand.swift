@@ -4,6 +4,7 @@ import ArgumentParser
 enum QueryCommands: String, Subcommandable, AlignedChoiceDescribable {
     case address
     case assetMeta = "asset-meta"
+    case calidusKey = "calidus-key"
     case committeeMember = "committee-member"
     case drep
     case epoch
@@ -22,6 +23,7 @@ enum QueryCommands: String, Subcommandable, AlignedChoiceDescribable {
         switch self {
             case .address: return "Address"
             case .assetMeta: return "Asset Metadata"
+            case .calidusKey: return "Calidus Pool Key"
             case .committeeMember: return "Committee Member"
             case .drep: return "DRep"
             case .epoch: return "Epoch"
@@ -42,6 +44,7 @@ enum QueryCommands: String, Subcommandable, AlignedChoiceDescribable {
         switch self {
             case .address: return "Query an address."
             case .assetMeta: return "Query off-chain metadata for a native asset from the Cardano Token Registry."
+            case .calidusKey: return "Query CIP-88 Calidus pool-key registrations via Koios."
             case .committeeMember: return "Query on-chain state for a constitutional-committee member."
             case .drep: return "Query on-chain DRep state and verify anchor metadata."
             case .epoch: return "Query information about a specific epoch."
@@ -73,6 +76,7 @@ enum QueryCommands: String, Subcommandable, AlignedChoiceDescribable {
         switch self {
             case .address: return QueryMainCommand.Address.self
             case .assetMeta: return QueryMainCommand.AssetMeta.self
+            case .calidusKey: return QueryMainCommand.PoolCalidusKey.self
             case .committeeMember: return QueryMainCommand.CommitteeMember.self
             case .drep: return QueryMainCommand.DRep.self
             case .epoch: return QueryMainCommand.Epoch.self
