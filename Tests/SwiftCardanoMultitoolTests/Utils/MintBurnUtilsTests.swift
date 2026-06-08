@@ -258,3 +258,169 @@ struct MintBurnUtilsTests {
         #expect(second?.lastAction == "burned 200 tokens")
     }
 }
+
+// MARK: - MintAction verb / verbLower labels
+
+@Suite("MintAction verb labels")
+struct MintActionVerbTests {
+
+    @Test("verb is 'Mint' / 'Burn' (capitalised)")
+    func verbCapitalised() {
+        #expect(MintAction.mint.verb == "Mint")
+        #expect(MintAction.burn.verb == "Burn")
+    }
+
+    @Test("verbLower is 'mint' / 'burn' (lowercased)")
+    func verbLowercase() {
+        #expect(MintAction.mint.verbLower == "mint")
+        #expect(MintAction.burn.verbLower == "burn")
+    }
+}
+
+// MARK: - loadPolicyForMintBurn
+
+@Suite("loadPolicyForMintBurn")
+struct LoadPolicyForMintBurnTests {
+
+    private func makeTempDir() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("scm-tests-lpfmb-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    private func writeStandardPolicy(
+        name: String,
+        in dir: URL,
+        addSkey: Bool = true,
+        addHws: Bool = false,
+        invalidBefore: UInt64? = nil
+    ) throws -> FilePath {
+        let dirPath = FilePath(dir.path)
+        let policyIdFile = dirPath.appending("\(name).policy.id")
+        let scriptFile = dirPath.appending("\(name).policy.script")
+        let vkeyFile = dirPath.appending("\(name).policy.vkey")
+
+        let keyHashHex = String(repeating: "a", count: 56)
+        let pubkey = ScriptPubkey(keyHash: VerificationKeyHash(payload: keyHashHex.hexStringToData))
+        let script: NativeScript
+        if let slot = invalidBefore {
+            // scriptAll wrapping a sig + invalidBefore.
+            let all = ScriptAll(scripts: [
+                .scriptPubkey(pubkey),
+                .invalidBefore(BeforeScript(slot: slot))
+            ])
+            script = .scriptAll(all)
+        } else {
+            script = .scriptPubkey(pubkey)
+        }
+        try script.saveJSON(to: scriptFile.string)
+        try Data(keyHashHex.utf8).write(to: URL(fileURLWithPath: policyIdFile.string))
+        try Data("vkey-placeholder".utf8).write(to: URL(fileURLWithPath: vkeyFile.string))
+
+        if addSkey {
+            try Data("skey-placeholder".utf8).write(
+                to: URL(fileURLWithPath: dirPath.appending("\(name).policy.skey").string)
+            )
+        }
+        if addHws {
+            try Data("hws-placeholder".utf8).write(
+                to: URL(fileURLWithPath: dirPath.appending("\(name).policy.hwsfile").string)
+            )
+        }
+        return dirPath
+    }
+
+    @Test("loads a sig-only policy via the software .policy.skey path")
+    func loadsSoftwarePolicy() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dirPath = try writeStandardPolicy(name: "soft", in: dir)
+
+        let loaded = try loadPolicyForMintBurn(name: "soft", in: dirPath)
+        #expect(loaded.name == "soft")
+        #expect(loaded.isHardwareWallet == false)
+        #expect(loaded.signingKeyPath.string.hasSuffix("soft.policy.skey"))
+        #expect(loaded.validBeforeSlot == nil)
+    }
+
+    @Test("prefers .policy.skey over .policy.hwsfile when both are present")
+    func prefersSoftwareOverHardware() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dirPath = try writeStandardPolicy(name: "both", in: dir, addSkey: true, addHws: true)
+
+        let loaded = try loadPolicyForMintBurn(name: "both", in: dirPath)
+        #expect(loaded.isHardwareWallet == false)
+        #expect(loaded.signingKeyPath.string.hasSuffix(".policy.skey"))
+    }
+
+    @Test("falls back to .policy.hwsfile when no software .skey is present")
+    func usesHardwareWhenNoSkey() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dirPath = try writeStandardPolicy(name: "hw", in: dir, addSkey: false, addHws: true)
+
+        let loaded = try loadPolicyForMintBurn(name: "hw", in: dirPath)
+        #expect(loaded.isHardwareWallet == true)
+        #expect(loaded.signingKeyPath.string.hasSuffix(".policy.hwsfile"))
+    }
+
+    @Test("throws when neither .skey nor .hwsfile is present")
+    func throwsWhenNoSigningKey() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dirPath = try writeStandardPolicy(name: "naked", in: dir, addSkey: false, addHws: false)
+
+        #expect(throws: (any Error).self) {
+            _ = try loadPolicyForMintBurn(name: "naked", in: dirPath)
+        }
+    }
+
+    @Test("throws when .policy.id is missing")
+    func throwsWhenIdMissing() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        #expect(throws: (any Error).self) {
+            _ = try loadPolicyForMintBurn(name: "ghost", in: FilePath(dir.path))
+        }
+    }
+
+    @Test("extracts validBeforeSlot from a scriptAll policy with an invalidBefore clause")
+    func extractsValidBeforeFromScriptAll() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dirPath = try writeStandardPolicy(name: "timed", in: dir, invalidBefore: 100_000)
+
+        let loaded = try loadPolicyForMintBurn(name: "timed", in: dirPath)
+        #expect(loaded.validBeforeSlot == 100_000)
+    }
+}
+
+// MARK: - verifyBurnHoldings
+
+@Suite("verifyBurnHoldings")
+struct VerifyBurnHoldingsTests {
+
+    @Test("rejects an invalid (non-hex) asset name hex")
+    func rejectsInvalidAssetHex() {
+        let policy = String(repeating: "a", count: 56)
+        #expect(throws: (any Error).self) {
+            try verifyBurnHoldings(utxos: [], policyIdHex: policy, assetNameHex: "zzgg", amount: 1)
+        }
+    }
+
+    @Test("throws when there are no UTxOs and a positive amount is requested")
+    func emptyUtxosFailsForNonZero() {
+        let policy = String(repeating: "a", count: 56)
+        #expect(throws: (any Error).self) {
+            try verifyBurnHoldings(utxos: [], policyIdHex: policy, assetNameHex: "", amount: 1)
+        }
+    }
+
+    @Test("passes when there are no UTxOs and amount is zero (vacuously satisfies)")
+    func zeroAmountPasses() throws {
+        let policy = String(repeating: "a", count: 56)
+        try verifyBurnHoldings(utxos: [], policyIdHex: policy, assetNameHex: "", amount: 0)
+    }
+}
