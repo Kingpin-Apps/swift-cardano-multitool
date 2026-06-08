@@ -36,4 +36,32 @@ struct VoteUtilsTests {
         let extracted = rewardAccountCredentialHash(acct)
         #expect(extracted == hash)
     }
+
+    // MARK: - matchesActionType
+
+    @Test("matchesActionType: nil filter matches everything")
+    func nilFilterMatches() {
+        let action: GovAction = .infoAction(InfoAction())
+        #expect(matchesActionType(action, filter: nil) == true)
+    }
+
+    @Test("matchesActionType: .any filter matches everything")
+    func anyFilterMatches() {
+        let action: GovAction = .infoAction(InfoAction())
+        #expect(matchesActionType(action, filter: .any) == true)
+    }
+
+    @Test("matchesActionType: matching filter returns true")
+    func matchingFilter() {
+        let action: GovAction = .infoAction(InfoAction())
+        #expect(matchesActionType(action, filter: .infoAction) == true)
+    }
+
+    @Test("matchesActionType: non-matching filter returns false")
+    func nonMatchingFilter() {
+        let action: GovAction = .infoAction(InfoAction())
+        #expect(matchesActionType(action, filter: .parameterChange) == false)
+        #expect(matchesActionType(action, filter: .treasuryWithdrawal) == false)
+        #expect(matchesActionType(action, filter: .noConfidence) == false)
+    }
 }
