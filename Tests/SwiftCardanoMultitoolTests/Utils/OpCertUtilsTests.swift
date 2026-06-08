@@ -252,4 +252,79 @@ struct OpCertUtilsCheckKESIntervalTests {
         )
         #expect(ok == false)
     }
+
+    @Test("expiry-styling branches: <1 week, <3 weeks, >3 weeks all return true")
+    func expiryStylingBranches() {
+        // < 1 week (less than 604800 seconds) — danger style branch
+        let near = OpCertUtils.checkKESInterval(
+            onDiskKESStart: 0,
+            currentKESPeriod: 0,
+            maxKESEvolutions: 1,
+            slotsPerKESPeriod: 100,
+            slotLength: 1,
+            currentSlot: 50 // expiry at slot 100, current at 50 → 50 seconds left
+        )
+        #expect(near == true)
+
+        // <3 weeks but >=1 week — warning style branch
+        let mid = OpCertUtils.checkKESInterval(
+            onDiskKESStart: 0,
+            currentKESPeriod: 0,
+            maxKESEvolutions: 10,
+            slotsPerKESPeriod: 100_000,
+            slotLength: 1,
+            currentSlot: 100_000 // expiry at 1_000_000, current at 100_000 → 900_000s left (~10 days)
+        )
+        #expect(mid == true)
+
+        // >=3 weeks — success style branch
+        let far = OpCertUtils.checkKESInterval(
+            onDiskKESStart: 0,
+            currentKESPeriod: 0,
+            maxKESEvolutions: 100,
+            slotsPerKESPeriod: 100_000,
+            slotLength: 1,
+            currentSlot: 100_000
+        )
+        #expect(far == true)
+    }
+}
+
+// MARK: - kesError warning branches
+
+@Suite("OpCertUtils kesError warning branches")
+struct OpCertUtilsKesErrorBranchesTests {
+
+    @Test("checkOpCertCounterForNext still returns true when on-disk matches and kesError is true")
+    func nextWithKesError() {
+        let ok = OpCertUtils.checkOpCertCounterForNext(
+            nextChainOpCertCount: 5,
+            onChainOpCertCount: 4,
+            onDiskOpCertCount: 5,
+            kesError: true
+        )
+        #expect(ok == true)
+    }
+
+    @Test("checkOpCertCounterForCurrent accepts the 'no block generated' state with kesError")
+    func currentNoBlockWithKesError() {
+        let ok = OpCertUtils.checkOpCertCounterForCurrent(
+            nextChainOpCertCount: 1,
+            onChainOpCertCount: -1,
+            onDiskOpCertCount: 0,
+            kesError: true
+        )
+        #expect(ok == true)
+    }
+
+    @Test("checkOpCertCounterForCurrent accepts matching counters with kesError")
+    func currentMatchingWithKesError() {
+        let ok = OpCertUtils.checkOpCertCounterForCurrent(
+            nextChainOpCertCount: 6,
+            onChainOpCertCount: 5,
+            onDiskOpCertCount: 5,
+            kesError: true
+        )
+        #expect(ok == true)
+    }
 }
