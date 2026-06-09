@@ -20,15 +20,20 @@ The tool provides two interaction modes:
 
 ### Commands
 
+- <doc:AssetCommand>
 - <doc:BuildCommand>
 - <doc:CertificatesCommand>
 - <doc:ConfigCommand>
 - <doc:DownloadCommand>
 - <doc:GenerateCommand>
+- <doc:GovernanceCommand>
 - <doc:InstallCommand>
 - <doc:ProtectCommand>
 - <doc:QueryCommand>
 - <doc:RunCommand>
 - <doc:SendCommand>
+- <doc:SignCommand>
 - <doc:TransactionCommand>
+- <doc:VerifyCommand>
+- <doc:VersionCommand>
 - <doc:WorkOfflineCommand>
