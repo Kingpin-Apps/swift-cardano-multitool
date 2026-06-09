@@ -146,19 +146,42 @@ scm query tip
 
 | Command | Alias | Description |
 |---------|-------|-------------|
+| [`asset`](#asset) | — | Mint and burn native assets |
 | [`build`](#build) | — | Build payment and stake addresses from keys |
-| [`certificates`](#certificates) | — | Create and submit Cardano certificates |
+| [`certificate`](#certificate) | `cert` | Generate Cardano certificates for stake, pools, and governance |
 | [`config`](#config) | `conf` | Manage SCM configuration |
 | [`download`](#download) | — | Download network config files and blockchain snapshots |
 | [`generate`](#generate) | — | Generate keys, addresses, and cryptographic material |
+| [`governance`](#governance) | — | Cast votes and submit Conway-era governance proposals |
 | [`install`](#install) | — | Install Cardano ecosystem tools |
 | [`protect`](#protect) | — | Encrypt and decrypt sensitive files |
 | [`query`](#query) | — | Query live blockchain data |
 | [`run`](#run) | — | Start Cardano node services |
 | [`send`](#send) | — | Send ADA and native assets |
+| [`sign`](#sign) | — | Sign messages, governance metadata, and registrations |
 | [`transaction`](#transaction) | — | Build, sign, and submit transactions |
+| [`verify`](#verify) | — | Verify signatures and signed metadata |
 | [`work-offline`](#work-offline) | — | Offline transaction workflows for air-gapped machines |
 | [`version`](#version) | — | Show version information |
+
+---
+
+### `asset`
+
+Mint and burn native assets under a local minting policy generated via `scm generate policy`. Both subcommands wrap the full build–sign–submit pipeline and update a `<policyName>.<assetName>.asset` audit sidecar on success.
+
+```bash
+scm asset mint   # Mint a native asset
+scm asset burn   # Burn a native asset
+```
+
+Each subcommand accepts either a combined positional identifier (`policyName.assetName amount`) or the explicit flag form:
+
+```bash
+scm asset mint myPolicy.MYTOK 1000 --fee-payment-address owner.payment --submit
+scm asset burn --policy-name myPolicy --asset-name MYTOK --amount 200 \
+  --fee-payment-address owner.payment --submit
+```
 
 ---
 
@@ -173,28 +196,28 @@ scm build stake-address     # Build a stake (rewards) address
 
 ---
 
-### `certificates`
+### `certificate`
 
-Create and submit all Cardano certificate types, including stake registration, pool registration/deregistration, governance, and Conway-era DRep/committee certificates.
+Create all Cardano certificate types — stake registration/delegation, pool registration/deregistration, and Conway-era governance (DRep, vote delegation, constitutional committee). The `cert` alias is also accepted.
 
 ```bash
-scm certificates stake-address-registration
-scm certificates stake-address-delegation
-scm certificates stake-address-deregistration
-scm certificates stake-pool-registration
-scm certificates stake-pool-deregistration
-scm certificates vote-delegation
-scm certificates stake-vote-delegate
-scm certificates stake-register-delegate
-scm certificates vote-register-delegate
-scm certificates stake-vote-register-delegate
-scm certificates auth-committee-hot
-scm certificates resign-committee-cold
-scm certificates register-drep
-scm certificates unregister-drep
-scm certificates update-drep
-scm certificates genesis-key-delegation
-scm certificates move-instantaneous-rewards
+scm certificate stake-address-registration
+scm certificate stake-address-delegation
+scm certificate stake-address-deregistration
+scm certificate pool-registration
+scm certificate pool-deregistration
+scm certificate vote-delegation
+scm certificate stake-vote-delegation
+scm certificate stake-register-delegation
+scm certificate vote-register-delegation
+scm certificate stake-vote-register-delegation
+scm certificate auth-committee-hot
+scm certificate resign-committee-cold
+scm certificate register-drep
+scm certificate unregister-drep
+scm certificate update-drep
+scm certificate genesis-key-delegation
+scm certificate move-instantaneous-rewards
 ```
 
 ---
@@ -241,6 +264,39 @@ scm generate payment-and-stake-address
 scm generate pool-json
 scm generate key-rotation
 ```
+
+---
+
+### `governance`
+
+Cast votes and submit Conway-era governance-action proposals. Each `create-*` style subcommand can run with `--generate-only` to emit just a `.action` file, which `submit-action` later bundles into a transaction.
+
+```bash
+# Cast a vote on an existing action
+scm governance vote gov_action1... yes \
+  --voter-vkey-file myDRep.drep.vkey \
+  --fee-payment-address owner.payment --submit
+
+# Build + submit governance actions
+scm governance info-action
+scm governance treasury-withdrawal
+scm governance no-confidence
+scm governance new-constitution
+scm governance hard-fork-initiation
+scm governance update-committee
+scm governance parameter-change
+
+# Submit one or more pre-built .action files
+scm governance submit-action --action-file proposal.action \
+  --fee-payment-address owner.payment --submit
+
+# CIP-100 / CIP-129 utilities
+scm governance canonize --data-file proposal.jsonld
+scm governance cip129 encode --prefix drep --key-hash <56-hex>
+scm governance cip129 decode --id drep1...
+```
+
+Any subcommand that accepts an anchor (`--anchor-url` + `--anchor-hash`) will download and blake2b-256 verify the CIP-100 document before broadcasting. Pass `--skip-anchor-verify` to bypass.
 
 ---
 
@@ -320,6 +376,23 @@ scm send all         # Send the entire wallet balance
 
 ---
 
+### `sign`
+
+Off-chain signing operations — plain Ed25519, CIP-8 / CIP-30 wallet messages, CIP-36 Catalyst voting registrations, CIP-88 Calidus pool-key registrations, and CIP-100 governance metadata witnesses.
+
+```bash
+scm sign default --data "hello" --secret-key payment.skey
+scm sign cip8    --data "hello" --secret-key payment.skey
+scm sign cip30   --data "hello" --secret-key wallet.skey
+scm sign cip36   --payment-address addr1... --vote-public-key vote.vkey --secret-key stake.skey
+scm sign cip88   --calidus-public-key calidus.vkey --secret-key pool.cold.skey
+scm sign cip100  --data-file proposal.jsonld --secret-key author.skey --author-name "Alice"
+```
+
+All `sign` subcommands share a `--json` / `--json-extended` / `--out-file` output group and accept the payload as either `--data` (UTF-8), `--data-hex`, or `--data-file`.
+
+---
+
 ### `transaction`
 
 Low-level transaction operations for full control over the build–sign–submit pipeline.
@@ -347,6 +420,19 @@ scm transaction txid
 scm transaction view
 scm transaction inspect
 scm transaction validate
+```
+
+---
+
+### `verify`
+
+Verify signatures and signed metadata produced by `scm sign` (or compatible cardano-signer outputs). Exits 0 on a valid signature, non-zero otherwise.
+
+```bash
+scm verify default --data "hello" --public-key payment.vkey --signature 8a5fd6...
+scm verify cip8    --cose-sign1 84582a... --cose-key a401...
+scm verify cip30   --cose-sign1 84582a... --cose-key a401...
+scm verify cip100  --data-file proposal-signed.jsonld
 ```
 
 ---
