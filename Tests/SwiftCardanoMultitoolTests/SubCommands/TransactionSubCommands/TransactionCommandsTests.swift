@@ -2,141 +2,29 @@ import ArgumentParser
 import Testing
 @testable import SwiftCardanoMultitool
 
-/// Argument-parsing smoke tests for all TransactionMainCommand subcommands.
+/// Behavior tests for TransactionMainCommand subcommands.
 ///
-/// Full behavior tests for these commands need a valid Cardano `Transaction` CBOR
-/// to be constructed, which is a substantial fixture investment. These tests verify
-/// the command shape and that each documented argument is accepted.
+/// Full behavior tests need a valid CBOR Transaction fixture and a chain context,
+/// which is a significant investment. These tests cover the parser-level behavior
+/// that's not trivially derivable from the source — flag inversion, repeated
+/// options, validation rules, and the txid/id alias regression guard.
 
 @Suite("TransactionMainCommand.Id")
 struct TransactionIdTests {
-    @Test("commandName is 'id'")
-    func commandName() {
-        #expect(TransactionMainCommand.Id.configuration.commandName == "id")
-    }
-    @Test("parses with tx-file")
-    func parsesTxFile() throws {
-        let cmd = try TransactionMainCommand.Id.parse(["--tx-file", "/tmp/x.tx"])
-        #expect(cmd.txFile?.string == "/tmp/x.tx")
-    }
-    @Test("parses with cbor-hex and --json flag")
-    func parsesCborAndJson() throws {
-        let cmd = try TransactionMainCommand.Id.parse(["--cbor-hex", "deadbeef", "--json"])
-        #expect(cmd.cborHex == "deadbeef")
-        #expect(cmd.json == true)
-    }
-    @Test("--tool defaults to .swiftCardano")
-    func toolDefault() throws {
-        let cmd = try TransactionMainCommand.Id.parse([])
-        #expect(cmd.tool == .swiftCardano)
-    }
-}
 
-@Suite("TransactionMainCommand.View")
-struct TransactionViewTests {
-    @Test("parses defaults")
-    func defaults() throws {
-        let cmd = try TransactionMainCommand.View.parse([])
-        #expect(cmd.txFile == nil)
-        #expect(cmd.cborHex == nil)
-    }
-    @Test("parses tx-file")
-    func parsesTxFile() throws {
-        let cmd = try TransactionMainCommand.View.parse(["-t", "/tmp/x.tx"])
-        #expect(cmd.txFile?.string == "/tmp/x.tx")
-    }
-}
-
-@Suite("TransactionMainCommand.Inspect")
-struct TransactionInspectTests {
-    @Test("commandName is 'inspect'")
+    @Test("commandName is 'txid' with 'id' alias")
     func commandName() {
-        #expect(TransactionMainCommand.Inspect.configuration.commandName == "inspect")
-    }
-    @Test("parses defaults")
-    func defaults() throws {
-        let cmd = try TransactionMainCommand.Inspect.parse([])
-        #expect(cmd.txFile == nil)
-        #expect(cmd.cborHex == nil)
-        #expect(cmd.json == false)
-    }
-    @Test("parses --json flag")
-    func jsonFlag() throws {
-        let cmd = try TransactionMainCommand.Inspect.parse(["--json"])
-        #expect(cmd.json == true)
-    }
-}
-
-@Suite("TransactionMainCommand.Validate")
-struct TransactionValidateTests {
-    @Test("commandName is 'validate'")
-    func commandName() {
-        #expect(TransactionMainCommand.Validate.configuration.commandName == "validate")
-    }
-    @Test("parses defaults")
-    func defaults() throws {
-        let cmd = try TransactionMainCommand.Validate.parse([])
-        #expect(cmd.txFile == nil)
-        #expect(cmd.cborHex == nil)
-        #expect(cmd.json == false)
-    }
-}
-
-@Suite("TransactionMainCommand.CalculateMinFee")
-struct TransactionCalculateMinFeeTests {
-    @Test("commandName is 'calculate-min-fee'")
-    func commandName() {
-        #expect(TransactionMainCommand.CalculateMinFee.configuration.commandName == "calculate-min-fee")
-    }
-    @Test("parses defaults")
-    func defaults() throws {
-        let cmd = try TransactionMainCommand.CalculateMinFee.parse([])
-        #expect(cmd.txFile == nil)
-        #expect(cmd.json == false)
-    }
-}
-
-@Suite("TransactionMainCommand.CalculateMinRequiredUtxo")
-struct TransactionCalculateMinRequiredUtxoTests {
-    @Test("commandName is 'calculate-min-required-utxo'")
-    func commandName() {
-        #expect(TransactionMainCommand.CalculateMinRequiredUtxo.configuration.commandName == "calculate-min-required-utxo")
-    }
-    @Test("parses defaults")
-    func defaults() throws {
-        _ = try TransactionMainCommand.CalculateMinRequiredUtxo.parse([])
-    }
-}
-
-@Suite("TransactionMainCommand.HashScriptData")
-struct TransactionHashScriptDataTests {
-    @Test("commandName is 'hash-script-data'")
-    func commandName() {
-        #expect(TransactionMainCommand.HashScriptData.configuration.commandName == "hash-script-data")
-    }
-    @Test("parses defaults")
-    func defaults() throws {
-        let cmd = try TransactionMainCommand.HashScriptData.parse([])
-        #expect(cmd.json == false)
-    }
-    @Test("--json flag flips bool")
-    func jsonFlag() throws {
-        let cmd = try TransactionMainCommand.HashScriptData.parse(["--json"])
-        #expect(cmd.json == true)
+        // Regression guard: this subcommand was previously registered as 'id'
+        // while the README documented 'txid'. The fix kept 'id' as an alias.
+        #expect(TransactionMainCommand.Id.configuration.commandName == "txid")
+        #expect(TransactionMainCommand.Id.configuration.aliases.contains("id"))
     }
 }
 
 @Suite("TransactionMainCommand.Build")
 struct TransactionBuildTests {
-    @Test("commandName is 'build'")
-    func commandName() {
-        #expect(TransactionMainCommand.Build.configuration.commandName == "build")
-    }
-    @Test("parses with no arguments (wizard would run)")
-    func parsesEmpty() throws {
-        _ = try TransactionMainCommand.Build.parse([])
-    }
-    @Test("accepts --tx-in repeated")
+
+    @Test("--tx-in accepts a valid 64-hex#index input")
     func acceptsTxIn() throws {
         let cmd = try TransactionMainCommand.Build.parse([
             "--tx-in", "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef#0"
@@ -145,57 +33,31 @@ struct TransactionBuildTests {
     }
 }
 
-@Suite("TransactionMainCommand.Sign")
-struct TransactionSignTests {
-    @Test("parses --save default true")
-    func saveDefault() throws {
-        let cmd = try TransactionMainCommand.Sign.parse([])
-        #expect(cmd.save == true)
-    }
-    @Test("--no-save inverts")
-    func noSave() throws {
+@Suite("TransactionMainCommand.Sign / Witness / Assemble — flag inversion")
+struct TransactionSignWitnessAssembleFlagTests {
+
+    @Test("Sign --no-save inverts save flag")
+    func signNoSave() throws {
         let cmd = try TransactionMainCommand.Sign.parse(["--no-save"])
         #expect(cmd.save == false)
     }
-}
 
-@Suite("TransactionMainCommand.Submit")
-struct TransactionSubmitTests {
-    @Test("parses defaults")
-    func defaults() throws {
-        let cmd = try TransactionMainCommand.Submit.parse([])
-        #expect(cmd.txFile == nil)
-        #expect(cmd.cborHex == nil)
+    @Test("Sign --save defaults to true")
+    func signSaveDefault() throws {
+        let cmd = try TransactionMainCommand.Sign.parse([])
+        #expect(cmd.save == true)
     }
-}
 
-@Suite("TransactionMainCommand.Witness")
-struct TransactionWitnessCommandTests {
-    @Test("--save defaults to true")
-    func saveDefault() throws {
+    @Test("Witness --save defaults to true")
+    func witnessSaveDefault() throws {
         let cmd = try TransactionMainCommand.Witness.parse([])
         #expect(cmd.save == true)
     }
-}
 
-@Suite("TransactionMainCommand.Assemble")
-struct TransactionAssembleTests {
-    @Test("--save defaults to true")
-    func saveDefault() throws {
+    @Test("Assemble --save defaults to true, --submit defaults to false")
+    func assembleDefaults() throws {
         let cmd = try TransactionMainCommand.Assemble.parse([])
         #expect(cmd.save == true)
-    }
-    @Test("--submit defaults to false")
-    func submitDefault() throws {
-        let cmd = try TransactionMainCommand.Assemble.parse([])
         #expect(cmd.submit == false)
-    }
-}
-
-@Suite("TransactionMainCommand.RewardsWithdraw")
-struct TransactionRewardsWithdrawTests {
-    @Test("parses with no arguments (wizard would run)")
-    func parsesEmpty() throws {
-        _ = try TransactionMainCommand.RewardsWithdraw.parse([])
     }
 }

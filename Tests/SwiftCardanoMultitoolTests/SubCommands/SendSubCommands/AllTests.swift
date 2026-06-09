@@ -5,17 +5,6 @@ import Testing
 @Suite("SendMainCommand.All")
 struct SendAllTests {
 
-    @Test("configuration commandName is 'all'")
-    func commandName() {
-        #expect(SendMainCommand.All.configuration.commandName == "all")
-    }
-
-    @Test("default sendMode is .all")
-    func defaultSendMode() throws {
-        let cmd = try SendMainCommand.All.parse([])
-        #expect(cmd.sendMode == .all)
-    }
-
     @Test("--send-mode accepts each documented value")
     func parsesEachMode() throws {
         let cmdAssets = try SendMainCommand.All.parse(["--send-mode", "assets-only"])

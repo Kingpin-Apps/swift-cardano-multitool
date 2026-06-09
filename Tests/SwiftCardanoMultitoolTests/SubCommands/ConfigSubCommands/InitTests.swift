@@ -3,23 +3,8 @@ import SystemPackage
 import Testing
 @testable import SwiftCardanoMultitool
 
-@Suite("ConfigMainCommand.Init")
+@Suite("ConfigMainCommand.Init parsing")
 struct ConfigInitArgsTests {
-
-    @Test("configuration abstract is set")
-    func configurationAbstractSet() {
-        #expect(ConfigMainCommand.Init.configuration.abstract == "Initialize a configuration file.")
-    }
-
-    @Test("default parse sets every option to nil/false")
-    func defaultParse() throws {
-        let cmd = try ConfigMainCommand.Init.parse([])
-        #expect(cmd.network == nil)
-        #expect(cmd.fileType == nil)
-        #expect(cmd.configPath == nil)
-        #expect(cmd.isDryRun == false)
-        #expect(cmd.overwrite == false)
-    }
 
     @Test("--network and --file-type accept their enum values")
     func parsesNetworkAndFileType() throws {

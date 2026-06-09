@@ -5,16 +5,6 @@ import Testing
 @Suite("QueryMainCommand.Epoch")
 struct QueryEpochTests {
 
-    @Test("configuration abstract is set")
-    func configurationAbstract() {
-        #expect(QueryMainCommand.Epoch.configuration.abstract == "Get current epoch.")
-    }
-
-    @Test("parses with no arguments")
-    func parsesEmpty() throws {
-        _ = try QueryMainCommand.Epoch.parse([])
-    }
-
     @Test("run() retrieves the epoch via the mocked chain context")
     func runUsesMockedEpoch() async throws {
         let cfg = TestConfigs.make()

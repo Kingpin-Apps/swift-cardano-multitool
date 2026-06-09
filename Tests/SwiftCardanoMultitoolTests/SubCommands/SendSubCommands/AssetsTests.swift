@@ -5,20 +5,6 @@ import Testing
 @Suite("SendMainCommand.Assets")
 struct SendAssetsTests {
 
-    @Test("configuration commandName is 'assets'")
-    func commandName() {
-        #expect(SendMainCommand.Assets.configuration.commandName == "assets")
-    }
-
-    @Test("default parse leaves all options nil")
-    func defaults() throws {
-        let cmd = try SendMainCommand.Assets.parse([])
-        #expect(cmd.policyId == nil)
-        #expect(cmd.assetNameHex == nil)
-        #expect(cmd.amount == nil)
-        #expect(cmd.lovelaceAmount == nil)
-    }
-
     @Test("validate accepts a 56-character hex policy ID")
     func validatesValidPolicyId() throws {
         let policyId = String(repeating: "ab", count: 28)

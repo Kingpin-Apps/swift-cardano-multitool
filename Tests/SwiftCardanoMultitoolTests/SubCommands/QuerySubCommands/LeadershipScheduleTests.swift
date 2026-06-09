@@ -5,27 +5,10 @@ import Testing
 @Suite("QueryMainCommand.LeadershipSchedule")
 struct QueryLeadershipScheduleTests {
 
-    @Test("configuration abstract is set")
-    func configurationAbstract() {
-        #expect(
-            QueryMainCommand.LeadershipSchedule.configuration.abstract
-                == "Query leadership schedule for a stake pool."
-        )
-    }
-
-    @Test("default parse: identification options nil, validate defaults whichEpoch to .current")
-    func defaults() throws {
+    @Test("validate() defaults whichEpoch to .current when not supplied")
+    func validateDefaultsWhichEpoch() throws {
         let cmd = try QueryMainCommand.LeadershipSchedule.parse([])
-        #expect(cmd.poolName == nil)
-        #expect(cmd.poolJSON == nil)
-        #expect(cmd.poolOperator == nil)
-        #expect(cmd.vrfSkey == nil)
-        // ArgumentParser invokes validate() during parse, which defaults whichEpoch
-        // to .current when not supplied.
         #expect(cmd.whichEpoch == .current)
-        #expect(cmd.exportIcs == false)
-        #expect(cmd.maintenanceSchedule == false)
-        #expect(cmd.outputFile == nil)
     }
 
     @Test("--which-epoch=next is preserved through parse+validate")

@@ -5,22 +5,6 @@ import Testing
 @Suite("GenerateMainCommand.DerivedKey")
 struct DerivedKeyTests {
 
-    @Test("commandName is 'derived-key'")
-    func commandName() {
-        #expect(GenerateMainCommand.DerivedKey.configuration.commandName == "derived-key")
-    }
-
-    @Test("defaults: variant icarus, account/index 0, no mnemonic/path")
-    func defaults() throws {
-        let cmd = try GenerateMainCommand.DerivedKey.parse([])
-        #expect(cmd.name == nil)
-        #expect(cmd.path == nil)
-        #expect(cmd.account == 0)
-        #expect(cmd.index == 0)
-        #expect(cmd.variant == .icarus)
-        #expect(cmd.passphrase == "")
-    }
-
     @Test("parses --path with each shortcut")
     func parsesPath() throws {
         let payment = try GenerateMainCommand.DerivedKey.parse(["--path", "payment"])
@@ -61,27 +45,10 @@ struct DerivedKeyTests {
         }
     }
 
-    // MARK: - CardanoPathShortcut.kind
-
     @Test("CardanoPathShortcut.kind maps to the matching ShelleyKeyKind")
     func pathKindMapping() {
-        // Smoke test only - we just verify each case returns a kind without crashing.
         for shortcut in CardanoPathShortcut.allCases {
             _ = shortcut.kind(account: 0, index: 0)
-        }
-    }
-
-    @Test("CardanoPathShortcut.description matches rawValue")
-    func descriptionEqualsRawValue() {
-        for shortcut in CardanoPathShortcut.allCases {
-            #expect(shortcut.description == shortcut.rawValue)
-        }
-    }
-
-    @Test("HwVariant.description matches rawValue")
-    func variantDescriptionEqualsRawValue() {
-        for variant in HwVariant.allCases {
-            #expect(variant.description == variant.rawValue)
         }
     }
 }

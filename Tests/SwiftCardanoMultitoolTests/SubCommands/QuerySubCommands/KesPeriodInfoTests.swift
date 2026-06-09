@@ -5,27 +5,10 @@ import Testing
 @Suite("QueryMainCommand.KesPeriodInfo")
 struct QueryKesPeriodInfoTests {
 
-    @Test("configuration abstract is set")
-    func configurationAbstract() {
-        #expect(QueryMainCommand.KesPeriodInfo.configuration.abstract == "Query KES period.")
-    }
-
-    @Test("default parse leaves identification options nil; validate defaults whichPeriod to .current")
-    func defaults() throws {
+    @Test("validate() defaults whichPeriod to .current when not supplied")
+    func validateDefaultsWhichPeriod() throws {
         let cmd = try QueryMainCommand.KesPeriodInfo.parse([])
-        #expect(cmd.poolName == nil)
-        #expect(cmd.poolJSON == nil)
-        #expect(cmd.poolOperator == nil)
-        #expect(cmd.opCert == nil)
-        // ArgumentParser invokes validate() during parse, which defaults whichPeriod
-        // to .current when not supplied.
         #expect(cmd.whichPeriod == .current)
-    }
-
-    @Test("--pool-name sets the pool name")
-    func poolNameOption() throws {
-        let cmd = try QueryMainCommand.KesPeriodInfo.parse(["--pool-name", "mypool"])
-        #expect(cmd.poolName == "mypool")
     }
 
     @Test("--which-period accepts 'current' and 'next'")

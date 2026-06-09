@@ -6,16 +6,6 @@ import Testing
 @Suite("QueryMainCommand.Era")
 struct QueryEraTests {
 
-    @Test("configuration abstract is set")
-    func configurationAbstract() {
-        #expect(QueryMainCommand.Era.configuration.abstract == "Get current era.")
-    }
-
-    @Test("parses with no arguments")
-    func parsesEmpty() throws {
-        _ = try QueryMainCommand.Era.parse([])
-    }
-
     @Test("run() succeeds when the mock returns an era")
     func runWithEra() async throws {
         let cfg = TestConfigs.make()

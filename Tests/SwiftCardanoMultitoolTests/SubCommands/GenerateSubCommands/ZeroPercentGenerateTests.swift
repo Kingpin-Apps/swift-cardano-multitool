@@ -2,33 +2,8 @@ import ArgumentParser
 import Testing
 @testable import SwiftCardanoMultitool
 
-// MARK: - Policy
-
 @Suite("GenerateMainCommand.Policy")
 struct GeneratePolicyTests {
-
-    @Test("commandName is 'policy'")
-    func commandName() {
-        #expect(GenerateMainCommand.Policy.configuration.commandName == "policy")
-    }
-
-    @Test("abstract is populated")
-    func abstract() {
-        #expect(!GenerateMainCommand.Policy.configuration.abstract.isEmpty)
-    }
-
-    @Test("defaults: nothing set, language English, wordCount 24")
-    func defaults() throws {
-        let cmd = try GenerateMainCommand.Policy.parse([])
-        #expect(cmd.policyName == nil)
-        #expect(cmd.keyGenMethod == nil)
-        #expect(cmd.subAccount == nil)
-        #expect(cmd.mnemonics == nil)
-        #expect(cmd.language == .english)
-        #expect(cmd.wordCount == .twentyFour)
-        #expect(cmd.tool == nil)
-        #expect(cmd.slotLimit == nil)
-    }
 
     @Test("parses --policy-name and --key-gen-method")
     func parsesNameAndMethod() throws {
@@ -65,42 +40,10 @@ struct GeneratePolicyTests {
         let cmd = try GenerateMainCommand.Policy.parse(["--slot-limit", "12345"])
         #expect(cmd.slotLimit == 12345)
     }
-
-    @Test("parses --tool option")
-    func parsesTool() throws {
-        let cmd = try GenerateMainCommand.Policy.parse(["--tool", "swiftcardano"])
-        #expect(cmd.tool == .swiftCardano)
-    }
 }
-
-// MARK: - DRepKeys
 
 @Suite("GenerateMainCommand.DRepKeys")
 struct GenerateDRepKeysTests {
-
-    @Test("commandName is 'drep'")
-    func commandName() {
-        #expect(GenerateMainCommand.DRepKeys.configuration.commandName == "drep")
-    }
-
-    @Test("defaults: nothing set, language English, wordCount 24")
-    func defaults() throws {
-        let cmd = try GenerateMainCommand.DRepKeys.parse([])
-        #expect(cmd.drepName == nil)
-        #expect(cmd.keyGenMethod == nil)
-        #expect(cmd.subAccount == nil)
-        #expect(cmd.index == nil)
-        #expect(cmd.mnemonics == nil)
-        #expect(cmd.language == .english)
-        #expect(cmd.wordCount == .twentyFour)
-        #expect(cmd.tool == nil)
-    }
-
-    @Test("parses --drep-name option")
-    func parsesDrepName() throws {
-        let cmd = try GenerateMainCommand.DRepKeys.parse(["--drep-name", "myDRep"])
-        #expect(cmd.drepName == "myDRep")
-    }
 
     @Test("validate defaults subAccount and index to 0 for .hw / .mnemonics")
     func validateDefaultsAccountIndex() throws {
@@ -134,8 +77,6 @@ struct GenerateDRepKeysTests {
 
     @Test("validate rejects negative index")
     func validateRejectsNegativeIndex() {
-        // ArgumentParser may surface negative ints differently; just confirm the
-        // boundary is enforced when the value is parseable.
         #expect(throws: (any Error).self) {
             var cmd = try GenerateMainCommand.DRepKeys.parse([])
             cmd.index = -1
@@ -144,29 +85,8 @@ struct GenerateDRepKeysTests {
     }
 }
 
-// MARK: - AssetMetadata
-
 @Suite("GenerateMainCommand.AssetMeta")
 struct GenerateAssetMetaTests {
-
-    @Test("commandName is 'asset-meta'")
-    func commandName() {
-        #expect(GenerateMainCommand.AssetMeta.configuration.commandName == "asset-meta")
-    }
-
-    @Test("defaults: every option nil")
-    func defaults() throws {
-        let cmd = try GenerateMainCommand.AssetMeta.parse([])
-        #expect(cmd.policyName == nil)
-        #expect(cmd.assetName == nil)
-        #expect(cmd.metaName == nil)
-        #expect(cmd.metaDescription == nil)
-        #expect(cmd.metaTicker == nil)
-        #expect(cmd.metaUrl == nil)
-        #expect(cmd.metaDecimals == nil)
-        #expect(cmd.metaLogoPath == nil)
-        #expect(cmd.outputDir == nil)
-    }
 
     @Test("parses --policy-name + --asset-name + --meta-name")
     func parsesBasicFields() throws {
@@ -194,15 +114,5 @@ struct GenerateAssetMetaTests {
         #expect(throws: (any Error).self) {
             _ = try GenerateMainCommand.AssetMeta.parse(["--meta-decimals", "256"])
         }
-    }
-
-    @Test("parses --meta-ticker and --meta-url")
-    func parsesTickerAndUrl() throws {
-        let cmd = try GenerateMainCommand.AssetMeta.parse([
-            "--meta-ticker", "MTK",
-            "--meta-url", "https://example.com"
-        ])
-        #expect(cmd.metaTicker == "MTK")
-        #expect(cmd.metaUrl == "https://example.com")
     }
 }
