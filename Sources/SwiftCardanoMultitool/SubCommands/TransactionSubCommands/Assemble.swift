@@ -38,7 +38,7 @@ extension TransactionMainCommand {
         @Option(name: .long, help: "Raw CBOR hex string of the transaction.")
         var cborHex: String?
         
-        @Option(name: [.short, .long], help: "The file paths to the witness files (repeat option to pass multiple).")
+        @Option(name: [.short, .customLong("witness-file")], help: "The file paths to the witness files (repeat option to pass multiple).")
         var witnessFiles: [FilePath] = []
         
         @Option(name: [.short, .long], help: "The file name to save the signed transaction to. If not specified, '.signed.tx' will be used with the name of the input transaction.")

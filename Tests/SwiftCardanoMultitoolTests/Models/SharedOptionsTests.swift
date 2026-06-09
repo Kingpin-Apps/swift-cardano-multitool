@@ -61,7 +61,7 @@ struct SharedTransactionOptionsTests {
     @Test("messages can be supplied multiple times")
     func multipleMessages() throws {
         let opts = try SharedTransactionOptions.parse([
-            "--messages", "hello", "world"
+            "--message", "hello", "world"
         ])
         #expect(opts.messages == ["hello", "world"])
     }

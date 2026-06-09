@@ -28,7 +28,7 @@ struct SharedTransactionOptions: ParsableArguments {
     @Option(name: [.short, .long], help: "Address to pay transaction fees from.")
     var feePaymentAddress: PaymentAddressInfo?
     
-    @Option(name: [.short, .long], parsing: .upToNextOption, help: "Transaction message(s). Max 64 bytes each. Can be specified multiple times.")
+    @Option(name: [.short, .customLong("message")], parsing: .upToNextOption, help: "Transaction message(s). Max 64 bytes each. Can be specified multiple times.")
     var messages: [String] = []
     
     @Option(name: .long, help: "Message encryption mode. Options: basic")
