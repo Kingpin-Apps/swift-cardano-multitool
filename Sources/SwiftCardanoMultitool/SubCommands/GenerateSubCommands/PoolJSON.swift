@@ -26,7 +26,7 @@ extension GenerateMainCommand {
         @Option(name: .shortAndLong, help: "The name of the pool. The pool file will be saved as <poolName>.pool.json.")
         var poolName: String? = nil
         
-        @Option(name: .shortAndLong, help: "Overwrite the existing pool.json file if it exists.")
+        @Flag(name: .shortAndLong, help: "Overwrite the existing pool.json file if it exists.")
         var overwrite: Bool = false
         
         // MARK: - File Prompt Helpers
