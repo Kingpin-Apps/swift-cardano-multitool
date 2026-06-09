@@ -1,3 +1,26 @@
+## 0.5.0 (2026-06-09)
+
+### Feat
+
+- add Query PoolCalidusKey command
+- add Governance CIP-129 encode/decode and Canonize commands
+- add Byron, Calidus, BIP-32 derived, Ed25519, and CIP-36 vote keys
+- add Sign and Verify commands with CIP-8/30/36/88/100 subcommands
+- add SignerUtils shared signing helpers
+- Add VoteUtils for governance voting logic and MintBurnUtils tests
+
+### Fix
+
+- parse govActionDeposits keys via GovActionID(argument:)
+- align asset usage strings and error messages with --fee-payment-address
+- expose singular --message and --witness-file CLI flags
+- make PoolJSON --overwrite a proper boolean flag
+- register transaction id subcommand as txid with id alias
+- correct rewards-wirhdraw enum rawValue typo
+- dispatch StakePoolDeregistrationCertificate for pool-deregistration
+- add DRep key generation
+- add more query commands
+
 ## 0.4.2 (2026-05-31)
 
 ### Feat
