@@ -343,7 +343,15 @@ public func stakeAddressInfoSummary(
             "👀 Staking Address is used in the following \(govActionDeposits.count) governance action(s):",
             takeaways: try govActionDeposits
                 .map({ (key: String, value: UInt64) in
-                    let govActionID = try GovActionID(from: .list([.string(key), .uint(value)]))
+                    // `key` is "<64-hex-txHash>#<index>" (cardano-cli natural form, the
+                    // shape Koios returns); `value` is the deposit in lovelace.
+                    // GovActionID(argument:) is the only constructor that already accepts
+                    // the txHash#index form (init(from:) is bech32-only and init(from:Primitive)
+                    // wants a typed pair, not the combined key). Reused as a general-purpose
+                    // parser here despite the ArgumentParser-flavored name.
+                    guard let govActionID = GovActionID(argument: key) else {
+                        return "\(.danger(key)) -> \(.primary("\(lovelaceToAdaString(value)) deposit (unparseable governance action ID)"))"
+                    }
                     return "\(.primary(try govActionID.id())) -> \(.primary("\(lovelaceToAdaString(value)) deposit"))"
                 })
         ))
