@@ -14,17 +14,17 @@ extension AssetMainCommand {
             abstract: "Mint a native asset using a local minting policy.",
             usage: """
             scm asset mint myPolicy.MYTOK 1000 \\
-                --from-address owner.payment --submit
+                --fee-payment-address owner.payment --submit
 
             scm asset mint \\
                 --policy-name myPolicy --asset-name MYTOK --amount 1000 \\
-                --from-address owner.payment --submit
+                --fee-payment-address owner.payment --submit
             """,
             discussion: """
             Loads <policyName>.policy.{id,script,vkey,skey|hwsfile}, builds a balanced
             transaction that mints <amount> tokens of <policyId>.<assetName> back to the
-            from-address, signs with both the payment and policy keys, and (with --submit)
-            submits to the configured network. On success the
+            fee payment address, signs with both the payment and policy keys, and
+            (with --submit) submits to the configured network. On success the
             <policyName>.<assetDisplay>.asset sidecar is created or its sequence number
             bumped with a "minted N tokens" audit entry.
             """

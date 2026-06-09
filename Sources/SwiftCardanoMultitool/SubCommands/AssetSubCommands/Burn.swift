@@ -14,16 +14,16 @@ extension AssetMainCommand {
             abstract: "Burn a native asset using a local minting policy.",
             usage: """
             scm asset burn myPolicy.MYTOK 200 \\
-                --from-address owner.payment --submit
+                --fee-payment-address owner.payment --submit
 
             scm asset burn \\
                 --policy-name myPolicy --asset-name MYTOK --amount 200 \\
-                --from-address owner.payment --submit
+                --fee-payment-address owner.payment --submit
             """,
             discussion: """
             Loads <policyName>.policy.{id,script,vkey,skey|hwsfile}, queries the
-            from-address for sufficient holdings of the target asset, builds a
-            balanced transaction that burns <amount> tokens (negative mint value),
+            fee payment address for sufficient holdings of the target asset, builds
+            a balanced transaction that burns <amount> tokens (negative mint value),
             signs with both the payment and policy keys, and (with --submit) submits.
             On success the <policyName>.<assetDisplay>.asset sidecar's sequence
             number is bumped with a "burned N tokens" audit entry.

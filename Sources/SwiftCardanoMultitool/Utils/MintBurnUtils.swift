@@ -198,8 +198,8 @@ func computeMintBurnTTL(
 // MARK: - Burn pre-flight
 
 /// Sum the available quantity of `(policyId, assetName)` across the given UTxOs and
-/// throw if the from-address holds less than `amount` tokens to burn. Mirrors the
-/// pre-flight check in `11b_burnAsset.sh`.
+/// throw if the fee payment address holds less than `amount` tokens to burn. Mirrors
+/// the pre-flight check in `11b_burnAsset.sh`.
 func verifyBurnHoldings(
     utxos: [UTxO],
     policyIdHex: String,
@@ -332,7 +332,7 @@ extension TransactionSendable {
     /// with `txBuilder.mint`, hand off to `Sign --submit`, then update the sidecar.
     ///
     /// `outFile` is the signed transaction file path; on completion the caller can
-    /// use it for display. Pass `nil` to derive a default from the from-address name.
+    /// use it for display. Pass `nil` to derive a default from the fee payment address name.
     mutating func runMintOrBurn(
         inputs: MintBurnInputs,
         outFile: inout FilePath?
@@ -344,13 +344,13 @@ extension TransactionSendable {
 
         guard let feePaymentAddress = transactionOptions.feePaymentAddress else {
             noora.error(.alert(
-                "From-address is required.",
-                takeaways: ["Pass --from-address (or run without args for wizard mode)."]
+                "Fee payment address is required.",
+                takeaways: ["Pass --fee-payment-address (or run without args for wizard mode)."]
             ))
             throw ExitCode.validationFailure
         }
 
-        // Tokens are minted/burned at the from-address — destination = source.
+        // Tokens are minted/burned at the fee payment address — destination = source.
         if transactionOptions.toAddress == nil {
             transactionOptions.toAddress = feePaymentAddress
         }
