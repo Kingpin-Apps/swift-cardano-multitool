@@ -93,7 +93,7 @@ enum CertificateCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .poolRegistration:
                 return CertificateMainCommand.StakePoolRegistrationCertificate.self
             case .poolDeregistration:
-                return CertificateMainCommand.StakePoolRegistrationCertificate.self
+                return CertificateMainCommand.StakePoolDeregistrationCertificate.self
             case .genesisKeyDelegation:
                 return CertificateMainCommand.GenesisKeyDelegationCertificate.self
             case .moveInstantaneousRewards:
