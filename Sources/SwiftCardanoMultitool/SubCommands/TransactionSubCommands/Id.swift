@@ -10,14 +10,15 @@ import SwiftCardanoUtils
 extension TransactionMainCommand {
     struct Id: TransactionAsyncParsableCommand {
         static let configuration = CommandConfiguration(
-            commandName: "id",
+            commandName: "txid",
             abstract: "View transaction id.",
             usage: """
-            scm transaction id --tx-file test.tx
+            scm transaction txid --tx-file test.tx
             """,
             discussion: """
             View the id of a Cardano transaction stored in a file or provided as raw CBOR hex.
-            """
+            """,
+            aliases: ["id"]
         )
         
         // MARK: - Required Arguments
