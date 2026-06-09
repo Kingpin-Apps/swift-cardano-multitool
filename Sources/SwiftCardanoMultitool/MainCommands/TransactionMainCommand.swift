@@ -10,7 +10,7 @@ enum TransactionCommands: String, Subcommandable, AlignedChoiceDescribable {
     case calculateMinFee = "calculate-min-fee"
     case calculateMinRequiredUtxo = "calculate-min-required-utxo"
     case hashScriptData = "hash-script-data"
-    case rewardsWithdraw = "rewards-wirhdraw"
+    case rewardsWithdraw = "rewards-withdraw"
     case txid
     case view
     case inspect
