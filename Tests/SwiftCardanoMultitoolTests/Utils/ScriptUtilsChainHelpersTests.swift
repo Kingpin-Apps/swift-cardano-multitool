@@ -321,4 +321,105 @@ struct StakeAddressInfoSummaryTests {
             protocolParams: pp
         )
     }
+
+    @Test("registered stake with non-zero rewards prints rewards balance branch")
+    func registeredNonZeroRewards() async throws {
+        let cfg = TestConfigs.make()
+        let pp = try TestFixtures.sampleProtocolParameters()
+        let info = SwiftCardanoCore.StakeAddressInfo(
+            active: true,
+            address: "stake_test1ur0wvgdxr8m4qtye3p3rj36g3f2lh9c7q92t3qdkj9z8xqx6gn8y3",
+            rewardAccountBalance: 12_345_678,
+            stakeDelegation: nil,
+            stakeRegistrationDeposit: 2_000_000,
+            voteDelegation: nil
+        )
+        try await stakeAddressInfoSummary(
+            stakeAddressInfo: [info],
+            config: cfg,
+            protocolParams: pp
+        )
+    }
+
+    @Test("alwaysAbstain DRep delegation prints the always-abstain branch")
+    func voteDelegationAlwaysAbstain() async throws {
+        let cfg = TestConfigs.make()
+        let pp = try TestFixtures.sampleProtocolParameters()
+        let info = SwiftCardanoCore.StakeAddressInfo(
+            active: true,
+            address: "stake_test1ur0wvgdxr8m4qtye3p3rj36g3f2lh9c7q92t3qdkj9z8xqx6gn8y3",
+            rewardAccountBalance: 0,
+            stakeDelegation: nil,
+            stakeRegistrationDeposit: 2_000_000,
+            voteDelegation: DRep(credential: .alwaysAbstain)
+        )
+        try await stakeAddressInfoSummary(
+            stakeAddressInfo: [info],
+            config: cfg,
+            protocolParams: pp
+        )
+    }
+
+    @Test("alwaysNoConfidence DRep delegation prints the always-no-confidence branch")
+    func voteDelegationAlwaysNoConfidence() async throws {
+        let cfg = TestConfigs.make()
+        let pp = try TestFixtures.sampleProtocolParameters()
+        let info = SwiftCardanoCore.StakeAddressInfo(
+            active: true,
+            address: "stake_test1ur0wvgdxr8m4qtye3p3rj36g3f2lh9c7q92t3qdkj9z8xqx6gn8y3",
+            rewardAccountBalance: 1_000_000,
+            stakeDelegation: nil,
+            stakeRegistrationDeposit: 2_000_000,
+            voteDelegation: DRep(credential: .alwaysNoConfidence)
+        )
+        try await stakeAddressInfoSummary(
+            stakeAddressInfo: [info],
+            config: cfg,
+            protocolParams: pp
+        )
+    }
+
+    @Test("non-empty govActionDeposits with valid txHash#index keys prints the takeaways")
+    func govActionDepositsValidKey() async throws {
+        let cfg = TestConfigs.make()
+        let pp = try TestFixtures.sampleProtocolParameters()
+        // Valid 64-hex tx hash + index, the cardano-cli natural form.
+        let txHash = String(repeating: "ab", count: 32)
+        let info = SwiftCardanoCore.StakeAddressInfo(
+            active: true,
+            address: "stake_test1ur0wvgdxr8m4qtye3p3rj36g3f2lh9c7q92t3qdkj9z8xqx6gn8y3",
+            govActionDeposits: ["\(txHash)#0": 100_000_000_000],  // 100k ADA — far above any UInt16 index
+            rewardAccountBalance: 0,
+            stakeDelegation: nil,
+            stakeRegistrationDeposit: 2_000_000,
+            voteDelegation: DRep(credential: .alwaysAbstain)
+        )
+        // Regression: this used to fatalError because the source conflated the deposit
+        // value with the action index in `GovActionID(from: .list([.string, .uint]))`.
+        try await stakeAddressInfoSummary(
+            stakeAddressInfo: [info],
+            config: cfg,
+            protocolParams: pp
+        )
+    }
+
+    @Test("non-empty govActionDeposits with an unparseable key falls through to the danger fallback")
+    func govActionDepositsUnparseableKey() async throws {
+        let cfg = TestConfigs.make()
+        let pp = try TestFixtures.sampleProtocolParameters()
+        let info = SwiftCardanoCore.StakeAddressInfo(
+            active: true,
+            address: "stake_test1ur0wvgdxr8m4qtye3p3rj36g3f2lh9c7q92t3qdkj9z8xqx6gn8y3",
+            govActionDeposits: ["not-a-real-action-id": 50_000_000],
+            rewardAccountBalance: 0,
+            stakeDelegation: nil,
+            stakeRegistrationDeposit: 2_000_000,
+            voteDelegation: DRep(credential: .alwaysAbstain)
+        )
+        try await stakeAddressInfoSummary(
+            stakeAddressInfo: [info],
+            config: cfg,
+            protocolParams: pp
+        )
+    }
 }
