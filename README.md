@@ -140,6 +140,42 @@ scm query tip
 
 ---
 
+## The pool.json File
+
+Stake pool operations are driven by a per-pool registry file named `<poolName>.pool.json`. It is the single source of truth for one pool and contains:
+
+- **Registration parameters** — pledge, cost, margin, owners, rewards owner, and relays
+- **Pool metadata** — display name, ticker, description, homepage, and metadata URLs shown in wallets
+- **Pool IDs** — in both hex and bech32 form
+- **Key file locations** — paths to the cold, VRF, KES, payment, and stake keys, the operational certificate, and counter files
+- **Registration history** — details of the last registration/deregistration performed through `scm`
+
+The file stores *paths* to key files, never the keys themselves — but it reveals where your signing keys live, so treat it as sensitive.
+
+Create one with the interactive wizard:
+
+```bash
+scm generate pool-json --pool-name mypool
+```
+
+This writes `mypool.pool.json` to the current directory, auto-discovering key files that follow the standard naming scheme (`mypool.cold.vkey`, `mypool.vrf.skey`, `mypool.kes-001.skey`, etc.).
+
+Commands that require (or fall back to) a pool.json file:
+
+| Command | Usage |
+|---------|-------|
+| `scm certificate pool-registration` | Builds the registration certificate from the file and records the registration back into it |
+| `scm certificate pool-deregistration` | Builds the retirement certificate and records the deregistration |
+| `scm query stake-pool` | Resolves the pool ID to query on-chain state |
+| `scm query kes-period-info` | Locates the latest operational certificate for KES checks |
+| `scm query leadership-schedule` | Reads the VRF signing key and pool ID to compute the slot schedule |
+
+Each accepts `--pool-name <name>` (looks for `<name>.pool.json` in the current directory) or `--pool-json <path>`, and prompts interactively otherwise.
+
+The file is plain JSON and safe to edit by hand, but fields like `registration`, KES paths, and `op_cert` are maintained automatically by `scm` commands. Note that editing the file changes nothing on-chain — submit a new registration certificate to apply parameter or metadata changes. See the full field reference in the DocC article *The pool.json File* (`scm.docc/PoolJsonFile.md`).
+
+---
+
 ## Commands
 
 `scm` is organized into top-level command groups. Pass `--help` to any command for full usage details.

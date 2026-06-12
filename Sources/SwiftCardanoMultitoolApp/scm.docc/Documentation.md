@@ -21,6 +21,7 @@ The tool provides two interaction modes:
 
 - <doc:GettingStarted>
 - <doc:Configuration>
+- <doc:PoolJsonFile>
 
 ### Commands
 
