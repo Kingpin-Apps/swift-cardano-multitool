@@ -19,7 +19,7 @@ extension DownloadMainCommand {
         var network: Network? = nil
         
         @Flag(help: "Whether to download for a block producer node or relay node.")
-        var blockPoducer: Bool = false
+        var blockProducer: Bool = false
         
         @Flag(help: "Whether to download configs for cardano-db-sync.")
         var dbSync = false
@@ -39,7 +39,7 @@ extension DownloadMainCommand {
                 description: "Available networks: mainnet, preview, preprod.",
             )
             
-            blockPoducer = noora.yesOrNoChoicePrompt(
+            blockProducer = noora.yesOrNoChoicePrompt(
                 title: "Node Type",
                 question: "Is this for a block producer node?",
                 defaultAnswer: false,
@@ -83,7 +83,7 @@ extension DownloadMainCommand {
             
             var configFiles: [String] = []
             
-            if blockPoducer {
+            if blockProducer {
                 configFiles.append("config-bp.json")
                 
                 if network == .mainnet {

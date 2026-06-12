@@ -10,12 +10,12 @@ struct DownloadCommandsTests {
     func configurationFilesParsesAll() throws {
         let cmd = try DownloadMainCommand.ConfigurationFiles.parse([
             "--network", "preview",
-            "--block-poducer",
+            "--block-producer",
             "--db-sync",
             "--submit-api"
         ])
         #expect(cmd.network == .preview)
-        #expect(cmd.blockPoducer == true)
+        #expect(cmd.blockProducer == true)
         #expect(cmd.dbSync == true)
         #expect(cmd.submitApi == true)
     }

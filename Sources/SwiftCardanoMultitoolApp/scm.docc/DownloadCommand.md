@@ -27,7 +27,7 @@ scm download configuration-files --network preprod --db-sync
 | Option | Description |
 |--------|-------------|
 | `--network`, `-n` | Network to download configs for: `mainnet`, `preprod`, `preview`, `guildnet`, `sanchonet`. |
-| `--block-poducer` | Download the block-producer node config instead of the relay config. |
+| `--block-producer` | Download the block-producer node config instead of the relay config. |
 | `--db-sync` | Also download configs for cardano-db-sync. |
 | `--submit-api` | Also download configs for cardano-submit-api. |
 
