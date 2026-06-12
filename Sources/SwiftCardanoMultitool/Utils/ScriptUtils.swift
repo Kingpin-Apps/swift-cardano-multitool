@@ -14,7 +14,13 @@ func printDivider(_ char: Character = "-") {
     
     func terminalWidth() -> Int {
         var size = winsize()
-        if ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == 0 {
+        // glibc types ioctl's request as UInt; Darwin accepts TIOCGWINSZ directly.
+        #if canImport(Glibc)
+        let request = UInt(TIOCGWINSZ)
+        #else
+        let request = TIOCGWINSZ
+        #endif
+        if ioctl(STDOUT_FILENO, request, &size) == 0 {
             return Int(size.ws_col)
         }
         return 80  // fallback

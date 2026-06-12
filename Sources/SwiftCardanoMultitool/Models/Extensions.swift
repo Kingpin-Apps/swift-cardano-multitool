@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(Glibc)
+import Glibc
+#endif
 import SystemPackage
 import ArgumentParser
 import SwiftCardanoCore
@@ -24,13 +27,29 @@ extension Noora {
         }
         
         // Use secure input
+        #if canImport(Darwin)
         var buf = [CChar](repeating: 0, count: 8192)
         guard let password = readpassphrase("", &buf, buf.count, 0),
               let passwordStr = String(validatingCString: password) else {
             return nil
         }
-        
         return passwordStr
+        #else
+        // Linux: glibc has no readpassphrase. Disable terminal echo via termios,
+        // read a line, then restore the previous terminal attributes.
+        var oldTerm = termios()
+        guard tcgetattr(STDIN_FILENO, &oldTerm) == 0 else { return nil }
+        var newTerm = oldTerm
+        newTerm.c_lflag &= ~tcflag_t(ECHO)
+        guard tcsetattr(STDIN_FILENO, TCSANOW, &newTerm) == 0 else { return nil }
+        defer {
+            var restore = oldTerm
+            _ = tcsetattr(STDIN_FILENO, TCSANOW, &restore)
+        }
+        let password = readLine(strippingNewline: true)
+        print("")  // emit the newline the terminal would not echo
+        return password
+        #endif
     }
 }
 

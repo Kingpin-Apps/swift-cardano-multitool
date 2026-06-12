@@ -562,7 +562,16 @@ public struct MultitoolConfig: Codable, Sendable {
     }
 
     private static func tomlNumber(_ num: NSNumber) -> String {
-        if CFBooleanGetTypeID() == CFGetTypeID(num) {
+        #if canImport(Darwin)
+        let isBool = CFBooleanGetTypeID() == CFGetTypeID(num)
+        #else
+        // CoreFoundation's CF*TypeID helpers aren't in scope on Linux. A boolean
+        // NSNumber decoded from JSON reports an objCType of "c" (char) on both
+        // platforms, and JSON never produces a genuine char/Int8, so this is an
+        // unambiguous boolean test here.
+        let isBool = String(cString: num.objCType) == "c"
+        #endif
+        if isBool {
             return num.boolValue ? "true" : "false"
         }
         if num.doubleValue.truncatingRemainder(dividingBy: 1) == 0 {
