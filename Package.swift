@@ -1,4 +1,4 @@
-// swift-tools-version: 6.1
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -32,7 +32,7 @@ let package = Package(
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-signer.git", from: "0.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.5.2"),
         .package(url: "https://github.com/Kingpin-Apps/swift-koios.git", from: "0.2.0"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-wallet.git", from: "1.1.1"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-wallet.git", from: "1.1.2"),
         .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.5"),
         .package(url: "https://github.com/Kingpin-Apps/swift-nacl.git", .upToNextMinor(from: "1.0.2")),
@@ -70,6 +70,7 @@ let package = Package(
                 .product(name: "Version", package: "version"),
                 .product(name: "ICalendar", package: "icalendar-kit"),
                 .product(name: "Crypto", package: "swift-crypto", condition: .when(platforms: [.linux])),
+                .product(name: "_CryptoExtras", package: "swift-crypto", condition: .when(platforms: [.linux])),
             ]
         ),
         // Thin executable that just calls into the library.

@@ -6,6 +6,9 @@ import OrderedCollections
 
 #if canImport(CommonCrypto)
 import CommonCrypto
+#elseif canImport(_CryptoExtras)
+import Crypto
+import _CryptoExtras
 #endif
 
 /// Transaction message encryption utilities
@@ -209,14 +212,10 @@ public struct TransactionMessage {
             throw TransactionMessageError.invalidPlaintext
         }
         
-        // Generate a random 8-byte salt (matching OpenSSL behavior)
-        var salt = Data(count: 8)
-        let result = salt.withUnsafeMutableBytes { saltBytes in
-            SecRandomCopyBytes(kSecRandomDefault, 8, saltBytes.baseAddress!)
-        }
-        guard result == errSecSuccess else {
-            throw TransactionMessageError.saltGenerationFailed
-        }
+        // Generate a random 8-byte salt (matching OpenSSL behavior). Uses the
+        // platform's cryptographically secure RNG via SystemRandomNumberGenerator.
+        var rng = SystemRandomNumberGenerator()
+        let salt = Data((0..<8).map { _ in rng.next() as UInt8 })
         
         // Derive key and IV using PBKDF2 (matching OpenSSL's EVP_BytesToKey with PBKDF2)
         guard let passphraseData = passphrase.data(using: .utf8) else {
@@ -284,8 +283,20 @@ public struct TransactionMessage {
         guard derivationStatus == kCCSuccess else {
             throw TransactionMessageError.keyDerivationFailed(Int(derivationStatus))
         }
-        
+
         return derivedKeyData
+        #elseif canImport(_CryptoExtras)
+        // swift-crypto's PBKDF2 (HMAC-SHA256), matching the CommonCrypto path.
+        // `unsafeUncheckedRounds` is required because OpenSSL-compatible output
+        // uses 10,000 iterations, below the safe-API minimum of 210,000.
+        let derivedKey = try KDF.Insecure.PBKDF2.deriveKey(
+            from: password,
+            salt: salt,
+            using: .sha256,
+            outputByteCount: totalLength,
+            unsafeUncheckedRounds: iterations
+        )
+        return derivedKey.withUnsafeBytes { Data($0) }
         #else
         throw TransactionMessageError.encryptionNotSupported
         #endif
@@ -297,9 +308,15 @@ public struct TransactionMessage {
             throw TransactionMessageError.invalidKeyOrIV
         }
         
-        // Swift Crypto doesn't directly expose CBC, so we use CommonCrypto
+        // CryptoKit doesn't expose CBC, so use CommonCrypto on Apple platforms.
         #if canImport(CommonCrypto)
         return try encryptUsingCommonCrypto(data: data, key: key, iv: iv)
+        #elseif canImport(_CryptoExtras)
+        // swift-crypto's AES-CBC with PKCS7 padding (the default), matching
+        // CommonCrypto's kCCOptionPKCS7Padding behavior.
+        let symmetricKey = SymmetricKey(data: key)
+        let cbcIV = try AES._CBC.IV(ivBytes: Array(iv))
+        return try AES._CBC.encrypt(data, using: symmetricKey, iv: cbcIV)
         #else
         throw TransactionMessageError.encryptionNotSupported
         #endif
