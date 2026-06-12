@@ -12,7 +12,7 @@ A Swift library for building Cardano tooling — configuration, chain queries, t
 - **Full TUI** — call ``runApp()`` to run the complete interactive `scm` terminal UI inside your own executable.
 
 > **Looking for end-user docs?**
-> If you want to know how to *use the `scm` CLI tool*, see the `SwiftCardanoMultitool` module documentation (the `scm.docc` catalog), which covers installation, configuration, and every command and subcommand.
+> If you want to know how to *use the `scm` CLI tool*, see the `SwiftCardanoMultitoolApp` executable documentation (the `scm.docc` catalog), which covers installation, configuration, and every command and subcommand.
 
 ## Topics
 

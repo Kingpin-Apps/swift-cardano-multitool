@@ -18,7 +18,7 @@ The interactive wizard for each tool asks for:
 
 ## Subcommands
 
-### `cardano-node`
+### cardano-node
 
 The core Cardano node — validates blocks, maintains the chain state, and provides the Unix socket used by most other tools.
 
@@ -29,7 +29,7 @@ The core Cardano node — validates blocks, maintains the chain state, and provi
 scm install cardano-node
 ```
 
-### `cardano-cli`
+### cardano-cli
 
 The official Cardano command-line interface. `scm` uses `cardano-cli` internally when the `CARDANO_MULTITOOL_USE_CARDANO_CLI` backend is active.
 
@@ -39,7 +39,7 @@ The official Cardano command-line interface. `scm` uses `cardano-cli` internally
 scm install cardano-cli
 ```
 
-### `cardano-db-sync`
+### cardano-db-sync
 
 Synchronizes the Cardano blockchain to a PostgreSQL database, enabling rich SQL queries over on-chain data.
 
@@ -49,7 +49,7 @@ Synchronizes the Cardano blockchain to a PostgreSQL database, enabling rich SQL 
 scm install cardano-db-sync
 ```
 
-### `cardano-wallet`
+### cardano-wallet
 
 The Cardano Wallet backend — provides a REST API for managing wallet funds, constructing transactions, and delegating stake.
 
@@ -59,7 +59,7 @@ The Cardano Wallet backend — provides a REST API for managing wallet funds, co
 scm install cardano-wallet
 ```
 
-### `cardano-hw-cli`
+### cardano-hw-cli
 
 Command-line interface for Ledger and Trezor hardware wallets. Used to sign transactions with hardware keys without exposing private key material to the host machine.
 
@@ -69,7 +69,7 @@ Command-line interface for Ledger and Trezor hardware wallets. Used to sign tran
 scm install cardano-hw-cli
 ```
 
-### `cardano-signer`
+### cardano-signer
 
 A standalone tool for signing transactions, messages, and CIP-8/CIP-30 payloads using Cardano keys. Useful for off-chain signing workflows.
 
@@ -79,7 +79,7 @@ A standalone tool for signing transactions, messages, and CIP-8/CIP-30 payloads 
 scm install cardano-signer
 ```
 
-### `cardano-submit-api`
+### cardano-submit-api
 
 A lightweight HTTP API for submitting signed transactions to the network via a local `cardano-node` socket.
 
@@ -89,7 +89,7 @@ A lightweight HTTP API for submitting signed transactions to the network via a l
 scm install cardano-submit-api
 ```
 
-### `kupo`
+### kupo
 
 A lightweight Cardano chain indexer optimized for UTxO lookups. Kupo watches specific address patterns and maintains an indexed set of UTxOs accessible via an HTTP API.
 
@@ -100,7 +100,7 @@ A lightweight Cardano chain indexer optimized for UTxO lookups. Kupo watches spe
 scm install kupo
 ```
 
-### `ogmios`
+### ogmios
 
 A WebSocket bridge interface for `cardano-node`. Ogmios exposes the node's mini-protocols (local chain sync, local tx submission, local state query) over a JSON/WebSocket API, enabling web applications and other non-Haskell clients to interact with the node.
 
@@ -111,7 +111,7 @@ A WebSocket bridge interface for `cardano-node`. Ogmios exposes the node's mini-
 scm install ogmios
 ```
 
-### `mithril`
+### mithril
 
 The Mithril client — downloads and verifies certified snapshots of the Cardano chain state, enabling fast node bootstrapping without syncing from genesis.
 

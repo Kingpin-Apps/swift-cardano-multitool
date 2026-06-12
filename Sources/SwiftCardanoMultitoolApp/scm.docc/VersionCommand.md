@@ -4,25 +4,25 @@ Show the application's version and chain-context information.
 
 ## Overview
 
-The `version` command prints the running `scm` build version alongside a snapshot of the resolved chain context — the loaded config, selected network, blockchain backend, and (when reachable) the connected node tip. It's the fastest way to confirm that a fresh install is wired up correctly.
+The `version` command prints the running `scm` build version alongside a snapshot of the resolved environment — the active chain context, scripts mode, and platform. It's the fastest way to confirm that a fresh install is wired up correctly.
 
 ```bash
 scm version
 scm --version
 ```
 
-Both forms emit the same one-time output. Unlike most `scm` commands, `version` has no subcommands and no flags — it loads `MultitoolConfig`, resolves a chain context, and prints. If the configured node or API provider is unreachable the command still succeeds and prints the local version, noting that no context is available.
+`scm version` loads `MultitoolConfig`, resolves a chain context, and prints the full info block; the `--version` flag (available on every command) prints just the bare version number. `version` itself has no subcommands and no flags.
 
 ## Sample output
 
 ```
-scm 1.x.y
-Network:  mainnet
-Backend:  swift-cardano
-Tip:      slot 123_456_789 (epoch 512, era Conway)
+SwiftCardanoMultitool v1.x.y
+Chain Context: CardanoCliChainContext
+Scripts-Mode: Auto
+Platform: Version 15.5 (Build ...)
 ```
 
-The exact fields depend on the loaded configuration — see <doc:Configuration> for what determines the network and backend.
+When the chain context is backed by cardano-cli, the installed `cardano-cli` and `cardano-node` versions are also shown. The exact fields depend on the loaded configuration — see <doc:Configuration> for what determines the network and backend.
 
 ## Notes
 

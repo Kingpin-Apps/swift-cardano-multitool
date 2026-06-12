@@ -25,7 +25,7 @@ Payload input is also shared where it applies: `--data` (UTF-8), `--data-hex`, o
 
 ## Subcommands
 
-### `default`
+### default
 
 Sign an arbitrary payload with a plain Ed25519 signing key.
 
@@ -41,7 +41,7 @@ scm sign default --data-file message.txt --secret-key payment.skey --out-file si
 | `--secret-key`, `-s` | Path to a `.skey` file or raw hex. |
 | `--calidus` | Treat the signing key as a Calidus key and also emit the CIP-151 `calidus_id` (bech32). |
 
-### `cip8`
+### cip8
 
 Wrap a payload in a CIP-8 `COSE_Sign1` envelope bound to an address derived from the signing key.
 
@@ -55,7 +55,7 @@ scm sign cip8 --data-hex 7b22... --secret-key stake.skey --testnet --json-extend
 | `--testnet` | Use the testnet network ID when deriving the signing address. |
 | `--attach-cose-key` | Attach the verification key as a separate `COSE_Key` (CIP-30 shape). |
 
-### `cip30`
+### cip30
 
 Produce a CIP-30 `signData` response — equivalent to `cip8` with `--attach-cose-key` always on, suitable as a drop-in for a wallet's `signData(...)` return value.
 
@@ -64,7 +64,7 @@ scm sign cip30 --data "hello" --secret-key wallet.skey
 scm sign cip30 --data-hex 7b22... --secret-key stake.skey --testnet --json-extended
 ```
 
-### `cip36`
+### cip36
 
 Build a CIP-36 Catalyst voting registration (or, with `--deregister`, a deregistration blob).
 
@@ -88,7 +88,7 @@ scm sign cip36 --deregister --secret-key stake.skey
 | `--nonce` | Monotonic nonce. Defaults to the current mainnet slot height. |
 | `--deregister` | Build a deregistration blob instead of a registration. |
 
-### `cip88`
+### cip88
 
 Build a CIP-88 / CIP-151 Calidus pool-key registration.
 
@@ -105,7 +105,7 @@ scm sign cip88 \
 | `--nonce` | Monotonic nonce. Defaults to current mainnet slot height. |
 | `--meta-json` | Emit cardano-cli `detailed-schema` JSON metadata (for `--metadata-json-file`) instead of CBOR-hex auxdata. |
 
-### `cip100`
+### cip100
 
 Sign a CIP-100 governance metadata JSON-LD document and append an author witness.
 

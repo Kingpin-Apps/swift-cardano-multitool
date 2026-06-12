@@ -22,7 +22,7 @@ Every subcommand shares the same output controls as `sign`:
 
 ## Subcommands
 
-### `default`
+### default
 
 Verify a detached Ed25519 signature against a payload and verification key.
 
@@ -39,7 +39,7 @@ scm verify default \
 | `--public-key`, `-p` | Verification key — `.vkey` path or raw hex. |
 | `--signature` | 64-byte Ed25519 signature as hex. |
 
-### `cip8`
+### cip8
 
 Verify a CIP-8 `COSE_Sign1` signed message.
 
@@ -54,7 +54,7 @@ scm verify cip8 \
 | `--cose-sign1` | Hex-encoded `COSE_Sign1` message. |
 | `--cose-key` | Hex-encoded `COSE_Key` — optional when the key is embedded in the message. |
 
-### `cip30`
+### cip30
 
 Verify a CIP-30 `signData` response. The `COSE_Key` is required since CIP-30 separates it from the `COSE_Sign1` message.
 
@@ -64,7 +64,7 @@ scm verify cip30 \
   --cose-key a401...
 ```
 
-### `cip100`
+### cip100
 
 Verify every author witness signature in a CIP-100 governance metadata document. Returns success only if **all** author witnesses validate.
 

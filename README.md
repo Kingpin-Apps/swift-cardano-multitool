@@ -151,7 +151,7 @@ scm query tip
 | [`certificate`](#certificate) | `cert` | Generate Cardano certificates for stake, pools, and governance |
 | [`config`](#config) | `conf` | Manage SCM configuration |
 | [`download`](#download) | — | Download network config files and blockchain snapshots |
-| [`generate`](#generate) | — | Generate keys, addresses, and cryptographic material |
+| [`generate`](#generate) | `gen` | Generate keys, addresses, and cryptographic material |
 | [`governance`](#governance) | — | Cast votes and submit Conway-era governance proposals |
 | [`install`](#install) | — | Install Cardano ecosystem tools |
 | [`protect`](#protect) | — | Encrypt and decrypt sensitive files |
@@ -159,9 +159,9 @@ scm query tip
 | [`run`](#run) | — | Start Cardano node services |
 | [`send`](#send) | — | Send ADA and native assets |
 | [`sign`](#sign) | — | Sign messages, governance metadata, and registrations |
-| [`transaction`](#transaction) | — | Build, sign, and submit transactions |
+| [`transaction`](#transaction) | `tx` | Build, sign, and submit transactions |
 | [`verify`](#verify) | — | Verify signatures and signed metadata |
-| [`work-offline`](#work-offline) | — | Offline transaction workflows for air-gapped machines |
+| [`work-offline`](#work-offline) | `offline` | Offline transaction workflows for air-gapped machines |
 | [`version`](#version) | — | Show version information |
 
 ---
@@ -263,6 +263,18 @@ scm generate payment-and-stake-address
 # Pool metadata & maintenance
 scm generate pool-json
 scm generate key-rotation
+
+# Governance & minting
+scm generate drep          # Conway-era DRep keys
+scm generate policy        # Native-script minting policy
+
+# Specialized key material
+scm generate asset-meta    # Signed Cardano Token Registry metadata
+scm generate ed25519       # Raw Ed25519 keypair
+scm generate derived-key   # BIP-32 key for any Cardano role from a mnemonic
+scm generate vote-key      # CIP-36 Catalyst voting keypair
+scm generate calidus-key   # CIP-151 Calidus pool-operator keypair
+scm generate byron-key     # Byron-era (Daedalus) keypair
 ```
 
 ---
@@ -342,9 +354,15 @@ scm query address                # UTxO set for an address
 scm query epoch                  # Current epoch information
 scm query era                    # Current era
 scm query protocol-parameters    # Current protocol parameters
+scm query asset-meta             # Token Registry metadata for a native asset
 scm query stake-pool             # Stake pool information
 scm query kes-period-info        # Operational certificate KES period check
 scm query leadership-schedule    # Upcoming/current slot leader schedule
+scm query drep                   # DRep registration and metadata
+scm query committee-member       # Constitutional-committee member state
+scm query governance-action      # Governance action state
+scm query vote                   # Votes filtered by voter, action, or type
+scm query calidus-key            # CIP-88 Calidus pool-key registrations
 ```
 
 ---
@@ -354,7 +372,7 @@ scm query leadership-schedule    # Upcoming/current slot leader schedule
 Start Cardano services. Each subcommand launches the service with the parameters from your config file.
 
 ```bash
-scm run cardano-node     # Start the Cardano node
+scm run node     # Start the Cardano node
 scm run db-sync          # Start cardano-db-sync
 scm run cardano-wallet   # Start the Cardano wallet backend
 scm run submit-api       # Start the transaction submit API
@@ -445,7 +463,7 @@ Complete transaction workflows for air-gapped (offline) machines. An offline tra
 scm work-offline new            # Create a new offline transfer file
 scm work-offline info           # Show info about the current transfer file
 scm work-offline sync           # Sync chain data into the transfer file (online machine)
-scm work-offline execute        # Execute a transaction using the transfer file (offline machine)
+scm work-offline execute        # Submit a queued transaction from the transfer file (online machine)
 scm work-offline attach         # Attach files to the transfer file
 scm work-offline extract        # Extract files from the transfer file
 scm work-offline clear-tx       # Clear pending transactions from the transfer file
@@ -480,13 +498,17 @@ scm --version
 
 ## Documentation
 
-Full API and command documentation is available via DocC. Build and open it with:
+Full API and command documentation is available via DocC:
 
 ```bash
-swift package generate-documentation --target SwiftCardanoMultitoolLib --include-extended-types
+# Library API documentation
+swift package generate-documentation --target SwiftCardanoMultitool
+
+# CLI command documentation (the scm.docc catalog)
+swift package generate-documentation --target SwiftCardanoMultitoolApp
 ```
 
-Or open the `.docc` catalog in Xcode for rendered documentation.
+Or open the package in Xcode and use Product → Build Documentation.
 
 ---
 

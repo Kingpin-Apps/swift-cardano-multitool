@@ -1,4 +1,8 @@
-# ``SwiftCardanoMultitool``
+# ``SwiftCardanoMultitoolApp``
+
+@Metadata {
+    @DisplayName("scm")
+}
 
 A comprehensive interactive CLI for managing the Cardano blockchain ecosystem.
 

@@ -15,7 +15,7 @@ See <doc:Configuration> for a full reference of all configuration fields, enviro
 
 ## Subcommands
 
-### `init`
+### init
 
 Run the interactive setup wizard to create a new configuration file.
 
@@ -25,7 +25,7 @@ scm config init
 
 The wizard prompts for:
 
-1. **Network** — mainnet, preprod, preview, or guildnet
+1. **Network** — mainnet, preprod, preview, guildnet, or sanchonet
 2. **Node socket path** — path to the `cardano-node` Unix socket (e.g. `/run/cardano-node/node.socket`)
 3. **Node config directory** — directory containing the network's `config.json`, `topology.json`, and genesis files
 4. **Blockchain provider** — Blockfrost project ID and/or Koios API key (optional, used for queries without a local node)
@@ -39,7 +39,7 @@ After initialization, set the `CARDANO_MULTITOOL_CONFIG` environment variable to
 export CARDANO_MULTITOOL_CONFIG=~/.config/scm/mainnet.json
 ```
 
-### `show`
+### show
 
 Display the currently loaded configuration in a readable format.
 
@@ -49,7 +49,7 @@ scm config show
 
 This reads the file pointed to by `CARDANO_MULTITOOL_CONFIG` (and any environment variable overrides) and prints all resolved values. Useful for verifying that your config is loaded correctly before running other commands.
 
-### `select`
+### select
 
 Interactively choose a different named configuration from your configs index.
 

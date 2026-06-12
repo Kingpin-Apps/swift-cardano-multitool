@@ -13,12 +13,12 @@ scm protect --help
 
 ## Subcommands
 
-### `encrypt`
+### encrypt
 
 Encrypt a file with a password. The original file is replaced by an encrypted version.
 
 ```bash
-scm protect encrypt --file payment.skey
+scm protect encrypt --file-name payment.skey
 ```
 
 The wizard prompts for a password (and a confirmation) unless `CARDANO_MULTITOOL_DECRYPT_PASSWORD` is set in the environment.
@@ -27,29 +27,27 @@ The wizard prompts for a password (and a confirmation) unless `CARDANO_MULTITOOL
 
 | Option | Description |
 |--------|-------------|
-| `--file` | Path to the file to encrypt |
-| `--out-file` | Write the encrypted file to a different path (optional — defaults to overwriting in place) |
+| `--file-name`, `-f` | The file to encrypt. Omit to be prompted interactively. |
 
-### `decrypt`
+### decrypt
 
 Decrypt a file that was previously encrypted with `scm protect encrypt`.
 
 ```bash
-scm protect decrypt --file payment.skey.enc
+scm protect decrypt --file-name payment.skey
 ```
 
 **Options:**
 
 | Option | Description |
 |--------|-------------|
-| `--file` | Path to the encrypted file |
-| `--out-file` | Write the decrypted file to a different path (optional) |
+| `--file-name`, `-f` | The encrypted file to decrypt. Omit to be prompted interactively. |
 
 **Pre-supplying the password in scripts:**
 
 ```bash
 export CARDANO_MULTITOOL_DECRYPT_PASSWORD="your-password"
-scm protect decrypt --file payment.skey.enc
+scm protect decrypt --file-name payment.skey
 ```
 
 ## Recommended workflow for key protection
@@ -57,9 +55,9 @@ scm protect decrypt --file payment.skey.enc
 1. Generate keys with `scm generate`.
 2. Immediately encrypt private key files:
    ```bash
-   scm protect encrypt --file payment.skey
-   scm protect encrypt --file stake.skey
-   scm protect encrypt --file node.skey
+   scm protect encrypt --file-name payment.skey
+   scm protect encrypt --file-name stake.skey
+   scm protect encrypt --file-name node.skey
    ```
 3. Store the encrypted files. Decrypt only when signing — decrypt in memory and shred the plaintext afterwards if possible.
 

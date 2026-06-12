@@ -31,7 +31,7 @@ If both flags are omitted, the subcommand falls back to its interactive wizard.
 
 ## Node key generation
 
-### `node-cold-keys`
+### node-cold-keys
 
 Generate a stake pool cold key pair plus an operational-certificate issue counter. The cold key signs operational certificates and pool registration certificates.
 
@@ -63,7 +63,7 @@ scm generate node-cold-keys \
 
 > **Best practice:** Generate cold keys on an air-gapped machine and never move the signing key to an internet-connected device.
 
-### `node-kes-keys`
+### node-kes-keys
 
 Generate a Key Evolving Signature (KES) key pair. KES keys sign blocks and must be rotated every `maxKESEvolutions` slots (typically ~90 days).
 
@@ -77,7 +77,7 @@ scm generate node-kes-keys --pool-name myPool --key-gen-method cli
 | `--key-gen-method`, `-k` | `cli` or `enc`. |
 | `--tool`, `-t` | Backend to use. |
 
-### `node-vrf-keys`
+### node-vrf-keys
 
 Generate a Verifiable Random Function (VRF) key pair. VRF keys prove a pool's right to mint a block in a given slot.
 
@@ -91,7 +91,7 @@ scm generate node-vrf-keys --pool-name myPool --key-gen-method cli
 | `--key-gen-method`, `-k` | `cli` or `enc`. |
 | `--tool`, `-t` | Backend to use. |
 
-### `node-operational-certificate`
+### node-operational-certificate
 
 Issue a new operational certificate that authorizes the current KES key to sign blocks on behalf of the cold key. Run this each time KES keys are rotated.
 
@@ -114,7 +114,7 @@ A node will not accept an operational certificate whose counter is below the one
 
 ## Address generation
 
-### `payment-address-only`
+### payment-address-only
 
 Generate a payment key pair and derive an enterprise (payment-only) address. This address cannot receive staking rewards.
 
@@ -145,10 +145,10 @@ scm generate payment-address-only \
 | `--index`, `-i` | Leaf index used with `--sub-account`. Defaults to `0`. |
 | `--mnemonics`, `-m` | Existing BIP-39 mnemonic. Omit to generate a fresh one. |
 | `--language`, `-l` | Mnemonic language (default `english`). |
-| `--word-count`, `-w` | Mnemonic length: `15`, `18`, `21`, or `24` (default). |
+| `--word-count`, `-w` | Mnemonic length: `12`, `15`, `18`, `21`, or `24` (default). |
 | `--tool`, `-t` | Backend to use. |
 
-### `payment-and-stake-address`
+### payment-and-stake-address
 
 Generate both payment and stake key pairs, then derive a base address (which receives staking rewards) and a stake address (for reward collection and delegation).
 
@@ -176,7 +176,7 @@ scm generate payment-and-stake-address \
 
 ## Pool metadata
 
-### `pool-json`
+### pool-json
 
 Interactively create a `pool.json` metadata file in the format expected by the Cardano token registry and most explorers. The `pool` alias is also accepted.
 
@@ -196,7 +196,7 @@ The wizard collects pool ticker, description, homepage URL, optional logo, relay
 
 ## Maintenance
 
-### `key-rotation`
+### key-rotation
 
 Run the full KES key rotation workflow: generate new KES keys, issue a new operational certificate with the incremented counter, and report the new files.
 

@@ -25,7 +25,7 @@ swift build -c release
 cp .build/release/scm ~/.local/bin/scm
 ```
 
-### Install with `just`
+### Install with just
 
 The project includes a `Justfile` for building a signed universal binary (arm64 + x86_64) and installing it in one step:
 
@@ -104,7 +104,7 @@ scm transaction --help
 
 4. **Start the node** (optional — if you want to run your own node):
    ```bash
-   scm run cardano-node
+   scm run node
    ```
 
 5. **Query the chain tip** to confirm your node is running and in sync:

@@ -17,7 +17,7 @@ Several subcommands accept either `--tx-file` (a Cardano text-envelope file) or 
 
 ## Transaction construction
 
-### `build`
+### build
 
 Build a balanced transaction body from explicit inputs and outputs. Fees are automatically calculated.
 
@@ -54,7 +54,7 @@ scm transaction build \
 
 For advanced Plutus script options (`--spending-tx-in-reference`, `--tx-in-script-file`, etc.), pass `--use-cardano-cli` (from `SharedTransactionOptions`) and any extra cardano-cli arguments through `--extra-args`.
 
-### `sign`
+### sign
 
 Sign a transaction body with one or more software (`.skey`) or hardware (`.hwsfile`) signing keys.
 
@@ -76,7 +76,7 @@ scm transaction sign \
 | `--no-save` | Don't write the signed transaction to disk. |
 | `--submit` | Broadcast the signed transaction immediately. |
 
-### `witness`
+### witness
 
 Create a transaction witness (a signature) from a signing key without fully assembling the transaction. Used in multi-party signing workflows.
 
@@ -87,7 +87,7 @@ scm transaction witness \
   --out-file payment.witness
 ```
 
-### `assemble`
+### assemble
 
 Combine a transaction body with one or more witness files to produce a signed transaction.
 
@@ -106,7 +106,7 @@ scm transaction assemble \
 | `--witness-file`, `-w` | Witness file. Repeat for multi-witness assembly. |
 | `--out-file`, `-o` | Output path (default: `<input>.signed.tx`). |
 
-### `submit`
+### submit
 
 Submit a signed transaction to the network.
 
@@ -121,7 +121,7 @@ On success, the transaction ID is printed and linked to the configured blockchai
 
 ## Fee and balance utilities
 
-### `calculate-min-fee`
+### calculate-min-fee
 
 Calculate the minimum fee for a transaction body given the current protocol parameters. The `min-fee` alias is also accepted.
 
@@ -144,7 +144,7 @@ scm transaction calculate-min-fee \
 | `--tool` | `swift-cardano` (default) or `cardano-cli`. |
 | `--json`, `-j` | Output as JSON instead of formatted text. |
 
-### `calculate-min-required-utxo`
+### calculate-min-required-utxo
 
 Calculate the minimum ADA required for a UTxO output — mandatory when outputs carry native assets. The `min-utxo` alias is also accepted.
 
@@ -173,7 +173,7 @@ scm transaction calculate-min-required-utxo \
 
 ## Script utilities
 
-### `hash-script-data`
+### hash-script-data
 
 Calculate the blake2b-256 hash of Plutus script data (datums and redeemers). The `hsd` alias is also accepted.
 
@@ -195,7 +195,7 @@ scm transaction hash-script-data --script-data-cbor-hex 1864
 
 ## Rewards
 
-### `rewards-withdraw`
+### rewards-withdraw
 
 Build a transaction that withdraws accumulated staking rewards. The stake address is identified by its file base name (without the `.stake.addr` suffix). All shared transaction options apply (`--fee-payment-address`, `--message`, `--submit`, …).
 
@@ -227,7 +227,7 @@ The full available rewards balance is withdrawn automatically. The wizard shows 
 
 ## Inspection
 
-### `txid`
+### txid
 
 Compute the transaction ID (hash) from a transaction body or signed transaction. The `id` alias is also accepted.
 
@@ -237,7 +237,7 @@ scm transaction txid --cbor-hex 84a40081...
 scm transaction txid --tx-file tx.signed --json
 ```
 
-### `view`
+### view
 
 Display a human-readable summary of a transaction.
 
@@ -245,7 +245,7 @@ Display a human-readable summary of a transaction.
 scm transaction view --tx-file tx.signed
 ```
 
-### `inspect`
+### inspect
 
 Inspect the detailed CBOR structure of a transaction.
 
@@ -254,7 +254,7 @@ scm transaction inspect --tx-file tx.signed
 scm transaction inspect --tx-file tx.signed --json
 ```
 
-### `validate`
+### validate
 
 Validate a transaction against current ledger rules without submitting.
 

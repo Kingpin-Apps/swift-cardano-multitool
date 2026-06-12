@@ -15,23 +15,23 @@ A valid `CARDANO_MULTITOOL_CONFIG` with the appropriate `cardano`, `ogmios`, or 
 
 ## Subcommands
 
-### `cardano-node`
+### node
 
 Start the Cardano node process. The node connects to peers via the topology file and begins syncing (or continues from the existing database).
 
 ```bash
-scm run cardano-node
+scm run node
 ```
 
 The node is started with parameters from the `cardano` section of your config file:
 - `node_socket_path` — where the Unix socket will be created
 - `node_config_path` — path to `config.json`
 - `node_topology_path` — path to `topology.json`
-- `node_database_path` — directory for the LevelDB chain database
+- `node_database_path` — directory for the chain database
 
 The node runs in the foreground. Use a process supervisor (systemd, launchd, tmux) for production deployments.
 
-### `db-sync`
+### db-sync
 
 Start `cardano-db-sync` to synchronize on-chain data to a PostgreSQL database.
 
@@ -41,7 +41,7 @@ scm run db-sync
 
 Requires a running `cardano-node` and a configured PostgreSQL connection. The `cardano-db-sync` binary must be installed — use `scm install cardano-db-sync` first.
 
-### `cardano-wallet`
+### cardano-wallet
 
 Start the Cardano Wallet backend. The wallet exposes a REST API for managing UTxO wallets, constructing transactions, and delegating stake.
 
@@ -51,7 +51,7 @@ scm run cardano-wallet
 
 Requires a running `cardano-node`. The wallet binary must be installed — use `scm install cardano-wallet` first.
 
-### `submit-api`
+### submit-api
 
 Start the lightweight transaction submission API. This HTTP service accepts signed CBOR transactions and forwards them to the node for submission.
 
@@ -61,7 +61,7 @@ scm run submit-api
 
 Useful as a thin submission endpoint that doesn't require exposing the full node socket.
 
-### `ogmios`
+### ogmios
 
 Start Ogmios — a WebSocket bridge that exposes `cardano-node` mini-protocols (chain sync, tx submission, state query) over a JSON API.
 
@@ -73,7 +73,7 @@ Parameters are read from the `ogmios` section of your config (`host`, `port`). R
 
 Default port: `1337`
 
-### `kupo`
+### kupo
 
 Start Kupo — a lightweight UTxO indexer that watches address patterns and maintains a fast-query UTxO set.
 
@@ -96,7 +96,7 @@ Description=Cardano Node
 After=network.target
 
 [Service]
-ExecStart=/home/cardano/.local/bin/scm run cardano-node
+ExecStart=/home/cardano/.local/bin/scm run node
 Environment=CARDANO_MULTITOOL_CONFIG=/home/cardano/.config/scm/mainnet.json
 Restart=always
 User=cardano

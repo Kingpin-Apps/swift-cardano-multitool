@@ -130,31 +130,31 @@ log_level = "info"
 | `max_retry_attempts` | Int | `5` | Maximum number of retries for API calls |
 | `base_retry_delay` | Int (ms) | `200` | Base delay for exponential backoff between retries |
 
-### `cardano` section
+### cardano section
 
 | Field | Description |
 |-------|-------------|
-| `network` | Network name: `mainnet`, `preprod`, `preview`, `guildnet` |
+| `network` | Network name: `mainnet`, `preprod`, `preview`, `guildnet`, `sanchonet` |
 | `node_socket_path` | Path to the `cardano-node` Unix socket |
 | `node_config_path` | Path to the node's `config.json` |
 | `node_topology_path` | Path to the node's `topology.json` |
-| `node_database_path` | Path to the node's LevelDB database directory |
+| `node_database_path` | Path to the node's chain database directory |
 
-### `mithril` section
+### mithril section
 
 | Field | Description |
 |-------|-------------|
 | `aggregator_endpoint` | Mithril aggregator API URL |
 | `genesis_verification_key` | Genesis verification key for the target network |
 
-### `ogmios` section
+### ogmios section
 
 | Field | Default | Description |
 |-------|---------|-------------|
 | `host` | `localhost` | Ogmios host |
 | `port` | `1337` | Ogmios port |
 
-### `kupo` section
+### kupo section
 
 | Field | Default | Description |
 |-------|---------|-------------|

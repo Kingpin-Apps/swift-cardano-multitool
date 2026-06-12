@@ -15,7 +15,7 @@ Each create-style subcommand can run with `--generate-only` to emit just a `.act
 
 ## Voting
 
-### `vote`
+### vote
 
 Cast a single Conway-era vote. The voter role (DRep / SPO / CC hot) is inferred from the voter vkey's file extension; override with `--voter-role`.
 
@@ -48,7 +48,7 @@ scm governance vote gov_action1xyz... yes \
 
 All create-style subcommands accept the shared anchor (`--anchor-url`, `--anchor-hash`), deposit (`--deposit`), `--deposit-return-stake-address`, and `--generate-only` flags via `SharedGovernanceActionOptions`.
 
-### `info-action`
+### info-action
 
 Build and submit a Conway info-action — a metadata-only proposal with no on-chain effect.
 
@@ -61,7 +61,7 @@ scm governance info-action \
   --submit
 ```
 
-### `treasury-withdrawal`
+### treasury-withdrawal
 
 Withdraw lovelace from the treasury to one or more stake addresses. `--withdrawal` is repeatable.
 
@@ -79,7 +79,7 @@ scm governance treasury-withdrawal \
 | `--withdrawal` | `<stakeAddrOrFile>:<lovelaces>` — repeat for multiple recipients. |
 | `--guardrails-script-hash` | 56-hex hash — required when the constitution has a guardrails script. |
 
-### `no-confidence`
+### no-confidence
 
 Submit a no-confidence motion against the current constitutional committee.
 
@@ -94,23 +94,23 @@ scm governance no-confidence \
 
 `--prev-action-id` is the most recent enacted Committee action. It is required on the SwiftCardano path and optional when `--use-cardano-cli` is set (the CLI infers it from gov-state).
 
-### `new-constitution`
+### new-constitution
 
 Propose a new constitution document.
 
-### `hard-fork-initiation`
+### hard-fork-initiation
 
 Propose advancing the protocol to a new major version. Pass `--major <version>` and the previous hard-fork action ID via `--prev-action-id`.
 
-### `update-committee`
+### update-committee
 
 Propose adding or removing committee members and updating the voting threshold.
 
-### `parameter-change`
+### parameter-change
 
 Propose changes to one or more protocol parameters.
 
-### `submit-action`
+### submit-action
 
 Submit one or more previously generated `.action` files in a single transaction. Deposit and return-stake-address are read directly from each action file.
 
@@ -129,7 +129,7 @@ scm governance submit-action \
 
 ## Utilities
 
-### `canonize`
+### canonize
 
 Compute the URDNA2015 canonical form and blake2b-256 hash of a CIP-100 JSON-LD document — useful when preparing or auditing an anchor hash.
 
@@ -138,7 +138,7 @@ scm governance canonize --data-file proposal.jsonld
 scm governance canonize --data-file proposal.jsonld --json-extended
 ```
 
-### `cip129 encode` / `cip129 decode`
+### cip129 encode / cip129 decode
 
 Encode or decode CIP-129 / CIP-151 bech32 governance identifiers (`drep`, `cc_cold`, `cc_hot`, `calidus`).
 

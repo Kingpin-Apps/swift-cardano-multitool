@@ -4,7 +4,7 @@ Offline transaction workflows for air-gapped machines.
 
 ## Overview
 
-The `work-offline` command implements a complete workflow for constructing and signing Cardano transactions on an air-gapped (offline) machine — a machine that has never been and never will be connected to the internet, keeping private keys completely isolated.
+The `work-offline` command implements a complete workflow for constructing and signing Cardano transactions on an air-gapped (offline) machine — a machine that has never been and never will be connected to the internet, keeping private keys completely isolated. The `offline` alias is also accepted.
 
 ```bash
 scm work-offline <subcommand> [options]
@@ -16,112 +16,126 @@ The workflow uses an **offline transfer file** (a JSON bundle) to safely ferry c
 ## The offline transfer model
 
 ```
-Online machine                      Offline machine
-─────────────────                   ─────────────────
-scm work-offline new         →      (transfer file created)
-scm work-offline sync        →      (UTxOs, params added)
-                                    (copy file to offline)
-                             ←      scm work-offline execute
-                                    (tx signed offline)
-                                    (copy file to online)
-scm transaction submit       ←      (tx submitted online)
+Online machine                        Offline machine
+─────────────────                     ─────────────────
+scm work-offline new
+scm work-offline sync          →      (copy file to offline machine)
+
+                                      scm send / scm transaction …
+                                      (built + signed offline; the
+                                      "submitted" tx is queued into
+                                      the transfer file)
+
+scm work-offline execute       ←      (copy file back online)
+(queued tx broadcast on-chain)
 ```
+
+On the offline machine, set `mode` to `offline` in your config (or let `auto` detect the missing network). Regular commands like `scm send` and `scm transaction` then read UTxOs and protocol parameters from the transfer file instead of the network, and `--submit` queues the signed transaction into the file rather than broadcasting it.
 
 ## Setup
 
-The path to the transfer file is configured in your `scm` config under `offline_file`, defaulting to `./offline-transfer.json`. Set `CARDANO_MULTITOOL_CONFIG` before running these commands.
+The path to the transfer file is configured in your `scm` config under `offline_file`, defaulting to `./offline-transfer.json`. Most subcommands also accept `--in-file` to point at a different transfer file. Set `CARDANO_MULTITOOL_CONFIG` before running these commands.
 
 ## Subcommands
 
-### `new`
+### new
 
 Create a new offline transfer file.
 
 ```bash
 scm work-offline new
+scm work-offline new --out-file my-transfer.json
 ```
 
-This initializes an empty transfer bundle at the path configured in `offline_file`. Run this once before starting a new offline signing session.
+| Option | Description |
+|--------|-------------|
+| `--out-file`, `-o` | Output path for the new transfer file. |
 
-### `info`
+This initializes an empty transfer bundle. Run this once before starting a new offline signing session.
 
-Display the current contents of the transfer file — pending transactions, attached files, and synced chain data.
+### info
+
+Display the current contents of the transfer file — protocol parameters, history, addresses with balances, attached files, and queued transactions.
 
 ```bash
 scm work-offline info
 ```
 
-### `sync`
+### sync
 
-Sync the transfer file with live chain data from a running node. Run this on the **online** machine before transferring the file to the offline machine.
+Add UTxO data (payment address) or rewards data (stake address) to the transfer file. Run this on the **online** machine — once per address — before transferring the file to the offline machine.
 
 ```bash
-scm work-offline sync \
-  --address addr1... \
-  --address addr1...
+scm work-offline sync --address-file owner.payment.addr
+scm work-offline sync --address-file owner.stake.addr
 ```
 
-Sync fetches and embeds:
-- UTxO sets for the specified addresses
-- Current protocol parameters
-- Current tip (slot, epoch, era)
+| Option | Description |
+|--------|-------------|
+| `--address-file`, `-a` | Path to the `.addr` file to sync (payment or stake address). |
+| `--in-file`, `-i` | Path to the offline transfer file. |
 
-After syncing, copy the transfer file to the offline machine (via USB drive or QR code).
+Sync also embeds the current protocol parameters and chain tip. After syncing, copy the transfer file to the offline machine (via USB drive, for example).
 
-### `execute`
+### execute
 
-Build and sign a transaction on the **offline** machine using the chain data embedded in the transfer file.
+Submit a queued transaction from the transfer file. Run this on the **online** machine after the transaction was built and signed offline. The UTxO state is verified before submission.
 
 ```bash
 scm work-offline execute
+scm work-offline execute --tx-index 1
 ```
 
-The wizard walks through:
-1. Selecting the transaction type (send lovelaces, send assets, certificate, etc.)
-2. Constructing the transaction from embedded UTxOs and protocol parameters
-3. Collecting signing key files from the local (air-gapped) filesystem
-4. Signing the transaction — entirely offline
-5. Embedding the signed transaction in the transfer file
+| Option | Description |
+|--------|-------------|
+| `--tx-index`, `-t` | Index of the queued transaction to execute (0-based, default: 0). |
+| `--in-file`, `-i` | Path to the offline transfer file. |
 
-After executing, copy the transfer file back to the online machine.
+On success the transaction is removed from the queue and recorded in the transfer file's history.
 
-### `attach`
+### attach
 
-Attach additional files to the transfer file (e.g. unsigned certificate files or metadata JSON files created on the online machine that need to be signed offline).
+Embed a file into the transfer file (base64-encoded) — e.g. certificate or metadata files created on the online machine that are needed during offline signing.
 
 ```bash
 scm work-offline attach --file stake-registration.cert
 ```
 
-Attached files are embedded in the transfer file and can be accessed on the offline machine during `execute`.
+| Option | Description |
+|--------|-------------|
+| `--file`, `-f` | Path to the file to attach. |
+| `--in-file`, `-i` | Path to the offline transfer file. |
 
-### `extract`
+### extract
 
-Extract files that have been embedded in the transfer file to the local filesystem.
+Decode all embedded files from the transfer file and write them to a directory.
 
 ```bash
 scm work-offline extract --out-dir ./extracted
 ```
 
-Useful for extracting the signed transaction from the transfer file on the online machine before submitting it.
+| Option | Description |
+|--------|-------------|
+| `--out-dir`, `-o` | Directory to extract files into (default: current directory). |
+| `--in-file`, `-i` | Path to the offline transfer file. |
 
-### `clear-tx`
+### clear-tx
 
-Remove all pending (unsigned or signed) transactions from the transfer file, without affecting attached files or chain data.
+Remove all queued transactions from the transfer file, without affecting attached files or chain data.
 
 ```bash
 scm work-offline clear-tx
 ```
 
-### `clear-history`
+### clear-history
 
-Clear the transaction history log from the transfer file.
+Clear the history entries from the transfer file, leaving a single "history cleared" entry.
 
 ```bash
 scm work-offline clear-history
 ```
 
-### `clear-files`
+### clear-files
 
 Remove all attached files from the transfer file.
 
@@ -138,7 +152,7 @@ scm work-offline clear-files
 scm work-offline new
 
 # 2. Sync UTxOs and protocol parameters into the transfer file
-scm work-offline sync --address addr1qx...
+scm work-offline sync --address-file owner.payment.addr
 
 # 3. Copy the transfer file to a USB drive
 cp offline-transfer.json /Volumes/USB/
@@ -150,8 +164,13 @@ cp offline-transfer.json /Volumes/USB/
 # 4. Copy the transfer file from the USB drive
 cp /Volumes/USB/offline-transfer.json .
 
-# 5. Build and sign the transaction offline
-scm work-offline execute
+# 5. Build and sign a transaction offline; --submit queues it
+#    into the transfer file instead of broadcasting
+scm send lovelaces \
+  --amount 5000000 \
+  --to-address addr1... \
+  --fee-payment-address owner.payment \
+  --submit
 
 # 6. Copy the updated transfer file back to the USB drive
 cp offline-transfer.json /Volumes/USB/
@@ -163,16 +182,16 @@ cp offline-transfer.json /Volumes/USB/
 # 7. Copy the signed transfer file back
 cp /Volumes/USB/offline-transfer.json .
 
-# 8. Extract the signed transaction
-scm work-offline extract --out-dir .
+# 8. Review the queued transaction
+scm work-offline info
 
-# 9. Submit the signed transaction
-scm transaction submit --tx-file tx.signed
+# 9. Broadcast it
+scm work-offline execute
 ```
 
 ## Notes
 
 - The offline machine should never have network access. Its sole purpose is to hold keys and produce signatures.
 - The transfer file is a plain JSON file. Inspect it with `scm work-offline info` at any point to understand its contents.
-- The sync data embedded in the transfer file has a time-to-live — synced UTxOs may become stale if the transfer takes too long. Re-sync if the signing session is delayed by many hours.
+- The sync data embedded in the transfer file can become stale — synced UTxOs may be spent by other transactions if the transfer takes too long. `execute` verifies the UTxO state before submitting; re-sync if the signing session is delayed by many hours.
 - For the highest security, generate your keys on the offline machine and never let the signing keys leave it.

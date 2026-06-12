@@ -17,7 +17,7 @@ All `send` subcommands compose with `SharedTransactionOptions`, so flags like `-
 
 ## Subcommands
 
-### `lovelaces`
+### lovelaces
 
 Send a specific amount of lovelace (1 ADA = 1,000,000 lovelace) to a recipient address.
 
@@ -46,7 +46,7 @@ scm send lovelaces \
 
 Native assets at the source are not affected — only lovelace is sent. Change (remaining lovelace and any assets) is returned to the source address.
 
-### `assets`
+### assets
 
 Send specific native assets (fungible tokens or NFTs) to a recipient address. The lovelace amount bundled with the assets defaults to the protocol minimum UTXO if not specified.
 
@@ -79,7 +79,7 @@ scm send assets \
 | `--fee-payment-address`, `-f` | Source address. |
 | `--message`, `-m` | Optional transaction message (CIP-20). Repeatable. |
 
-### `all`
+### all
 
 Send the entire balance from an address. Useful for consolidating funds or moving a wallet's full contents.
 

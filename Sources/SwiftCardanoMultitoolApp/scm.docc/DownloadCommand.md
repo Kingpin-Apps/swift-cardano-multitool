@@ -13,17 +13,25 @@ scm download --help
 
 ## Subcommands
 
-### `configuration-files`
+### configuration-files
 
-Download the official node configuration files for a Cardano network from `cardano.org`.
+Download the official node configuration files for a Cardano network from `book.world.dev.cardano.org`.
 
 ```bash
 scm download configuration-files
+scm download configuration-files --network preprod --db-sync
 ```
 
-The interactive wizard asks for:
-- **Network** — mainnet, preprod, or preview
-- **Output directory** — where to save the configuration files
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--network`, `-n` | Network to download configs for: `mainnet`, `preprod`, `preview`, `guildnet`, `sanchonet`. |
+| `--block-poducer` | Download the block-producer node config instead of the relay config. |
+| `--db-sync` | Also download configs for cardano-db-sync. |
+| `--submit-api` | Also download configs for cardano-submit-api. |
+
+Any missing parameters (like the output directory) are collected interactively.
 
 Files downloaded:
 
@@ -43,20 +51,24 @@ After downloading, point your config at the directory:
 # "node_config_path": "/path/to/config/mainnet/config.json"
 ```
 
-### `database-snapshot`
+### database-snapshot
 
 Download a Mithril-certified blockchain snapshot to bootstrap a node without syncing from genesis.
 
 ```bash
 scm download database-snapshot
+scm download database-snapshot --network preprod
 ```
 
 Mithril is a stake-based threshold multi-signature scheme that certifies snapshots of the Cardano chain state. Downloading a certified snapshot lets you start a node fully synced in minutes rather than days.
 
-The wizard collects:
-- **Network** — mainnet, preprod, or preview (must match your Mithril aggregator config)
-- **Snapshot digest** — the specific snapshot to download, or `latest` to use the most recent certified snapshot
-- **Output directory** — where to extract the database
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--network`, `-n` | Network to download the snapshot for (defaults to the configured network). |
+
+The snapshot is fetched and verified through the Mithril aggregator configured in the `mithril` section of your config file; remaining parameters are collected interactively.
 
 > **Important:** Verify your Mithril aggregator endpoint and genesis verification key in your config before downloading. Using an untrusted aggregator could result in a corrupt database.
 
