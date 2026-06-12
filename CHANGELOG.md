@@ -1,3 +1,16 @@
+## 0.6.0 (2026-06-12)
+
+### Feat
+
+- support message encryption on Linux via swift-crypto
+
+### Fix
+
+- correct misspelled --block-poducer flag to --block-producer
+- replace Apple-only APIs with cross-platform equivalents
+- guard Apple-only imports for Linux compatibility
+- update dependencies
+
 ## 0.5.0 (2026-06-09)
 
 ### Feat
