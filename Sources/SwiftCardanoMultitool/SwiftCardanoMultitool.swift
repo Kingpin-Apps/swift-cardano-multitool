@@ -148,7 +148,11 @@ struct SwiftCardanoMultitool: AsyncParsableCommand {
         
         // Bootstrap Logging
         LoggingSystem.bootstrap { label in
+            #if canImport(os)
             OSLogHandler(subsystem: "com.swift-cardano-multitool", category: label)
+            #else
+            StreamLogHandler.standardError(label: label)
+            #endif
         }
         
         await MainMenuCommand.main()

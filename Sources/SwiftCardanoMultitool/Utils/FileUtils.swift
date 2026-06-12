@@ -16,8 +16,15 @@
 ///   `ExitCode.validationFailure` when a user-facing validation message has already been emitted.
 /// - Socket checks are supported on Apple platforms via Darwin constants and guarded elsewhere.
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import SystemPackage
+#if canImport(Darwin)
 import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 import ArgumentParser
 import Noora
 import Path

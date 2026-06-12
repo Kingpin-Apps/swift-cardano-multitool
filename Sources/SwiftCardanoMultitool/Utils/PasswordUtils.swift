@@ -2,7 +2,11 @@ import Foundation
 import ArgumentParser
 import Noora
 import SystemPackage
+#if canImport(Darwin)
 import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 #if canImport(CryptoKit)
 import CryptoKit
 #elseif canImport(Crypto)

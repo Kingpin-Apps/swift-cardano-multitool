@@ -1,18 +1,25 @@
 import Logging
 import SwiftCardanoUtils
+#if canImport(os)
 import os
+#endif
 
 public func getLogger(config: MultitoolConfig) -> Logging.Logger {
     var logger = Logger(
         label: "com.swift-cardano-multitool",
         factory: { label in
+            #if canImport(os)
             OSLogHandler(subsystem: "com.swift-cardano-multitool", category: label)
+            #else
+            StreamLogHandler.standardError(label: label)
+            #endif
         }
     )
     logger.logLevel = config.logLevel ?? .error
     return logger
 }
 
+#if canImport(os)
 struct OSLogHandler: LogHandler {
     let logger: os.Logger
     
@@ -46,5 +53,6 @@ struct OSLogHandler: LogHandler {
         set { metadata[key] = newValue }
     }
 }
+#endif
 
 
