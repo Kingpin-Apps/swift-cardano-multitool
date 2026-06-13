@@ -1,3 +1,9 @@
+## 0.7.0 (2026-06-13)
+
+### Feat
+
+- derive DRep and policy mnemonic keys via swift-cardano-signer
+
 ## 0.6.0 (2026-06-12)
 
 ### Feat
