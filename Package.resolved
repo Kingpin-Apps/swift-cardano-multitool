@@ -1,5 +1,5 @@
 {
-  "originHash" : "432bbfd032dccbbab8ae34610b62f2c3c5cf2562a16b345b65d439f4c4fe49b4",
+  "originHash" : "c9ac47e693cbf10bb5927fbec72277a423ba0378c7fae1319d8c9a6bea36a946",
   "pins" : [
     {
       "identity" : "base32",
@@ -177,8 +177,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-cips.git",
       "state" : {
-        "revision" : "92f6b6ae653bd954aceaafb55012571dbecdd770",
-        "version" : "0.3.7"
+        "revision" : "ec09cd3a379871415438306959b7f0fb9fbef4b8",
+        "version" : "0.3.8"
       }
     },
     {
@@ -204,8 +204,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-signer.git",
       "state" : {
-        "revision" : "dde1c1da6ec101c7d3d75a7a8c517ce9008d95c5",
-        "version" : "0.1.1"
+        "revision" : "4473d92eebcf73a99e0b09b2a00919769078e9e0",
+        "version" : "0.1.2"
       }
     },
     {

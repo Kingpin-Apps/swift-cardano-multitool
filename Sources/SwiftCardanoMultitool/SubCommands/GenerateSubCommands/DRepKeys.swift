@@ -3,6 +3,7 @@ import ArgumentParser
 import Noora
 import SystemPackage
 import SwiftCardanoCore
+import SwiftCardanoSigner
 import SwiftCardanoUtils
 import SwiftCardanoWallet
 import SwiftMnemonic
@@ -272,12 +273,6 @@ extension GenerateMainCommand {
                     "Generating DRep-Key via Derivation-Path: \(.primary(derivationPath))"
                 ))
 
-                if tool == .swiftCardano {
-                    print(noora.format(
-                        "Note: \(.primary("--tool swift-cardano")) is not supported for DRep mnemonic derivation; using \(.primary("cardano-signer")) instead."
-                    ))
-                }
-
                 if let existing = mnemonics, !existing.isEmpty {
                     print(noora.format("Using Mnemonics: \(.primary(existing))"))
                 } else {
@@ -288,72 +283,111 @@ extension GenerateMainCommand {
                     print(noora.format("Created Mnemonics: \(.primary(mnemonics!))"))
                 }
 
-                let signer = try await CardanoSigner(
-                    configuration: config.toSwiftCardanoUtilsConfig()
-                )
+                switch tool {
+                    case .swiftCardano:
+                        print(noora.format(
+                            "Using \(.primary("SwiftCardano")) to derive the DRep key")
+                        )
 
-                let responseJSON = try await signer.keygen(
-                    path: derivationPath,
-                    mnemonics: .words(mnemonics!),
-                    withChainCode: true,
-                    outputFormat: .jsonExtended,
-                    outSkey: drepSKey
-                )
+                        // DRep is a canonical Shelley role (CIP-1852 .../3/index),
+                        // so the swift-cardano-signer library derives it directly —
+                        // no cardano-signer / cardano-cli subprocess needed.
+                        let bundle = try Signer.Keygen.shelley(
+                            mnemonic: mnemonics!.split(separator: " ").map(String.init),
+                            kind: .drep(
+                                account: UInt32(subAccount!),
+                                index: UInt32(index!)
+                            )
+                        )
 
-                let signerResponse = try JSONSerialization.jsonObject(
-                    with: responseJSON.toData,
-                    options: []
-                ) as! [String: Any]
+                        // Extended signing key (with chain code) + non-extended
+                        // verification key, matching the cardano-signer flow.
+                        try bundle.signingKey.save(to: drepSKey.string)
 
-                let extendedVKeyJSON = (signerResponse["output"] as! [String: Any])["vkey"] as! [String: String]
-                let extendedVKeyData = try JSONEncoder().encode(extendedVKeyJSON)
+                        let drepVerificationKey: DRepVerificationKey =
+                            try bundle.verificationKey.toNonExtended()
+                        try drepVerificationKey.save(to: drepVKey.string)
 
-                // Save extended VKEY to tmp directory, then convert to non-extended
-                let tmpDir = FilePath(FileManager.default.temporaryDirectory.path)
-                let tmpVKey = tmpDir.appending("temp.drep.extended.vkey")
-                try extendedVKeyData.write(
-                    to: URL(fileURLWithPath: tmpVKey.string),
-                    options: .atomic
-                )
+                        // Compute the DRep ID natively from the verification-key hash.
+                        let drep = DRep(
+                            credential: .verificationKeyHash(
+                                try drepVerificationKey.hash()
+                            )
+                        )
+                        try drep.save(to: drepId.string)
 
-                let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
-                let vkeyJSON = try await cli.key.nonExtendedKey(
-                    arguments: [
-                        "--extended-verification-key-file", tmpVKey.string,
-                        "--verification-key-file", "/dev/stdout"
-                    ]
-                )
+                    default:
+                        print(noora.format(
+                            "Using \(.primary("cardano-signer")) to derive the DRep key")
+                        )
 
-                var vkey = try JSONSerialization.jsonObject(
-                    with: vkeyJSON.toData,
-                    options: []
-                ) as! [String: String]
-                vkey["description"] = "Delegated Representative Verification Key"
-                let vkeyData = try JSONEncoder().encode(vkey)
+                        let signer = try await CardanoSigner(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
 
-                do {
-                    try vkeyData.write(
-                        to: URL(fileURLWithPath: drepVKey.string),
-                        options: .atomic
-                    )
-                } catch {
-                    noora.error(
-                        .alert(
-                            "Could not write file: \(drepVKey.string). \(error)",
-                            takeaways: [
-                                "Make sure you have write permissions to the file path"
+                        let responseJSON = try await signer.keygen(
+                            path: derivationPath,
+                            mnemonics: .words(mnemonics!),
+                            withChainCode: true,
+                            outputFormat: .jsonExtended,
+                            outSkey: drepSKey
+                        )
+
+                        let signerResponse = try JSONSerialization.jsonObject(
+                            with: responseJSON.toData,
+                            options: []
+                        ) as! [String: Any]
+
+                        let extendedVKeyJSON = (signerResponse["output"] as! [String: Any])["vkey"] as! [String: String]
+                        let extendedVKeyData = try JSONEncoder().encode(extendedVKeyJSON)
+
+                        // Save extended VKEY to tmp directory, then convert to non-extended
+                        let tmpDir = FilePath(FileManager.default.temporaryDirectory.path)
+                        let tmpVKey = tmpDir.appending("temp.drep.extended.vkey")
+                        try extendedVKeyData.write(
+                            to: URL(fileURLWithPath: tmpVKey.string),
+                            options: .atomic
+                        )
+
+                        let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
+                        let vkeyJSON = try await cli.key.nonExtendedKey(
+                            arguments: [
+                                "--extended-verification-key-file", tmpVKey.string,
+                                "--verification-key-file", "/dev/stdout"
                             ]
                         )
-                    )
-                    throw ExitCode.failure
-                }
 
-                _ = try await cli.governance.drepId(
-                    arguments: [
-                        "--drep-verification-key-file", drepVKey.string,
-                        "--out-file", drepId.string
-                    ]
-                )
+                        var vkey = try JSONSerialization.jsonObject(
+                            with: vkeyJSON.toData,
+                            options: []
+                        ) as! [String: String]
+                        vkey["description"] = "Delegated Representative Verification Key"
+                        let vkeyData = try JSONEncoder().encode(vkey)
+
+                        do {
+                            try vkeyData.write(
+                                to: URL(fileURLWithPath: drepVKey.string),
+                                options: .atomic
+                            )
+                        } catch {
+                            noora.error(
+                                .alert(
+                                    "Could not write file: \(drepVKey.string). \(error)",
+                                    takeaways: [
+                                        "Make sure you have write permissions to the file path"
+                                    ]
+                                )
+                            )
+                            throw ExitCode.failure
+                        }
+
+                        _ = try await cli.governance.drepId(
+                            arguments: [
+                                "--drep-verification-key-file", drepVKey.string,
+                                "--out-file", drepId.string
+                            ]
+                        )
+                }
 
                 try saveMnemonics(mnemonics!, to: drepMnemonics)
                 try await FileUtils.fileLock(drepMnemonics)

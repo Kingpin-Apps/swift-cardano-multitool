@@ -3,6 +3,7 @@ import ArgumentParser
 import Noora
 import SystemPackage
 import SwiftCardanoCore
+import SwiftCardanoSigner
 import SwiftCardanoUtils
 import SwiftCardanoWallet
 import SwiftMnemonic
@@ -356,12 +357,6 @@ extension GenerateMainCommand {
                     "Generating Policy-Key via Derivation-Path: \(.primary(derivationPath))"
                 ))
 
-                if tool == .swiftCardano {
-                    print(noora.format(
-                        "Note: \(.primary("--tool swift-cardano")) is not supported for policy mnemonic derivation; using \(.primary("cardano-signer")) instead."
-                    ))
-                }
-
                 if let existing = mnemonics, !existing.isEmpty {
                     print(noora.format("Using Mnemonics: \(.primary(existing))"))
                 } else {
@@ -372,63 +367,90 @@ extension GenerateMainCommand {
                     print(noora.format("Created Mnemonics: \(.primary(mnemonics!))"))
                 }
 
-                let signer = try await CardanoSigner(
-                    configuration: config.toSwiftCardanoUtilsConfig()
-                )
+                switch tool {
+                    case .swiftCardano:
+                        print(noora.format(
+                            "Using \(.primary("SwiftCardanoSigner")) to derive the policy key")
+                        )
 
-                let responseJSON = try await signer.keygen(
-                    path: derivationPath,
-                    mnemonics: .words(mnemonics!),
-                    withChainCode: true,
-                    outputFormat: .jsonExtended,
-                    outSkey: policySKey
-                )
+                        // CIP-1855 minting-policy key derivation, native via the
+                        // swift-cardano-signer library (path m/1855'/1815'/<ix>').
+                        let bundle = try Signer.Keygen.policy(
+                            mnemonic: mnemonics!.split(separator: " ").map(String.init),
+                            policyIndex: UInt32(subAccount!)
+                        )
 
-                let signerResponse = try JSONSerialization.jsonObject(
-                    with: responseJSON.toData,
-                    options: []
-                ) as! [String: Any]
+                        // Extended signing key (with chain code) + non-extended
+                        // payment verification key, matching the cardano-signer flow.
+                        try bundle.signingKey.save(to: policySKey.string)
 
-                let extendedVKeyJSON = (signerResponse["output"] as! [String: Any])["vkey"] as! [String: String]
-                let extendedVKeyData = try JSONEncoder().encode(extendedVKeyJSON)
+                        let policyVerificationKey: PaymentVerificationKey =
+                            try bundle.verificationKey.toNonExtended()
+                        try policyVerificationKey.save(to: policyVKey.string)
 
-                let tmpDir = FilePath(FileManager.default.temporaryDirectory.path)
-                let tmpVKey = tmpDir.appending("temp.policy.extended.vkey")
-                try extendedVKeyData.write(
-                    to: URL(fileURLWithPath: tmpVKey.string),
-                    options: .atomic
-                )
+                    default:
+                        print(noora.format(
+                            "Using \(.primary("cardano-signer")) to derive the policy key")
+                        )
 
-                let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
-                let vkeyJSON = try await cli.key.nonExtendedKey(
-                    arguments: [
-                        "--extended-verification-key-file", tmpVKey.string,
-                        "--verification-key-file", "/dev/stdout"
-                    ]
-                )
+                        let signer = try await CardanoSigner(
+                            configuration: config.toSwiftCardanoUtilsConfig()
+                        )
 
-                var vkey = try JSONSerialization.jsonObject(
-                    with: vkeyJSON.toData,
-                    options: []
-                ) as! [String: String]
-                vkey["description"] = "Payment Verification Key"
-                let vkeyData = try JSONEncoder().encode(vkey)
+                        let responseJSON = try await signer.keygen(
+                            path: derivationPath,
+                            mnemonics: .words(mnemonics!),
+                            withChainCode: true,
+                            outputFormat: .jsonExtended,
+                            outSkey: policySKey
+                        )
 
-                do {
-                    try vkeyData.write(
-                        to: URL(fileURLWithPath: policyVKey.string),
-                        options: .atomic
-                    )
-                } catch {
-                    noora.error(
-                        .alert(
-                            "Could not write file: \(policyVKey.string). \(error)",
-                            takeaways: [
-                                "Make sure you have write permissions to the file path"
+                        let signerResponse = try JSONSerialization.jsonObject(
+                            with: responseJSON.toData,
+                            options: []
+                        ) as! [String: Any]
+
+                        let extendedVKeyJSON = (signerResponse["output"] as! [String: Any])["vkey"] as! [String: String]
+                        let extendedVKeyData = try JSONEncoder().encode(extendedVKeyJSON)
+
+                        let tmpDir = FilePath(FileManager.default.temporaryDirectory.path)
+                        let tmpVKey = tmpDir.appending("temp.policy.extended.vkey")
+                        try extendedVKeyData.write(
+                            to: URL(fileURLWithPath: tmpVKey.string),
+                            options: .atomic
+                        )
+
+                        let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
+                        let vkeyJSON = try await cli.key.nonExtendedKey(
+                            arguments: [
+                                "--extended-verification-key-file", tmpVKey.string,
+                                "--verification-key-file", "/dev/stdout"
                             ]
                         )
-                    )
-                    throw ExitCode.failure
+
+                        var vkey = try JSONSerialization.jsonObject(
+                            with: vkeyJSON.toData,
+                            options: []
+                        ) as! [String: String]
+                        vkey["description"] = "Payment Verification Key"
+                        let vkeyData = try JSONEncoder().encode(vkey)
+
+                        do {
+                            try vkeyData.write(
+                                to: URL(fileURLWithPath: policyVKey.string),
+                                options: .atomic
+                            )
+                        } catch {
+                            noora.error(
+                                .alert(
+                                    "Could not write file: \(policyVKey.string). \(error)",
+                                    takeaways: [
+                                        "Make sure you have write permissions to the file path"
+                                    ]
+                                )
+                            )
+                            throw ExitCode.failure
+                        }
                 }
 
                 try saveMnemonics(mnemonics!, to: policyMnemonics)
@@ -450,7 +472,8 @@ extension GenerateMainCommand {
             // MARK: - Compute key hash
 
             let keyHashHex: String
-            if tool == .swiftCardano, keyGenMethod == .cli || keyGenMethod == .enc {
+            if tool == .swiftCardano,
+               keyGenMethod == .cli || keyGenMethod == .enc || keyGenMethod == .mnemonics {
                 let vk: PaymentVerificationKey = try PaymentVerificationKey.load(
                     from: policyVKey.string
                 )
@@ -469,29 +492,17 @@ extension GenerateMainCommand {
 
             var validBefore: UInt64? = nil
             if let slotLimit {
-                let cli = try await CardanoCLI(
-                    configuration: config.toSwiftCardanoUtilsConfig()
+                let context = try await getContext(config: config)
+                try await printContextInfo(config: config, context: context)
+                
+                let (chainTip, _) = try await queryChainState(
+                    context: context,
+                    config: config
                 )
-                let chainTip = try await noora.progressStep(
-                    message: "Querying current chain tip...",
-                    successMessage: "Chain tip queried.",
-                    errorMessage: "Failed to query chain tip.",
-                    showSpinner: true
-                ) { _ in
-                    try await cli.query.tip()
-                }
 
-                guard let currentSlot = chainTip.slot else {
-                    noora.error(.alert(
-                        "Chain tip response did not include a slot number.",
-                        takeaways: ["Confirm the node is running and synced, then retry."]
-                    ))
-                    throw ExitCode.failure
-                }
-
-                validBefore = currentSlot + slotLimit
+                validBefore = UInt64(chainTip) + slotLimit
                 print(noora.format(
-                    "Policy expires at slot \(.primary(String(validBefore!))) (current tip: \(currentSlot), slot-limit: \(slotLimit))"
+                    "Policy expires at slot \(.primary(String(validBefore!))) (current tip: \(chainTip), slot-limit: \(slotLimit))"
                 ))
             }
 
