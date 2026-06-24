@@ -5,6 +5,9 @@ enum ConfigCommands: String, Subcommandable, AlignedChoiceDescribable {
     case `init`
     case show
     case select
+    case nodeConfig
+    case genesis
+    case topology
     case back
     case exit
 
@@ -13,6 +16,9 @@ enum ConfigCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .`init`: return "Initialize"
             case .show: return "Show"
             case .select: return "Select"
+            case .nodeConfig: return "Node Config"
+            case .genesis: return "Genesis"
+            case .topology: return "Topology"
             case .back: return "Back"
             case .exit: return "Exit"
         }
@@ -23,6 +29,9 @@ enum ConfigCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .`init`: return "Set up configuration for the first time or reset existing configuration."
             case .show: return "Display the current configuration."
             case .select: return "Choose configuration values."
+            case .nodeConfig: return "Show or set the node configuration file (config.json)."
+            case .genesis: return "Show genesis files (byron, shelley, alonzo, conway)."
+            case .topology: return "Show or set the topology file."
             case .back: return "Go back to the main menu."
             case .exit: return "Leave the program."
         }
@@ -47,6 +56,12 @@ enum ConfigCommands: String, Subcommandable, AlignedChoiceDescribable {
                 return ConfigMainCommand.Show.self
             case .select:
                 return ConfigMainCommand.Select.self
+            case .nodeConfig:
+                return ConfigMainCommand.NodeConfig.self
+            case .genesis:
+                return ConfigMainCommand.Genesis.self
+            case .topology:
+                return ConfigMainCommand.Topology.self
             case .back:
                 return MainMenuCommand.self
             case .exit:
