@@ -236,8 +236,10 @@ public struct MultitoolConfig: Codable, Sendable {
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.blockfrostProjectId = try container.decodeIfPresent(String.self, forKey: .blockfrostProjectId)
-        self.koiosApiKey = try container.decodeIfPresent(String.self, forKey: .koiosApiKey)
+        self.blockfrostProjectId = (try container.decodeIfPresent(String.self, forKey: .blockfrostProjectId))
+            .flatMap { $0.isEmpty ? nil : $0 }
+        self.koiosApiKey = (try container.decodeIfPresent(String.self, forKey: .koiosApiKey))
+            .flatMap { $0.isEmpty ? nil : $0 }
         self.cardano = try container.decodeIfPresent(CardanoConfig.self, forKey: .cardano)
         self.mithril = try container.decodeIfPresent(MithrilConfig.self, forKey: .mithril)
         self.ogmios = try container.decodeIfPresent(OgmiosConfig.self, forKey: .ogmios)
@@ -326,11 +328,11 @@ public struct MultitoolConfig: Codable, Sendable {
         
         self.blockfrostProjectId = config.string(
             forKey: CodingKeys.blockfrostProjectId.configKey
-        )
-        
+        ).flatMap { $0.isEmpty ? nil : $0 }
+
         self.koiosApiKey = config.string(
             forKey: CodingKeys.koiosApiKey.configKey
-        )
+        ).flatMap { $0.isEmpty ? nil : $0 }
         
         self.cardano = try? CardanoConfig(config: config)
         self.mithril = try? MithrilConfig(config: config)
@@ -428,8 +430,14 @@ public struct MultitoolConfig: Codable, Sendable {
         let cwd = FilePath(FileManager.default.currentDirectoryPath)
         var cardanoConfig = try CardanoConfig.default()
         cardanoConfig.network = network
-        return MultitoolConfig(
-            blockfrostProjectId: Environment.get(.blockfrostProjectId),
+        // Emit empty placeholders so the generated file always has a correctly
+        // scoped, top-level slot for these keys. In TOML a `key = value` line
+        // appended after a `[section]` header binds to that table, so without a
+        // visible top-level slot users tend to add `blockfrost_project_id` at
+        // the bottom where it is silently scoped into the last table and never
+        // read. Empty strings are treated as unset by the reader.
+        var config = MultitoolConfig(
+            blockfrostProjectId: Environment.get(.blockfrostProjectId) ?? "",
             cardano: cardanoConfig,
             mithril: try? MithrilConfig.default(),
             ogmios: try? OgmiosConfig.default(),
@@ -447,6 +455,8 @@ public struct MultitoolConfig: Codable, Sendable {
             baseRetryDelay: 200,
             byronToShelleyEpoch: 208
         )
+        config.koiosApiKey = ""
+        return config
     }
     
     /// Save the configuration to a file, using JSON or TOML based on the file extension.

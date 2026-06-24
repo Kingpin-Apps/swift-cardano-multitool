@@ -269,6 +269,52 @@ struct MultitoolConfigInitFromConfigTests {
         #expect(cfg.koiosApiKey == "koios-test-key")
     }
 
+    @Test("empty-string blockfrost_project_id / koios_api_key are treated as unset")
+    func emptyStringCredentialsTreatedAsNil() {
+        let provider = InMemoryProvider(
+            name: "test",
+            values: [
+                "blockfrost_project_id": "",
+                "koios_api_key": ""
+            ]
+        )
+        let reader = ConfigReader(provider: provider)
+        let cfg = MultitoolConfig(config: reader)
+        #expect(cfg.blockfrostProjectId == nil)
+        #expect(cfg.koiosApiKey == nil)
+    }
+
+    @Test("a top-level key appended after a [section] is scoped into that table, not top level")
+    func tomlKeyPlacementFootgun() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("scm-toml-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let topURL = dir.appendingPathComponent("top.toml")
+        try """
+        blockfrost_project_id = "bf-top"
+
+        [token_meta_server]
+        mainnet = "https://tokens.cardano.org/metadata/"
+        """.write(to: topURL, atomically: true, encoding: .utf8)
+
+        let bottomURL = dir.appendingPathComponent("bottom.toml")
+        try """
+        [token_meta_server]
+        mainnet = "https://tokens.cardano.org/metadata/"
+
+        blockfrost_project_id = "bf-bottom"
+        """.write(to: bottomURL, atomically: true, encoding: .utf8)
+
+        let top = try await MultitoolConfig.load(from: FilePath(topURL.path))
+        let bottom = try await MultitoolConfig.load(from: FilePath(bottomURL.path))
+        // Placed before any section header → read as the top-level key.
+        #expect(top.blockfrostProjectId == "bf-top")
+        // Appended after a section header → TOML scopes it into that table, so
+        // the top-level lookup finds nothing.
+        #expect(bottom.blockfrostProjectId == nil)
+    }
+
     @Test("token_meta_server.mainnet overrides the default mainnet URL")
     func tokenMetaServerOverride() {
         let provider = InMemoryProvider(
