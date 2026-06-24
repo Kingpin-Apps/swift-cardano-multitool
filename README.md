@@ -263,10 +263,31 @@ scm certificate move-instantaneous-rewards
 Manage your SCM configuration files.
 
 ```bash
-scm config init    # Interactive setup wizard — creates a new config file
-scm config show    # Display the current configuration
-scm config select  # Change individual configuration values interactively
+scm config init     # Interactive setup wizard — creates a new config file
+scm config show     # Show a configuration (scm, node config, genesis, topology)
+scm config set      # Set a configuration path (scm, node config, topology)
+scm config select   # Change individual configuration values interactively
 ```
+
+`config show` and `config set` take a type — `config`, `node-config`, `genesis`,
+or `topology`. Run them with no arguments to be prompted interactively.
+
+```bash
+# Show contents, or the resolved path with --path
+scm config show node-config            # node config.json contents
+scm config show node-config --path     # just the path to config.json
+scm config show genesis --era shelley  # Shelley genesis (resolved via the node config)
+scm config show config --path          # the active config file path
+
+# Set a path (saved into the active config; missing files only warn)
+scm config set node-config --path /etc/cardano/mainnet/config.json
+scm config set topology --path /etc/cardano/mainnet/topology.json
+```
+
+Genesis files are located via the node config, so `genesis` is show-only — set
+the node config path and genesis resolution follows. Node config and genesis
+files are pretty-printed structurally, so `show` keeps working as the Cardano
+node formats change between releases.
 
 ---
 

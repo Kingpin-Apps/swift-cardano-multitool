@@ -41,13 +41,70 @@ export CARDANO_MULTITOOL_CONFIG=~/.config/scm/mainnet.json
 
 ### show
 
-Display the currently loaded configuration in a readable format.
+Display a configuration's contents — or its resolved path — in a readable format.
 
 ```bash
-scm config show
+scm config show [<type>] [--era <era>] [--path]
 ```
 
-This reads the file pointed to by `CARDANO_MULTITOOL_CONFIG` (and any environment variable overrides) and prints all resolved values. Useful for verifying that your config is loaded correctly before running other commands.
+`<type>` selects what to show:
+
+| Type | Shows |
+| --- | --- |
+| `config` | The whole `scm` configuration (the file pointed to by `CARDANO_MULTITOOL_CONFIG`, with environment overrides applied). |
+| `node-config` | The Cardano node configuration (`config.json`) from `[cardano].config`. |
+| `genesis` | A genesis file. Requires `--era` (`byron`, `shelley`, `alonzo`, or `conway`); the path is resolved from the node config. |
+| `topology` | The node topology file from `[cardano].topology`. |
+
+Run `scm config show` with no type to be prompted interactively (and prompted for the era when you pick `genesis`).
+
+By default the file **contents** are printed. Genesis, node-config, and topology files are pretty-printed structurally, so they keep displaying correctly even as the Cardano node formats gain or drop fields between releases.
+
+Pass `--path` to print the resolved file **path** instead of the contents — handy for scripting:
+
+```bash
+scm config show node-config            # prints config.json contents
+scm config show node-config --path     # prints the path to config.json
+scm config show genesis --era shelley  # prints the Shelley genesis contents
+scm config show config --path          # prints the active config file path
+```
+
+Genesis files are located via the node config: each era's path is read from the
+node `config.json` (e.g. `ShelleyGenesisFile`) and resolved relative to it. Set
+the node config path first (see the `set` subcommand below) so genesis
+resolution works.
+
+### set
+
+Store the path to a configuration file in the active configuration.
+
+```bash
+scm config set [<type>] [--path <path>]
+```
+
+`<type>` selects what to set:
+
+| Type | Sets |
+| --- | --- |
+| `config` | The active `scm` configuration (`CARDANO_MULTITOOL_CONFIG`). Applies to the current session; export the variable to persist it across shells. |
+| `node-config` | The `[cardano].config` path (node `config.json`). |
+| `topology` | The `[cardano].topology` path. |
+
+```bash
+scm config set node-config --path /etc/cardano/mainnet/config.json
+scm config set topology --path /etc/cardano/mainnet/topology.json
+```
+
+Run `scm config set` with no type or path to be prompted interactively.
+
+Genesis files cannot be set directly — their paths are derived from the node
+config — so `genesis` is not a settable type. Point `set node-config` at the
+right `config.json` and genesis resolution follows.
+
+A missing target file is only a warning, not an error: the path is still saved so
+you can configure paths before the files exist. Writing `node-config`/`topology`
+re-saves the active config file in its existing format (`.json`/`.toml`/`.yaml`),
+which reorders keys and drops any comments.
 
 ### select
 
