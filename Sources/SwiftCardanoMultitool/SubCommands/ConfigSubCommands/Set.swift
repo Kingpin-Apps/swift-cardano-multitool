@@ -16,7 +16,7 @@ extension ConfigMainCommand {
             """
         )
 
-        @Argument(help: "What to set: config, node-config, or topology.")
+        @Argument(help: "What to set: config, node, or topology.")
         var type: ConfigTarget?
 
         @Option(name: .long, help: "Path to set. If omitted, you'll be prompted.")
@@ -65,7 +65,7 @@ extension ConfigMainCommand {
                         )
                     )
 
-                case .nodeConfig:
+                case .node:
                     warnIfPathMissing(path, label: "Node config")
                     try await updateActiveCardanoConfig { $0.config = path }
                     noora.success(.alert("Node config path set to \(.primary(path.string))."))
@@ -81,7 +81,7 @@ extension ConfigMainCommand {
                             "Genesis files can't be set directly.",
                             takeaways: [
                                 "Genesis paths are derived from the node config.",
-                                "Set the node config with \(.command("scm config set node-config --path <path>")).",
+                                "Set the node config with \(.command("scm config set node --path <path>")).",
                             ]
                         )
                     )

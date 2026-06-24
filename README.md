@@ -269,18 +269,18 @@ scm config set      # Set a configuration path (scm, node config, topology)
 scm config select   # Change individual configuration values interactively
 ```
 
-`config show` and `config set` take a type — `config`, `node-config`, `genesis`,
+`config show` and `config set` take a type — `config`, `node`, `genesis`,
 or `topology`. Run them with no arguments to be prompted interactively.
 
 ```bash
 # Show contents, or the resolved path with --path
-scm config show node-config            # node config.json contents
-scm config show node-config --path     # just the path to config.json
+scm config show node                   # node config.json contents
+scm config show node --path            # just the path to config.json
 scm config show genesis --era shelley  # Shelley genesis (resolved via the node config)
 scm config show config --path          # the active config file path
 
 # Set a path (saved into the active config; missing files only warn)
-scm config set node-config --path /etc/cardano/mainnet/config.json
+scm config set node --path /etc/cardano/mainnet/config.json
 scm config set topology --path /etc/cardano/mainnet/topology.json
 ```
 

@@ -7,14 +7,14 @@ import SwiftCardanoUtils
 /// A configuration that `config show` / `config set` can operate on.
 enum ConfigTarget: String, ExpressibleByArgument, CaseIterable, AlignedChoiceDescribable, Sendable {
     case config
-    case nodeConfig = "node-config"
+    case node
     case genesis
     case topology
 
     var name: String {
         switch self {
             case .config: return "Configuration"
-            case .nodeConfig: return "Node Config"
+            case .node: return "Node Config"
             case .genesis: return "Genesis"
             case .topology: return "Topology"
         }
@@ -23,7 +23,7 @@ enum ConfigTarget: String, ExpressibleByArgument, CaseIterable, AlignedChoiceDes
     var details: String {
         switch self {
             case .config: return "The scm multitool configuration itself."
-            case .nodeConfig: return "The Cardano node configuration (config.json)."
+            case .node: return "The Cardano node configuration (config.json)."
             case .genesis: return "A genesis file (byron, shelley, alonzo, conway)."
             case .topology: return "The Cardano node topology file."
         }
@@ -31,7 +31,7 @@ enum ConfigTarget: String, ExpressibleByArgument, CaseIterable, AlignedChoiceDes
 
     /// Targets whose path can be set. Genesis is derived from the node config and
     /// therefore not independently settable.
-    static var settableCases: [ConfigTarget] { [.config, .nodeConfig, .topology] }
+    static var settableCases: [ConfigTarget] { [.config, .node, .topology] }
 }
 
 /// A Cardano genesis era, used to locate the matching genesis file in the node
@@ -116,7 +116,7 @@ func resolveNodeConfigPath(config: MultitoolConfig) throws -> FilePath {
         .alert(
             "No node config path is set.",
             takeaways: [
-                "Store one with \(.command("scm config set node-config --path <path>")).",
+                "Store one with \(.command("scm config set node --path <path>")).",
             ]
         )
     )

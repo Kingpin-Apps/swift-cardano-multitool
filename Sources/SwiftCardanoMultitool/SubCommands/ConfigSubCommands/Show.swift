@@ -16,7 +16,7 @@ extension ConfigMainCommand {
             """
         )
 
-        @Argument(help: "What to show: config, node-config, genesis, or topology.")
+        @Argument(help: "What to show: config, node, genesis, or topology.")
         var type: ConfigTarget?
 
         @Option(name: .shortAndLong, help: "Genesis era (byron, shelley, alonzo, conway). Only used with 'genesis'.")
@@ -75,7 +75,7 @@ extension ConfigMainCommand {
                         try printMultitoolConfig(config)
                     }
 
-                case .nodeConfig:
+                case .node:
                     let resolved = try resolveNodeConfigPath(config: config)
                     if path { print(resolved.string) }
                     else { try printJSONFile(at: resolved, label: "Node Config") }
