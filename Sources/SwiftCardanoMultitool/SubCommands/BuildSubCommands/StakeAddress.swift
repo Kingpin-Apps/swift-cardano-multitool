@@ -124,6 +124,10 @@ extension BuildMainCommand {
             
             let config = try await MultitoolConfig.load()
             
+            if tool == nil {
+                tool = try await getToolToUse()
+            }
+
             try await printToolInfo(config: config, tool: tool!)
             
             let address: Address

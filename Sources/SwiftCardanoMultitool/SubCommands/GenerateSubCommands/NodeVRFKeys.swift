@@ -62,6 +62,10 @@ extension GenerateMainCommand {
             
             let config = try await MultitoolConfig.load()
             
+            if tool == nil {
+                tool = try await getToolToUse()
+            }
+
             try await printToolInfo(config: config, tool: tool!)
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)

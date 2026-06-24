@@ -822,6 +822,18 @@ func getOptionalAnchor(purpose: String = "metadata") async throws -> Anchor? {
     return Anchor(anchorUrl: anchorUrl, anchorDataHash: anchorDataHash)
 }
 
+/// Whether the process can interactively prompt the user.
+///
+/// Returns `false` when standard input is not a TTY (e.g. piped/scripted/CI) or
+/// when prompts have been explicitly suppressed via `CARDANO_MULTITOOL_SKIP_PROMPT`.
+/// Callers should use this to pick a sensible default (or throw a clear error)
+/// instead of calling a Noora prompt, which aborts the process with a fatal
+/// error when it cannot prompt.
+func isInteractiveSession() -> Bool {
+    return isatty(FileHandle.standardInput.fileDescriptor) != 0
+        && !Environment.getBool(Environment.skipPrompt)
+}
+
 /// Prompt user to select which tool to use for generating keys (cardano-cli or SwiftCardano).
 /// - Returns: Tool enum value indicating the selected tool.
 func getToolToUse() async throws -> Tool {
@@ -829,6 +841,11 @@ func getToolToUse() async throws -> Tool {
         return .cardanoCLI
     }
     else if Environment.getBool(Environment.useSwiftCardano) {
+        return .swiftCardano
+    } else if !isInteractiveSession() {
+        // Non-interactive (piped/scripted or CARDANO_MULTITOOL_SKIP_PROMPT):
+        // default to the built-in SwiftCardano path rather than aborting on a
+        // prompt that cannot be displayed.
         return .swiftCardano
     } else {
         return noora.singleChoicePrompt(

@@ -43,7 +43,7 @@ extension GenerateMainCommand {
         
         mutating func validate() throws {
             switch keyGenMethod {
-                case .hw, .hwMulti, .hybrid, .hybridMulti, .hybridEnc, .hybridMultiEnc:
+                case .mnemonics, .hw, .hwMulti, .hybrid, .hybridMulti, .hybridEnc, .hybridMultiEnc:
                     if  subAccount == nil{
                         subAccount = 0
                     }
@@ -153,9 +153,17 @@ extension GenerateMainCommand {
             if addressName == nil && keyGenMethod == nil {
                 try await self.wizard()
             }
-            
+
+            // Apply defaults and resolve the tool even when the wizard was
+            // skipped (partial args / non-interactive) so optionals aren't
+            // force-unwrapped while nil.
+            try self.validate()
+            if tool == nil {
+                tool = try await getToolToUse()
+            }
+
             let config = try await MultitoolConfig.load()
-            
+
             try await printToolInfo(config: config, tool: tool!)
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)

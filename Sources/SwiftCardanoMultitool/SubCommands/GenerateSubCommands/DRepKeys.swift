@@ -160,6 +160,14 @@ extension GenerateMainCommand {
                 try await self.wizard()
             }
 
+            // Apply defaults and resolve the tool even when the wizard was
+            // skipped (partial args / non-interactive) so optionals aren't
+            // force-unwrapped while nil.
+            try self.validate()
+            if tool == nil {
+                tool = try await getToolToUse()
+            }
+
             let config = try await MultitoolConfig.load()
 
             try await printToolInfo(config: config, tool: tool!)
