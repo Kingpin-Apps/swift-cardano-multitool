@@ -747,10 +747,25 @@ extension GenerateMainCommand {
         }
         
         mutating func run() async throws {
+            // This command gathers pledge, margin, cost, metadata, and key file
+            // paths interactively (no CLI flags exist for them yet), so fail with
+            // a clear message instead of aborting deep inside a Noora prompt when
+            // there is no interactive terminal.
+            guard isInteractiveSession() else {
+                noora.error(.alert(
+                    "'generate pool-json' requires an interactive terminal.",
+                    takeaways: [
+                        "It prompts for pledge, margin, cost, metadata, and key files, which have no command-line flags yet.",
+                        "Run it in an interactive shell (not piped/CI), and make sure CARDANO_MULTITOOL_SKIP_PROMPT is not set."
+                    ]
+                ))
+                throw ExitCode.validationFailure
+            }
+
             if poolName == nil {
                 try await self.wizard()
             }
-            
+
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
             let poolFile = cwd.appending("\(poolName!).pool.json")
             

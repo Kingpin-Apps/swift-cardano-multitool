@@ -39,17 +39,31 @@ extension ProtectMainCommand {
         }
         
         mutating func run() async throws {
+            // Decryption needs an interactive password prompt (no flag for it),
+            // so fail clearly instead of aborting inside a prompt when there is
+            // no interactive terminal.
+            guard isInteractiveSession() else {
+                noora.error(.alert(
+                    "'protect decrypt' requires an interactive terminal.",
+                    takeaways: [
+                        "It prompts for the decryption password, which has no command-line flag.",
+                        "Run it in an interactive shell (not piped/CI), and make sure CARDANO_MULTITOOL_SKIP_PROMPT is not set."
+                    ]
+                ))
+                throw ExitCode.validationFailure
+            }
+
             if fileName == nil {
                 try await self.wizard()
             }
-            
+
             guard let fileName = fileName else {
                 noora.error(.alert("File name is required."))
                 throw ExitCode.failure
             }
             
             print(noora.format(
-                "SKEY-File that will be decrypted: \(.path(try .init(validating: fileName.string)))\n"
+                "SKEY-File that will be decrypted: \(.primary(fileName.string))\n"
             ))
             
             var skey = try await TextEnvelope.load(from: fileName)
@@ -102,7 +116,7 @@ extension ProtectMainCommand {
                 throw ExitCode.success
             }
             
-            spacedPrint("Writing the file \(.path(try .init(validating: fileName.string))) to disc ... ")
+            spacedPrint("Writing the file \(.primary(fileName.string)) to disc ... ")
             
             let data = try JSONEncoder().encode(skey)
             
@@ -123,7 +137,7 @@ extension ProtectMainCommand {
                 throw ExitCode.failure
             }
             
-            noora.success(.alert("Decrypted SKEY-File saved successfully to disc at \(.path(try .init(validating: fileName.string)))."))
+            noora.success(.alert("Decrypted SKEY-File saved successfully to disc at \(.primary(fileName.string))."))
             try noora.json(savedSKey)
         }
     }

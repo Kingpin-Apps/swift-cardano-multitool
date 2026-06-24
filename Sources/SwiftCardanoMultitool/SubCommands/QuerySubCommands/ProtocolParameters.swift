@@ -52,7 +52,13 @@ extension QueryMainCommand {
         
         mutating func run() async throws {
             if fileName == nil && save {
-                try await wizard()
+                if isInteractiveSession() {
+                    try await wizard()
+                } else {
+                    // Non-interactive (piped/scripted/SKIP_PROMPT): don't prompt.
+                    // Display only unless a file name was provided explicitly.
+                    save = false
+                }
             }
             
             let config = try await MultitoolConfig.load()
