@@ -14,7 +14,7 @@ extension CertificateMainCommand {
             commandName: "stake-address-registration",
             abstract: "Generates a stake address registration certificate.",
             usage: """
-            scm certificate stake-registration --stake-address test
+            scm certificate stake-address-registration --stake-address test
             """,
             discussion: """
             Creates a stake address registration certificate for the specified 

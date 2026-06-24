@@ -15,7 +15,7 @@ extension CertificateMainCommand {
             commandName: "stake-address-deregistration",
             abstract: "Generates a stake address deregistration certificate.",
             usage: """
-            scm certificate stake-deregistration --stake-address test
+            scm certificate stake-address-deregistration --stake-address test
             """,
             discussion: """
             Creates a stake address deregistration certificate named 

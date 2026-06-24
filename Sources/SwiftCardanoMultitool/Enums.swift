@@ -374,9 +374,9 @@ public enum Tool: CaseIterable, CustomStringConvertible, ExpressibleByArgument, 
     public init?(argument: String) {
         let trimmed = argument.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         switch trimmed {
-            case "swiftcardano", "swift-cardano", "swift_cardano":
+            case "swiftcardano", "swift-cardano", "swift_cardano", "swift cardano":
                 self = .swiftCardano
-            case "cardanocli", "cardano-cli", "cardano_cli":
+            case "cardanocli", "cardano-cli", "cardano_cli", "cardano cli":
                 self = .cardanoCLI
             default:
                 return nil

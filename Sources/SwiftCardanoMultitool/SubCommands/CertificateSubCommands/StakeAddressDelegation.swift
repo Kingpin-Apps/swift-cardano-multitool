@@ -15,7 +15,7 @@ extension CertificateMainCommand {
             commandName: "stake-address-delegation",
             abstract: "Generates a stake delegation certificate.",
             usage: """
-            scm certificate stake-delegation --stake-address test --pool-operator pool1xyz
+            scm certificate stake-address-delegation --stake-address test --pool-operator pool1xyz
             """,
             discussion: """
             Creates a stake address delegation certificate which delegates the 
