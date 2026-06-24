@@ -4,6 +4,36 @@ import Noora
 import SystemPackage
 import SwiftCardanoUtils
 
+/// A configuration that `config show` / `config set` can operate on.
+enum ConfigTarget: String, ExpressibleByArgument, CaseIterable, AlignedChoiceDescribable, Sendable {
+    case config
+    case nodeConfig = "node-config"
+    case genesis
+    case topology
+
+    var name: String {
+        switch self {
+            case .config: return "Configuration"
+            case .nodeConfig: return "Node Config"
+            case .genesis: return "Genesis"
+            case .topology: return "Topology"
+        }
+    }
+
+    var details: String {
+        switch self {
+            case .config: return "The scm multitool configuration itself."
+            case .nodeConfig: return "The Cardano node configuration (config.json)."
+            case .genesis: return "A genesis file (byron, shelley, alonzo, conway)."
+            case .topology: return "The Cardano node topology file."
+        }
+    }
+
+    /// Targets whose path can be set. Genesis is derived from the node config and
+    /// therefore not independently settable.
+    static var settableCases: [ConfigTarget] { [.config, .nodeConfig, .topology] }
+}
+
 /// A Cardano genesis era, used to locate the matching genesis file in the node
 /// configuration.
 enum GenesisEra: String, ExpressibleByArgument, CaseIterable, CustomStringConvertible, Sendable {
@@ -70,53 +100,49 @@ func printJSONFile(at path: FilePath, label: TerminalText) throws {
     print("\n")
 }
 
-/// Resolve the node `config.json` path, preferring an explicit option and
-/// falling back to the `config` field of the active config's `[cardano]` section.
-func resolveNodeConfigPath(explicit: FilePath?, config: MultitoolConfig) throws -> FilePath {
-    if let explicit { return explicit }
+/// Pretty-print the whole multitool configuration as JSON.
+func printMultitoolConfig(_ config: MultitoolConfig) throws {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+    try noora.json(config, encoder: encoder)
+    print("\n\n")
+}
+
+/// Resolve the node `config.json` path from the active config's `[cardano]` section.
+func resolveNodeConfigPath(config: MultitoolConfig) throws -> FilePath {
     if let path = config.cardano?.config { return path }
 
     noora.error(
         .alert(
-            "No node config path is available.",
+            "No node config path is set.",
             takeaways: [
-                "Pass one explicitly with \(.command("--path")).",
-                "Or store one with \(.command("scm config node-config set <path>")).",
+                "Store one with \(.command("scm config set node-config --path <path>")).",
             ]
         )
     )
     throw ExitCode.failure
 }
 
-/// Resolve the topology file path, preferring an explicit option and falling back
-/// to the `topology` field of the active config's `[cardano]` section.
-func resolveTopologyPath(explicit: FilePath?, config: MultitoolConfig) throws -> FilePath {
-    if let explicit { return explicit }
+/// Resolve the topology file path from the active config's `[cardano]` section.
+func resolveTopologyPath(config: MultitoolConfig) throws -> FilePath {
     if let path = config.cardano?.topology { return path }
 
     noora.error(
         .alert(
-            "No topology path is available.",
+            "No topology path is set.",
             takeaways: [
-                "Pass one explicitly with \(.command("--path")).",
-                "Or store one with \(.command("scm config topology set <path>")).",
+                "Store one with \(.command("scm config set topology --path <path>")).",
             ]
         )
     )
     throw ExitCode.failure
 }
 
-/// Resolve a genesis file path for `era`, either from an explicit option or by
-/// reading the era's `*GenesisFile` entry out of the node config and resolving it
-/// relative to the node config's own directory.
-func resolveGenesisPath(
-    era: GenesisEra,
-    explicit: FilePath?,
-    config: MultitoolConfig
-) throws -> FilePath {
-    if let explicit { return explicit }
-
-    let nodeConfigPath = try resolveNodeConfigPath(explicit: nil, config: config)
+/// Resolve a genesis file path for `era` by reading the era's `*GenesisFile`
+/// entry out of the node config and resolving it relative to the node config's
+/// own directory.
+func resolveGenesisPath(era: GenesisEra, config: MultitoolConfig) throws -> FilePath {
+    let nodeConfigPath = try resolveNodeConfigPath(config: config)
 
     guard FileManager.default.fileExists(atPath: nodeConfigPath.string) else {
         noora.error(
@@ -124,7 +150,6 @@ func resolveGenesisPath(
                 "Node config file not found, so the genesis path can't be resolved.",
                 takeaways: [
                     "Expected the node config at: \(.primary(nodeConfigPath.string))",
-                    "Pass the genesis file directly with \(.command("--path")).",
                 ]
             )
         )
@@ -140,7 +165,7 @@ func resolveGenesisPath(
             .alert(
                 "Could not find \(.primary(era.nodeConfigKey)) in the node config.",
                 takeaways: [
-                    "Pass the genesis file directly with \(.command("--path")).",
+                    "Make sure the node config references the \(.primary(era.rawValue)) genesis file.",
                 ]
             )
         )
