@@ -15,11 +15,11 @@ func printDivider(_ char: Character = "-") {
     func terminalWidth() -> Int {
         var size = winsize()
         // glibc types ioctl's request as UInt; Darwin accepts TIOCGWINSZ directly.
-        #if canImport(Glibc)
+#if canImport(Glibc)
         let request = UInt(TIOCGWINSZ)
-        #else
+#else
         let request = TIOCGWINSZ
-        #endif
+#endif
         if ioctl(STDOUT_FILENO, request, &size) == 0 {
             return Int(size.ws_col)
         }
@@ -39,26 +39,38 @@ public enum Contexts {
     @TaskLocal public static var override: (any ChainContext)?
 }
 
+/// Wraps a failure that occurred *after* Lite mode was already attempted, so the
+/// auto-mode fallback chain doesn't redundantly retry Lite mode a second time.
+private struct LiteModeFallbackError: Error {
+    let underlying: Error
+}
+
 /// Get the appropriate chain context based on the multitool configuration
 /// - Parameter config: The multitool configuration
 /// - Returns: An instance of `ChainContext`
 public func getContext(config: MultitoolConfig) async throws -> any ChainContext {
-
+    
     if let override = Contexts.override {
         return override
     }
-
-    func fallbackToLiteMode(config: MultitoolConfig) async throws -> any ChainContext {
+    
+    func fallbackToLiteMode(config: MultitoolConfig, syncProgress: Double? = nil) async throws -> any ChainContext {
         noora.warning(
             .alert(
-                "\(.danger("The node is not synced."))",
+                "\(.danger("The node is not synced. Sync progress: \(syncProgress ?? 0)%."))",
                 takeaway: "Falling back to \(.primary("Lite")) mode."
             )
         )
         
         print()
         
-        return try await getLiteContext(config: config)
+        do {
+            return try await getLiteContext(config: config)
+        } catch {
+            // Signal that Lite mode has already been attempted so the auto-mode
+            // handler doesn't retry it a second time.
+            throw LiteModeFallbackError(underlying: error)
+        }
     }
     
     func getOnlineContext(config: MultitoolConfig) async throws -> any ChainContext {
@@ -100,8 +112,8 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
                 } else {
                     return nodeSocketContext
                 }
-            } catch SwiftCardanoUtilsError.nodeNotSynced {
-                return try await fallbackToLiteMode(config: config)
+            } catch SwiftCardanoUtilsError.nodeNotSynced(let syncProgress) {
+                return try await fallbackToLiteMode(config: config, syncProgress: syncProgress)
             }
         } else if let ogmiosConfig = config.ogmios {
             return try await OgmiosChainContext(
@@ -154,14 +166,38 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
                 return try await getOnlineContext(config: config)
             }
             catch {
-                do {
-                    return try await getLiteContext(config: config)
-                } catch {
+                // Resolve the Lite-mode failure, attempting Lite mode only if
+                // the online path didn't already do so (avoids a redundant,
+                // duplicate-logging second attempt).
+                let liteError: Error
+                if let alreadyTried = error as? LiteModeFallbackError {
+                    liteError = alreadyTried.underlying
+                } else {
+                    do {
+                        return try await getLiteContext(config: config)
+                    } catch {
+                        liteError = error
+                    }
+                }
+                
+                // Only cascade to offline mode if an offline transfer file
+                // actually exists. Otherwise surface the real Lite-mode failure
+                // rather than a confusing missing/undecodable
+                // offline-transfer.json error — the offline file should only be
+                // required when we genuinely fall back to offline mode.
+                if let offlineFile = config.offlineFile,
+                   FileManager.default.fileExists(atPath: offlineFile.string) {
                     return try await getOfflineContext(config: config)
                 }
+                throw liteError
             }
         case .online:
-            return try await getOnlineContext(config: config)
+            do {
+                return try await getOnlineContext(config: config)
+            } catch let error as LiteModeFallbackError {
+                // Surface the underlying Lite-mode error, not the internal wrapper.
+                throw error.underlying
+            }
         case .lite:
             return try await getLiteContext(config: config)
         case .offline:
@@ -198,7 +234,7 @@ public func stakeAddressInfoSummary(
         } else {
             stakeDelegation = .primary(try info.stakeDelegation!.id())
         }
-            
+        
         rows.append([
             .plain("\(idx + 1)"),
             .primary("\(lovelaceToAdaString(UInt64(info.rewardAccountBalance))) (\(info.rewardAccountBalance) lovelaces)"),
@@ -400,16 +436,16 @@ public func utxoSummary(
             
             var displayName: String {
                 switch self {
-                case .adaHandleCIP68(let handle):
-                    return "ADA Handle(Own): $\(handle)"
-                case .adaHandleVirtual(let handle):
-                    return "ADA Handle(Vir): $\(handle)"
-                case .adaHandleReference(let handle):
-                    return "ADA Handle(Ref): $\(handle)"
-                case .adaHandleCIP25(let handle):
-                    return "ADA Handle: $\(handle)"
-                case .standard:
-                    return ""
+                    case .adaHandleCIP68(let handle):
+                        return "ADA Handle(Own): $\(handle)"
+                    case .adaHandleVirtual(let handle):
+                        return "ADA Handle(Vir): $\(handle)"
+                    case .adaHandleReference(let handle):
+                        return "ADA Handle(Ref): $\(handle)"
+                    case .adaHandleCIP25(let handle):
+                        return "ADA Handle: $\(handle)"
+                    case .standard:
+                        return ""
                 }
             }
         }
@@ -478,40 +514,40 @@ public func utxoSummary(
                         let prefix = assetNameHex.prefix(8)
                         
                         switch prefix {
-                        case "000de140":  // CIP-68 (Own)
-                            let handleName = String(assetNameHex.dropFirst(8))
-                            let handleBytes = Data(hex: handleName)
-                            if let handleStr = String(data: handleBytes, encoding: .utf8) {
-                                assetType = .adaHandleCIP68(handleStr)
-                            } else {
-                                assetType = .standard
-                            }
-                            
-                        case "00000000":  // Virtual
-                            let handleName = String(assetNameHex.dropFirst(8))
-                            let handleBytes = Data(hex: handleName)
-                            if let handleStr = String(data: handleBytes, encoding: .utf8) {
-                                assetType = .adaHandleVirtual(handleStr)
-                            } else {
-                                assetType = .standard
-                            }
-                            
-                        case "000643b0":  // Reference
-                            let handleName = String(assetNameHex.dropFirst(8))
-                            let handleBytes = Data(hex: handleName)
-                            if let handleStr = String(data: handleBytes, encoding: .utf8) {
-                                assetType = .adaHandleReference(handleStr)
-                            } else {
-                                assetType = .standard
-                            }
-                            
-                        default:  // CIP-25 (standard ADA Handle)
-                            let handleBytes = Data(hex: assetNameHex)
-                            if let handleStr = String(data: handleBytes, encoding: .utf8) {
-                                assetType = .adaHandleCIP25(handleStr)
-                            } else {
-                                assetType = .standard
-                            }
+                            case "000de140":  // CIP-68 (Own)
+                                let handleName = String(assetNameHex.dropFirst(8))
+                                let handleBytes = Data(hex: handleName)
+                                if let handleStr = String(data: handleBytes, encoding: .utf8) {
+                                    assetType = .adaHandleCIP68(handleStr)
+                                } else {
+                                    assetType = .standard
+                                }
+                                
+                            case "00000000":  // Virtual
+                                let handleName = String(assetNameHex.dropFirst(8))
+                                let handleBytes = Data(hex: handleName)
+                                if let handleStr = String(data: handleBytes, encoding: .utf8) {
+                                    assetType = .adaHandleVirtual(handleStr)
+                                } else {
+                                    assetType = .standard
+                                }
+                                
+                            case "000643b0":  // Reference
+                                let handleName = String(assetNameHex.dropFirst(8))
+                                let handleBytes = Data(hex: handleName)
+                                if let handleStr = String(data: handleBytes, encoding: .utf8) {
+                                    assetType = .adaHandleReference(handleStr)
+                                } else {
+                                    assetType = .standard
+                                }
+                                
+                            default:  // CIP-25 (standard ADA Handle)
+                                let handleBytes = Data(hex: assetNameHex)
+                                if let handleStr = String(data: handleBytes, encoding: .utf8) {
+                                    assetType = .adaHandleCIP25(handleStr)
+                                } else {
+                                    assetType = .standard
+                                }
                         }
                     } else {
                         // Regular asset
@@ -608,9 +644,9 @@ public func utxoSummary(
                 // Display asset name based on type
                 switch asset.assetType {
                     case .adaHandleCIP68(_),
-                         .adaHandleVirtual(_),
-                         .adaHandleReference(_),
-                         .adaHandleCIP25(_):
+                            .adaHandleVirtual(_),
+                            .adaHandleReference(_),
+                            .adaHandleCIP25(_):
                         cellStyle = .accent("\(asset.assetType.displayName)")
                         
                     case .standard:
@@ -643,7 +679,7 @@ public func utxoSummary(
 /// - Throws: An error if the version cannot be retrieved or if the configuration is invalid
 public func getVersionAndInfoText(config: MultitoolConfig) async throws -> (String, TerminalText) {
     let infoString: TerminalText
-
+    
     let cardanoConfig = try getCardanoConfig(config: config)
     if cardanoConfig.network == .mainnet {
         infoString = "\(.success("\(cardanoConfig.network.description.capitalized)"))"
@@ -655,7 +691,7 @@ public func getVersionAndInfoText(config: MultitoolConfig) async throws -> (Stri
         }
         infoString = "\(.danger("Testnet: \(cardanoConfig.network.description.capitalized)")) \(.danger("(magic \(testnetMagic))"))"
     }
-
+    
     return (Version.number, infoString)
 }
 
@@ -687,7 +723,7 @@ public func printToolInfo(
             
         case .swiftCardano:
             let swiftCardanoVersion = SwiftCardanoCore.version!
-
+            
             takeaways
                 .insert(
                     "SwiftCardanoCore: \(.primary(String(describing: swiftCardanoVersion)))",
