@@ -140,7 +140,7 @@ extension TransactionMainCommand {
                 || scriptDataValue != nil
                 || scriptDataCborHex != nil
 
-            if !hasInput {
+            if !hasInput , isInteractiveSession() {
                 try await wizard()
             }
 

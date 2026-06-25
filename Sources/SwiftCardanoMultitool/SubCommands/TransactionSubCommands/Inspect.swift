@@ -52,7 +52,7 @@ extension TransactionMainCommand {
         // MARK: - Run
 
         mutating func run() async throws {
-            if txFile == nil && cborHex == nil {
+            if txFile == nil && cborHex == nil , isInteractiveSession() {
                 try await wizard()
             }
             

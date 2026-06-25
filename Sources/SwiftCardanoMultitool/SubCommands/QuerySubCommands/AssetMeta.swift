@@ -35,7 +35,7 @@ extension QueryMainCommand {
         }
 
         mutating func run() async throws {
-            if asset == nil {
+            if asset == nil && isInteractiveSession() {
                 try await wizard()
             }
             guard let asset else {

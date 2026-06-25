@@ -48,7 +48,7 @@ extension TransactionMainCommand {
         
         mutating func run() async throws {
             // If no arguments provided, run wizard
-            if txFile == nil && cborHex == nil {
+            if txFile == nil && cborHex == nil , isInteractiveSession() {
                 try await wizard()
             }
             

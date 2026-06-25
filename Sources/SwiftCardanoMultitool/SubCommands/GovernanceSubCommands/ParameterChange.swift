@@ -88,7 +88,7 @@ extension GovernanceMainCommand {
             if paramUpdateJson == nil
                 || actionOptions.depositReturnStakeAddress == nil
                 || transactionOptions.feePaymentAddress == nil
-                || (actionOptions.anchorUrl == nil && actionOptions.anchorHash == nil) {
+                || (actionOptions.anchorUrl == nil && actionOptions.anchorHash == nil) , isInteractiveSession() {
                 try await wizard()
             }
 

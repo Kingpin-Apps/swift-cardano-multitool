@@ -89,6 +89,9 @@ func enterAssetMetaBy(title: TerminalText? = nil) async throws -> EnterAssetMeta
 /// - Returns: StakeAddressInfo of the selected stake address.
 /// - Throws: ExitCode.failure if no stake address files are found.
 func getStakeAddress(title: TerminalText? = nil) async throws -> StakeAddressInfo {
+    guard isInteractiveSession() else {
+        throw ValidationError("A stake address is required when not running interactively. Provide it via the corresponding flag/argument.")
+    }
     let cwd = FilePath(FileManager.default.currentDirectoryPath)
     let stakingFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
         .filter { $0.hasSuffix(".stake.addr") }
@@ -195,6 +198,9 @@ func getDestinationAddress(title: TerminalText? = nil) async throws -> PaymentAd
 /// - Returns: PaymentAddressInfo of the selected fee payment address.
 /// - Throws: ExitCode.failure if no payment address files are found.
 func getFeePaymentAddress(title: TerminalText? = nil) async throws -> PaymentAddressInfo {
+    guard isInteractiveSession() else {
+        throw ValidationError("A fee payment address is required when not running interactively. Provide --fee-payment-address.")
+    }
     let addressBy = try await getAddressBy(title: title)
     
     let info: AddressInfo
@@ -795,6 +801,9 @@ func getDRepCredential(title: TerminalText? = nil) async throws -> DRepCredentia
 /// - Parameter purpose: Describes the context (e.g. "DRep registration", "committee resignation").
 /// - Returns: Anchor if user confirmed, nil otherwise.
 func getOptionalAnchor(purpose: String = "metadata") async throws -> Anchor? {
+    // Non-interactive: no anchor is supplied here. Callers that require one
+    // (e.g. governance actions) surface their own clear error.
+    guard isInteractiveSession() else { return nil }
     let include = noora.yesOrNoChoicePrompt(
         title: "Include Anchor",
         question: "Include \(purpose) anchor (URL + hash)?",

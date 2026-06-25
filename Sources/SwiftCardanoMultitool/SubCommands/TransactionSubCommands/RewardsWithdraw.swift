@@ -111,7 +111,7 @@ extension TransactionMainCommand {
         
         mutating func run() async throws {
             // If no arguments provided, run wizard
-            if stakeAddress == nil && transactionOptions.feePaymentAddress == nil {
+            if stakeAddress == nil && transactionOptions.feePaymentAddress == nil , isInteractiveSession() {
                 try await self.wizard()
             }
             

@@ -113,8 +113,8 @@ extension TransactionSendable {
             )
         }
         
-        // Messages (optional)
-        let includeMessages = noora.yesOrNoChoicePrompt(
+        // Messages (optional) — skipped (default) when non-interactive.
+        let includeMessages = isInteractiveSession() && noora.yesOrNoChoicePrompt(
             title: "Transaction Messages",
             question: "Include transaction messages?",
             defaultAnswer: false,
@@ -179,8 +179,8 @@ extension TransactionSendable {
             }
         }
         
-        // Step 6: Metadata JSON files (optional)
-        let includeMetadataJson = noora.yesOrNoChoicePrompt(
+        // Step 6: Metadata JSON files (optional) — skipped when non-interactive.
+        let includeMetadataJson = isInteractiveSession() && noora.yesOrNoChoicePrompt(
             title: "Metadata JSON",
             question: "Include JSON metadata files?",
             defaultAnswer: false,
@@ -219,7 +219,7 @@ extension TransactionSendable {
             }
         }
         
-        let includeMetadataCbor = noora.yesOrNoChoicePrompt(
+        let includeMetadataCbor = isInteractiveSession() && noora.yesOrNoChoicePrompt(
             title: "Metadata CBOR",
             question: "Include CBOR metadata files?",
             defaultAnswer: false,

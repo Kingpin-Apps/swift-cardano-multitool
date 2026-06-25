@@ -63,7 +63,7 @@ extension QueryMainCommand {
         
         
         mutating func run() async throws {
-            if address == nil {
+            if address == nil && isInteractiveSession() {
                 try await wizard()
             }
             

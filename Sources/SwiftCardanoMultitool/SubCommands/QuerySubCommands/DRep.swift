@@ -20,7 +20,7 @@ extension QueryMainCommand {
         }
 
         mutating func run() async throws {
-            if drep == nil {
+            if drep == nil && isInteractiveSession() {
                 try await wizard()
             }
 

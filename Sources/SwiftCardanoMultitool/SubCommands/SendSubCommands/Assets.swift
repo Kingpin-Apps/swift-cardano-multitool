@@ -206,7 +206,7 @@ extension SendMainCommand {
         // MARK: - Run
 
         mutating func run() async throws {
-            if policyId == nil {
+            if policyId == nil , isInteractiveSession() {
                 try await wizard()
             }
 

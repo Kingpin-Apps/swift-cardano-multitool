@@ -161,7 +161,7 @@ extension GovernanceMainCommand {
             if govActionId == nil
                 || choice == nil
                 || voterVkeyFile == nil
-                || transactionOptions.feePaymentAddress == nil {
+                || transactionOptions.feePaymentAddress == nil , isInteractiveSession() {
                 try await wizard()
             }
 

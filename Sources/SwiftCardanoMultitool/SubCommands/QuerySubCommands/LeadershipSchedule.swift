@@ -159,7 +159,7 @@ extension QueryMainCommand {
         
         mutating func run() async throws {
             // Run wizard if no input method was provided
-            if poolName == nil && poolJSON == nil && poolOperator == nil && vrfSkey == nil {
+            if poolName == nil && poolJSON == nil && poolOperator == nil && vrfSkey == nil && isInteractiveSession() {
                 try await wizard()
             }
             

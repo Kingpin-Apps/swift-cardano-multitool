@@ -116,7 +116,7 @@ extension QueryMainCommand {
         }
         
         mutating func run() async throws {
-            if poolName == nil && opCert == nil && poolOperator == nil {
+            if poolName == nil && opCert == nil && poolOperator == nil && isInteractiveSession() {
                 try await self.wizard()
             }
             

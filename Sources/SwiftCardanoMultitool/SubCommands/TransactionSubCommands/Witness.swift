@@ -115,7 +115,7 @@ extension TransactionMainCommand {
         // MARK: - Run
         
         mutating func run() async throws {
-            if (txFile == nil && cborHex == nil) || signingKeys.isEmpty {
+            if (txFile == nil && cborHex == nil) || signingKeys.isEmpty , isInteractiveSession() {
                 try await self.wizard()
             }
             

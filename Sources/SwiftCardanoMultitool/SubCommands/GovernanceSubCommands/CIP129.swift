@@ -53,8 +53,11 @@ extension GovernanceMainCommand {
             }
 
             mutating func run() async throws {
-                if prefix == nil || keyHash == nil {
+                if prefix == nil || keyHash == nil, isInteractiveSession() {
                     try await wizard()
+                }
+                guard prefix != nil, keyHash != nil else {
+                    throw ValidationError("--prefix and --key-hash are required when not running interactively.")
                 }
                 guard let prefixValue = Signer.CIP129.Prefix(rawValue: prefix!) else {
                     throw ValidationError("Unknown prefix '\(prefix!)'. Use one of: \(Signer.CIP129.Prefix.allCases.map(\.rawValue).joined(separator: ", ")).")
@@ -88,8 +91,11 @@ extension GovernanceMainCommand {
             }
 
             mutating func run() async throws {
-                if id == nil {
+                if id == nil && isInteractiveSession() {
                     try await wizard()
+                }
+                guard id != nil else {
+                    throw ValidationError("--id is required when not running interactively.")
                 }
                 let (prefix, keyHash, isScript) = try Signer.CIP129.decode(id!)
                 print(noora.format("Prefix:    \(.primary(prefix.rawValue))"))

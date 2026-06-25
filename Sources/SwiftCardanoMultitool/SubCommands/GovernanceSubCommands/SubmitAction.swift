@@ -83,7 +83,7 @@ extension GovernanceMainCommand {
         }
 
         mutating func run() async throws {
-            if actionFile.isEmpty || transactionOptions.feePaymentAddress == nil {
+            if actionFile.isEmpty || transactionOptions.feePaymentAddress == nil, isInteractiveSession() {
                 try await wizard()
             }
 

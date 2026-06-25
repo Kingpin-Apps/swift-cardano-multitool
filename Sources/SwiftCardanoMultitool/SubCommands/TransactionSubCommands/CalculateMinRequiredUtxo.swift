@@ -154,7 +154,7 @@ extension TransactionMainCommand {
         // MARK: - Run
 
         mutating func run() async throws {
-            if txOutAddress == nil || txOutValue == nil {
+            if txOutAddress == nil || txOutValue == nil , isInteractiveSession() {
                 try await wizard()
             }
 

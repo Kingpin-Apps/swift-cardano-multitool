@@ -58,7 +58,7 @@ extension TransactionMainCommand {
         }
         
         mutating func run() async throws {
-            if txFile == nil && cborHex == nil {
+            if txFile == nil && cborHex == nil , isInteractiveSession() {
                 try await self.wizard()
             }
             

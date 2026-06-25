@@ -38,7 +38,7 @@ extension GovernanceMainCommand {
         }
 
         mutating func run() async throws {
-            if data == nil && dataFile == nil {
+            if data == nil && dataFile == nil && isInteractiveSession() {
                 try await wizard()
             }
             let document = try SignerUtils.resolveData(text: data, hex: nil, file: dataFile)

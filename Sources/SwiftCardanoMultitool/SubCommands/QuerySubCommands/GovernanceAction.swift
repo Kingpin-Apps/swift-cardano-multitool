@@ -38,7 +38,7 @@ extension QueryMainCommand {
         }
 
         mutating func run() async throws {
-            if govActionID == nil {
+            if govActionID == nil && isInteractiveSession() {
                 try await wizard()
             }
 

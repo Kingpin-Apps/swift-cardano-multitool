@@ -732,7 +732,7 @@ extension TransactionMainCommand {
         // MARK: - Run
 
         mutating func run() async throws {
-            if txIn.isEmpty || changeAddress == nil || outFile == nil {
+            if txIn.isEmpty || changeAddress == nil || outFile == nil, isInteractiveSession() {
                 try await wizard()
             }
 

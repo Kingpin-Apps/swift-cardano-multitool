@@ -51,7 +51,7 @@ extension QueryMainCommand {
         }
 
         mutating func run() async throws {
-            if credential == nil {
+            if credential == nil && isInteractiveSession() {
                 try await wizard()
             }
 

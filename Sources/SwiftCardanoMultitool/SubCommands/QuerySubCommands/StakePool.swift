@@ -115,7 +115,7 @@ extension QueryMainCommand {
         
         mutating func run() async throws {
             // Run wizard if required parameters are missing
-            if poolOperator == nil {
+            if poolOperator == nil && isInteractiveSession() {
                 try await wizard()
             }
             

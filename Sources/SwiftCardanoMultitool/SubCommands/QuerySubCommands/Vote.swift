@@ -98,7 +98,7 @@ extension QueryMainCommand {
                 && govActionID == nil
                 && actionType == nil
                 && !showAll
-            if nothingProvided {
+            if nothingProvided && isInteractiveSession() {
                 try await wizard(into: &resolvedVoter)
             }
 

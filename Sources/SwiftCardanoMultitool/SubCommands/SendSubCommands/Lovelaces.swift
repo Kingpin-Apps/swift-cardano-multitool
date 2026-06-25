@@ -96,7 +96,7 @@ extension SendMainCommand {
         // MARK: - Run
 
         mutating func run() async throws {
-            if amount == nil || transactionOptions.feePaymentAddress == nil {
+            if amount == nil || transactionOptions.feePaymentAddress == nil , isInteractiveSession() {
                 try await wizard()
             }
 

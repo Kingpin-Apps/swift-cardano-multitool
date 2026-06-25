@@ -45,7 +45,7 @@ extension QueryMainCommand {
         }
 
         mutating func run() async throws {
-            if filter == nil {
+            if filter == nil && isInteractiveSession() {
                 try await wizard()
             }
             guard let raw = filter?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {

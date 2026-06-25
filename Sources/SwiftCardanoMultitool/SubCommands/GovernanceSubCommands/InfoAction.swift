@@ -53,7 +53,7 @@ extension GovernanceMainCommand {
         mutating func run() async throws {
             if actionOptions.depositReturnStakeAddress == nil
                 || transactionOptions.feePaymentAddress == nil
-                || (actionOptions.anchorUrl == nil && actionOptions.anchorHash == nil) {
+                || (actionOptions.anchorUrl == nil && actionOptions.anchorHash == nil) , isInteractiveSession() {
                 try await wizard()
             }
 
