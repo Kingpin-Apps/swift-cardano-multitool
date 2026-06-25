@@ -67,7 +67,7 @@ extension GovActionID: @retroactive ExpressibleByArgument {
         ]
 
         for fileName in variations {
-            let filePath = currentDir.appending(fileName)
+            let filePath = (currentDir as NSString).appendingPathComponent(fileName)
             if fileManager.fileExists(atPath: filePath) {
                 if let raw = try? String(contentsOfFile: filePath, encoding: .utf8) {
                     let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -42,7 +42,7 @@ extension DRep: @retroactive ExpressibleByArgument {
         let drepFileName = trimmed
         let fileManager = FileManager.default
         let currentDir = fileManager.currentDirectoryPath
-        let filePath = currentDir.appending(drepFileName)
+        let filePath = (currentDir as NSString).appendingPathComponent(drepFileName)
         
         if fileManager.fileExists(atPath: filePath) {
             if let loaded = try? DRep.load(from: filePath) {
@@ -59,7 +59,7 @@ extension DRep: @retroactive ExpressibleByArgument {
         
         var foundFiles: [String] = []
         for fileName in variations {
-            let filePath = currentDir.appending(fileName)
+            let filePath = (currentDir as NSString).appendingPathComponent(fileName)
             if fileManager.fileExists(atPath: filePath) {
                 foundFiles.append(fileName)
             }
@@ -67,7 +67,7 @@ extension DRep: @retroactive ExpressibleByArgument {
         
         // Handle results
         if !foundFiles.isEmpty, foundFiles.count == 1, let firstFile = foundFiles.first {
-            let filePath = currentDir.appending(firstFile)
+            let filePath = (currentDir as NSString).appendingPathComponent(firstFile)
             if let loaded = try? DRep.load(from: filePath) {
                 self = loaded
                 return

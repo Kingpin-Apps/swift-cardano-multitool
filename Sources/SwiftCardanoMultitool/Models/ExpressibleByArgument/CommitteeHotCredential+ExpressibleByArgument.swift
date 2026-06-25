@@ -47,7 +47,7 @@ extension CommitteeHotCredential: @retroactive ExpressibleByArgument {
         ]
 
         for fileName in variations {
-            let filePath = currentDir.appending(fileName)
+            let filePath = (currentDir as NSString).appendingPathComponent(fileName)
             if fileManager.fileExists(atPath: filePath) {
                 if let vkey = try? CommitteeHotVerificationKey.load(from: filePath) {
                     if let hash = try? vkey.hash() {

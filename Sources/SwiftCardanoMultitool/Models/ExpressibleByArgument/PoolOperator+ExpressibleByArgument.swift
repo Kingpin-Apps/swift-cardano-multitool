@@ -42,7 +42,7 @@ extension PoolOperator: @retroactive ExpressibleByArgument {
         let poolOperatorFileName = trimmed
         let fileManager = FileManager.default
         let currentDir = fileManager.currentDirectoryPath
-        let filePath = currentDir.appending(poolOperatorFileName)
+        let filePath = (currentDir as NSString).appendingPathComponent(poolOperatorFileName)
         
         if fileManager.fileExists(atPath: filePath) {
             if let loaded = try? PoolOperator.load(from: filePath) {
@@ -53,7 +53,7 @@ extension PoolOperator: @retroactive ExpressibleByArgument {
         
         // Try vkey
         let nodeVKey = "\(poolOperatorFileName).node.vkey"
-        let nodeVKeyFilePath = currentDir.appending(nodeVKey)
+        let nodeVKeyFilePath = (currentDir as NSString).appendingPathComponent(nodeVKey)
         if fileManager.fileExists(atPath: nodeVKey) {
             if let stakePoolVerificationKey = try? StakePoolVerificationKey.load(from: nodeVKeyFilePath) {
                 guard let poolKeyHash = try? stakePoolVerificationKey.poolKeyHash() else {
@@ -74,7 +74,7 @@ extension PoolOperator: @retroactive ExpressibleByArgument {
         
         var foundFiles: [String] = []
         for fileName in variations {
-            let filePath = currentDir.appending(fileName)
+            let filePath = (currentDir as NSString).appendingPathComponent(fileName)
             if fileManager.fileExists(atPath: filePath) {
                 foundFiles.append(fileName)
             }
@@ -82,7 +82,7 @@ extension PoolOperator: @retroactive ExpressibleByArgument {
         
         // Handle results
         if !foundFiles.isEmpty, foundFiles.count == 1, let firstFile = foundFiles.first {
-            let filePath = currentDir.appending(firstFile)
+            let filePath = (currentDir as NSString).appendingPathComponent(firstFile)
             if let loaded = try? PoolOperator.load(from: filePath) {
                 self = loaded
                 return

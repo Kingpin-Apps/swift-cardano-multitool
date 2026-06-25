@@ -44,13 +44,13 @@ extension CommitteeMemberCredential: ExpressibleByArgument {
         let coldFileSuffixes = [".cc-cold.vkey", ".cc-cold.id", ".cc-cold.hash"]
         let hotFileSuffixes = [".cc-hot.vkey", ".cc-hot.id", ".cc-hot.hash"]
 
-        for suffix in coldFileSuffixes where trimmed.hasSuffix(suffix) || fileManager.fileExists(atPath: currentDir.appending(trimmed + suffix)) {
+        for suffix in coldFileSuffixes where trimmed.hasSuffix(suffix) || fileManager.fileExists(atPath: (currentDir as NSString).appendingPathComponent(trimmed + suffix)) {
             if let cold = CommitteeColdCredential(argument: trimmed) {
                 self = .cold(cold)
                 return
             }
         }
-        for suffix in hotFileSuffixes where trimmed.hasSuffix(suffix) || fileManager.fileExists(atPath: currentDir.appending(trimmed + suffix)) {
+        for suffix in hotFileSuffixes where trimmed.hasSuffix(suffix) || fileManager.fileExists(atPath: (currentDir as NSString).appendingPathComponent(trimmed + suffix)) {
             if let hot = CommitteeHotCredential(argument: trimmed) {
                 self = .hot(hot)
                 return
