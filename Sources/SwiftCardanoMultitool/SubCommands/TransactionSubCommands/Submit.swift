@@ -111,6 +111,18 @@ extension TransactionMainCommand {
                         "You can try submitting it manually."
                     ]
                 ))
+                // Noora renders asynchronously; when this command is invoked
+                // through `Submit.main(...)` (e.g. from `transaction sign --submit`,
+                // `send`, mint/burn, certificate flows) the `ExitCode.failure`
+                // below unwinds straight into `exit()`, which can pre-empt that
+                // render and leave the node rejection invisible — the process
+                // appears to hang silently at "Submitting transaction...". Emit
+                // the reason synchronously to stderr (unbuffered) so it is always
+                // shown, and flush stdout for good measure.
+                fflush(stdout)
+                FileHandle.standardError.write(
+                    Data("Transaction submission failed: \(error)\n".utf8)
+                )
                 throw ExitCode.failure
             }
         }
