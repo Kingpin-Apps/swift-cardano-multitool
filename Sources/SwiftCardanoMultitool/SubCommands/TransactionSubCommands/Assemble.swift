@@ -164,7 +164,7 @@ extension TransactionMainCommand {
             
             noora.info(.alert(
                 "Assemble the unsigned transaction \(.primary("\(txId)")) with:",
-                takeaways: try witnessFiles.map {
+                takeaways: witnessFiles.map {
                     "  - Witness File: \(pathComponent($0.string))"
                 }
             ))
