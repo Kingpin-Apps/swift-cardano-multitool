@@ -802,7 +802,6 @@ extension GenerateMainCommand {
                     
                     let _ = try await cli.stakeAddress.build(
                         arguments: [
-                            "--payment-verification-key-file", paymentVKey.string,
                             "--stake-verification-key-file", stakeVKey.string,
                             "--out-file", stakeAddress.string,
                         ]

@@ -155,10 +155,18 @@ extension QueryMainCommand {
                         "Checking UTXOs of Payment-Address \(.primary(name)): \(.primary(try address.toBech32()))"
                     )
                     
-                    try await addressInfo.updateUTxOs(context: context)
-                    
+                    do {
+                        try await addressInfo.updateUTxOs(context: context)
+                    } catch {
+                        // Blockfrost returns 404 for an address that has never
+                        // appeared on-chain. Treat that as an empty UTxO set
+                        // rather than a hard failure (the local node already
+                        // returns an empty set for unused addresses).
+                        guard "\(error)".contains("notFound") else { throw error }
+                    }
+
                     addressInfo.addressTypeEra()
-                    
+
                     try await utxoSummary(
                         utxos: addressInfo.utxos,
                         config: config

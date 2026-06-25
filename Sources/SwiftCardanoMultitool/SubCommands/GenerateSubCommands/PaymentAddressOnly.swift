@@ -407,9 +407,21 @@ extension GenerateMainCommand {
                 throw ExitCode.failure
             }
             
+            // Build and save the enterprise (payment-only) address from the
+            // generated verification key.
+            let cardanoConfig = try getCardanoConfig(config: config)
+            let _paymentVKey = try PaymentVerificationKey.load(from: paymentVKey.string)
+            let enterpriseAddress = try Address(
+                paymentPart: .verificationKeyHash(_paymentVKey.hash()),
+                network: cardanoConfig.network.networkId
+            )
+            try enterpriseAddress.save(to: paymentAddress.string)
+            try await FileUtils.fileLock(paymentAddress)
+            spacedPrint("\nPayment(Enterprise)-Address built: \(pathComponent(paymentAddress.string))")
+
             noora.success(
                 .alert("Payment address generated successfully.")
-            )            
+            )
         }
     }
 }

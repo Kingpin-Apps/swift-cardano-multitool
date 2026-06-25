@@ -151,7 +151,7 @@ extension SendMainCommand {
                     "Protocol minimum UTXO: \(.primary(lovelaceToAdaFormatString(resolvedLovelace))) / \(.primary("\(resolvedLovelace)")) lovelaces"
                 )
             } else {
-                guard let parsed = AdaFormatter(defaultUnit: .ada).toLovelace(amount), parsed > 0 else {
+                guard let parsed = AdaFormatter(defaultUnit: .lovelace).toLovelace(amount), parsed > 0 else {
                     noora.error(.alert("Invalid amount '\(amount)'. Must be 'min', or an ADA or lovelace amount."))
                     throw ExitCode.validationFailure
                 }
