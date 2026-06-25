@@ -118,7 +118,12 @@ extension GenerateMainCommand {
         mutating func rotatePool(poolName name: String, cwd: FilePath, uploadDir: FilePath) async throws {
             spacedPrint("Generating \(name) KES keys...")
 
-            var kesKeys = GenerateMainCommand.NodeKESKeys()
+            // Build via `parse([])` rather than the bare `init()`: ArgumentParser only
+            // applies the `= nil` property defaults during parsing, so a memberwise-init
+            // instance leaves any field we don't explicitly set in an `.unset` state that
+            // traps ("Can't read a value from a parsable argument definition") the moment
+            // run() reads it — e.g. opcert's `useOpCertCounter`, which we never set.
+            var kesKeys = try GenerateMainCommand.NodeKESKeys.parse([])
             kesKeys.poolName = name
             kesKeys.keyGenMethod = keyGenMethod
             kesKeys.tool = tool
@@ -126,7 +131,7 @@ extension GenerateMainCommand {
 
             spacedPrint("Generating \(name) OPCERT...")
 
-            var opcertCmd = GenerateMainCommand.NodeOperationalCertificate()
+            var opcertCmd = try GenerateMainCommand.NodeOperationalCertificate.parse([])
             opcertCmd.poolName = name
             opcertCmd.tool = tool
             try await opcertCmd.run()
