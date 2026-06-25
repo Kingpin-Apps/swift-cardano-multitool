@@ -13,7 +13,7 @@ extension AssetMainCommand {
             commandName: "burn",
             abstract: "Burn a native asset using a local minting policy.",
             usage: """
-            scm asset burn myPolicy.MYTOK 200 \\
+            scm asset burn myPolicy.MYTOK --amount 200 \\
                 --fee-payment-address owner.payment --submit
 
             scm asset burn \\

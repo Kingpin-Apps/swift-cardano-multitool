@@ -13,7 +13,7 @@ extension AssetMainCommand {
             commandName: "mint",
             abstract: "Mint a native asset using a local minting policy.",
             usage: """
-            scm asset mint myPolicy.MYTOK 1000 \\
+            scm asset mint myPolicy.MYTOK --amount 1000 \\
                 --fee-payment-address owner.payment --submit
 
             scm asset mint \\
