@@ -7,6 +7,10 @@ import SystemPackage
 /// without modifying the config file.
 enum Environment: String {
     case blockfrostProjectId = "BLOCKFROST_PROJECT_ID"
+    /// The canonical node socket variable used by cardano-cli and cardano-node.
+    case cardanoNodeSocketPath = "CARDANO_NODE_SOCKET_PATH"
+    /// Alternative socket variable some tooling sets.
+    case cardanoSocketPath = "CARDANO_SOCKET_PATH"
     case config = "CARDANO_MULTITOOL_CONFIG"
     case configs = "CARDANO_MULTITOOL_CONFIGS"
     case decryptPassword = "CARDANO_MULTITOOL_DECRYPT_PASSWORD"

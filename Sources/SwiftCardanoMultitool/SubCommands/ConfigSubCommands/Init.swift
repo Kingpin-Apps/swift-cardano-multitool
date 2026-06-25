@@ -31,6 +31,69 @@ extension ConfigMainCommand {
             let home = FileManager.default.homeDirectoryForCurrentUser.path
             return FilePath("\(home)/.scm/config-\(network.rawValue).\(fileType.rawValue)")
         }
+
+        /// Best-effort autodetection of the node socket, config, and topology paths so a
+        /// freshly generated config works against a local node without hand-editing.
+        ///
+        /// - Socket: the canonical `CARDANO_NODE_SOCKET_PATH` (what cardano-cli and
+        ///   cardano-node themselves read), falling back to `CARDANO_SOCKET_PATH`.
+        /// - Config / topology: the `share/<network>/{config,topology}.json` pair that
+        ///   ships alongside the cardano-node binary (`…/bin/cardano-node` ⇒
+        ///   `…/share/<network>/…`). The cardano-cli install dir is tried as a fallback.
+        ///
+        /// Only slots that are still empty are filled, so values already resolved from
+        /// the environment (e.g. `CARDANO_CONFIG`) are never overwritten.
+        /// - Returns: Human-readable descriptions of what was detected, for display.
+        private func discoverCardanoPaths(
+            network: ConfigNetwork,
+            into config: inout MultitoolConfig
+        ) -> [String] {
+            guard config.cardano != nil else { return [] }
+            var found: [String] = []
+
+            // Socket — prefer the canonical CARDANO_NODE_SOCKET_PATH. The socket file is
+            // created by the node at runtime, so we don't require it to exist yet.
+            if config.cardano?.socket == nil,
+               let socket = Environment.getFilePath(.cardanoNodeSocketPath)
+                ?? Environment.getFilePath(.cardanoSocketPath) {
+                config.cardano?.socket = socket
+                found.append("socket → \(socket.string)")
+            }
+
+            // Config + topology — discover from the node (then cli) install's
+            // share/<network>/ directory.
+            if config.cardano?.config == nil || config.cardano?.topology == nil {
+                let binaries = [config.cardano?.node, config.cardano?.cli].compactMap { $0 }
+                for binary in binaries {
+                    // …/bin/cardano-node → …/share/<network>
+                    let shareDir = binary
+                        .removingLastComponent()      // strip the binary
+                        .removingLastComponent()      // strip bin/
+                        .appending("share")
+                        .appending(network.rawValue)
+
+                    if config.cardano?.config == nil {
+                        let candidate = shareDir.appending("config.json")
+                        if FileManager.default.fileExists(atPath: candidate.string) {
+                            config.cardano?.config = candidate
+                            found.append("config → \(candidate.string)")
+                        }
+                    }
+                    if config.cardano?.topology == nil {
+                        let candidate = shareDir.appending("topology.json")
+                        if FileManager.default.fileExists(atPath: candidate.string) {
+                            config.cardano?.topology = candidate
+                            found.append("topology → \(candidate.string)")
+                        }
+                    }
+                    if config.cardano?.config != nil && config.cardano?.topology != nil {
+                        break
+                    }
+                }
+            }
+
+            return found
+        }
         
         /// Wizard to interactively gather missing parameters
         mutating func wizard() async throws {
@@ -84,12 +147,25 @@ extension ConfigMainCommand {
                 }
             }
             
-            guard let configPath = self.configPath else {
-                noora.error("Config path is required to save the config file.")
-                throw ExitCode.validationFailure
-            }
+            var config = try MultitoolConfig.default(network: network.network)
 
-            let config = try MultitoolConfig.default(network: network.network)
+            // Autodetect node socket / config / topology so the generated file works
+            // against a local node without hand-editing.
+            let discovered = discoverCardanoPaths(network: network, into: &config)
+            if discovered.isEmpty {
+                noora.info(.alert(
+                    "Could not autodetect node socket / config / topology paths.",
+                    takeaways: [
+                        "Set \(.primary("CARDANO_NODE_SOCKET_PATH")) for the node socket.",
+                        "Install cardano-node so its \(.primary("share/\(network.rawValue)/")) config + topology can be found, or edit the generated file.",
+                    ]
+                ))
+            } else {
+                noora.info(.alert(
+                    "Autodetected Cardano node paths:",
+                    takeaways: discovered.map { TerminalText(stringLiteral: $0) }
+                ))
+            }
 
             switch fileType {
                 case .json:
@@ -104,6 +180,11 @@ extension ConfigMainCommand {
             print("\n")
 
             if !isDryRun {
+                guard let configPath = self.configPath else {
+                    noora.error("Config path is required to save the config file.")
+                    throw ExitCode.validationFailure
+                }
+
                 let dirPath = (configPath.string as NSString).deletingLastPathComponent
                 try FileManager.default.createDirectory(
                     atPath: dirPath,
