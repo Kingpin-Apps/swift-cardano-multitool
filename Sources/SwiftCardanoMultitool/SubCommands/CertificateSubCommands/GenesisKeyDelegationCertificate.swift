@@ -138,7 +138,7 @@ extension CertificateMainCommand {
         mutating func run() async throws {
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
 
-            if genesisVerificationKeyFile == nil || genesisDelegateVerificationKeyFile == nil || vrfVerificationKeyFile == nil {
+            if genesisVerificationKeyFile == nil || genesisDelegateVerificationKeyFile == nil || vrfVerificationKeyFile == nil , isInteractiveSession() {
                 try await wizard()
             }
 

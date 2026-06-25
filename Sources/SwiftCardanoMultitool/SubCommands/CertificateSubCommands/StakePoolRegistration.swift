@@ -141,7 +141,7 @@ extension CertificateMainCommand {
         
         mutating func run() async throws {
             // Run wizard if no input method was provided
-            if poolName == nil && poolJSON == nil {
+            if poolName == nil && poolJSON == nil , isInteractiveSession() {
                 try await wizard()
             }
             

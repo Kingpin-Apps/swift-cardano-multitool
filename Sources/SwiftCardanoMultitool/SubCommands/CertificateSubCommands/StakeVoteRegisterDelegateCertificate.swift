@@ -69,7 +69,7 @@ extension CertificateMainCommand {
         // MARK: - Run
 
         mutating func run() async throws {
-            if stakeAddress == nil || poolOperator == nil || drep == nil {
+            if stakeAddress == nil || poolOperator == nil || drep == nil , isInteractiveSession() {
                 try await wizard()
             }
 

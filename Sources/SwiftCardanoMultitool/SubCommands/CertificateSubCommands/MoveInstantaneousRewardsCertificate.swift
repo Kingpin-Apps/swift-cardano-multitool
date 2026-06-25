@@ -54,6 +54,20 @@ extension CertificateMainCommand {
         // MARK: - Run
 
         mutating func run() async throws {
+            // This command gathers the reward source and distribution entirely
+            // through prompts (no CLI flags yet), so fail clearly instead of
+            // aborting inside a Noora prompt when there is no interactive terminal.
+            guard isInteractiveSession() else {
+                noora.error(.alert(
+                    "'certificate move-instantaneous-rewards' requires an interactive terminal.",
+                    takeaways: [
+                        "It prompts for the reward source and distribution, which have no command-line flags yet.",
+                        "Run it in an interactive shell (not piped/CI), and make sure CARDANO_MULTITOOL_SKIP_PROMPT is not set."
+                    ]
+                ))
+                throw ExitCode.validationFailure
+            }
+
             // Prompt for source
             let sourceOption: MoveInstantaneousRewardSourceOption = noora.singleChoicePrompt(
                 title: "MIR Source",

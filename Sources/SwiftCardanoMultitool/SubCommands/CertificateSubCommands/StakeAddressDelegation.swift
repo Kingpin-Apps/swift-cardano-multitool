@@ -71,7 +71,7 @@ extension CertificateMainCommand {
         
         mutating func run() async throws {
             // Run wizard if required parameters are missing
-            if stakeAddress == nil || poolOperator == nil {
+            if stakeAddress == nil || poolOperator == nil , isInteractiveSession() {
                 try await wizard()
             }
             

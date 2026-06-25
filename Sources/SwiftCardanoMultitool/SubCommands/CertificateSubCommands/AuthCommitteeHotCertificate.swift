@@ -64,7 +64,7 @@ extension CertificateMainCommand {
         // MARK: - Run
 
         mutating func run() async throws {
-            if committeeColdCredential == nil || committeeHotCredential == nil {
+            if committeeColdCredential == nil || committeeHotCredential == nil , isInteractiveSession() {
                 try await wizard()
             }
 

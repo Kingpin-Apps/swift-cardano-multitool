@@ -65,7 +65,7 @@ extension CertificateMainCommand {
         
         mutating func run() async throws {
             // Run wizard if required parameters are missing
-            if stakeAddress == nil {
+            if stakeAddress == nil , isInteractiveSession() {
                 try await wizard()
             }
             
