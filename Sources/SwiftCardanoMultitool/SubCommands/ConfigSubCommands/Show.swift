@@ -45,7 +45,10 @@ extension ConfigMainCommand {
         }
 
         mutating func run() async throws {
-            if type == nil || (type == .genesis && era == nil) {
+            // Only prompt when attached to a TTY — Noora's prompts fatalError in a
+            // non-interactive session. Without a type the `guard let type` below then
+            // surfaces a clean validation error instead of crashing.
+            if (type == nil || (type == .genesis && era == nil)), isInteractiveSession() {
                 try await wizard()
             }
 
