@@ -177,19 +177,21 @@ extension BuildMainCommand {
                         configuration: config.toSwiftCardanoUtilsConfig()
                     )
                     
+                    // Absolutize key paths — a user-supplied relative --*-verification-key
+                    // would not be found by cardano-cli (it runs in its own working dir).
                     var arguments: [String]
                     if stakeVkey != nil {
                         arguments = [
-                            "--payment-verification-key-file", paymentVkey!.string,
-                            "--stake-verification-key-file", stakeVkey!.string,
+                            "--payment-verification-key-file", FileUtils.absolutePath(paymentVkey!).string,
+                            "--stake-verification-key-file", FileUtils.absolutePath(stakeVkey!).string,
                         ]
                     } else {
                         arguments = [
-                            "--payment-verification-key-file", paymentVkey!.string
+                            "--payment-verification-key-file", FileUtils.absolutePath(paymentVkey!).string
                         ]
                     }
-                    
-                    arguments.append(contentsOf: ["--out-file", paymentAddress.string])
+
+                    arguments.append(contentsOf: ["--out-file", FileUtils.absolutePath(paymentAddress).string])
 
                     _ = try await cli
                         .address

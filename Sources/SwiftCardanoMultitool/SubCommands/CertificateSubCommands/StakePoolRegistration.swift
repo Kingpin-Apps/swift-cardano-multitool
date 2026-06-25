@@ -420,7 +420,7 @@ extension CertificateMainCommand {
                     logger: logger
                 )
                 metadataHash = try await cli.stakePool.metadataHash(arguments: [
-                    "--pool-metadata-file", metadataFilePath.string
+                    "--pool-metadata-file", FileUtils.absolutePath(metadataFilePath).string
                 ]).trimmingCharacters(in: .whitespacesAndNewlines)
             } else {
                 let poolMetadata = try PoolMetadata(
@@ -484,9 +484,12 @@ extension CertificateMainCommand {
                         logger: logger
                     )
 
+                    // Absolutize key paths — they often come from pool.json as paths
+                    // relative to the user's cwd, but cardano-cli resolves them against
+                    // its own working directory.
                     var cliArgs: [String] = [
-                        "--cold-verification-key-file", coldVkeyPath.string,
-                        "--vrf-verification-key-file", vrfVkeyPath.string,
+                        "--cold-verification-key-file", FileUtils.absolutePath(coldVkeyPath).string,
+                        "--vrf-verification-key-file", FileUtils.absolutePath(vrfVkeyPath).string,
                         "--pool-pledge", "\(pool.pledge ?? 0)",
                         "--pool-cost", "\(pool.cost ?? 0)",
                         "--pool-margin", "\(pool.margin ?? 0)",
@@ -495,13 +498,13 @@ extension CertificateMainCommand {
                     // Rewards stake vkey
                     let rewardsVkeyPath = pool.rewardsOwner?.stakeVkey ?? pool.owners.first?.stakeVkey
                     if let rewardsVkeyPath {
-                        cliArgs += ["--pool-reward-account-verification-key-file", rewardsVkeyPath.string]
+                        cliArgs += ["--pool-reward-account-verification-key-file", FileUtils.absolutePath(rewardsVkeyPath).string]
                     }
 
                     // Owner stake vkeys
                     for owner in pool.owners {
                         if let ownerVkey = owner.stakeVkey {
-                            cliArgs += ["--pool-owner-stake-verification-key-file", ownerVkey.string]
+                            cliArgs += ["--pool-owner-stake-verification-key-file", FileUtils.absolutePath(ownerVkey).string]
                         }
                     }
 

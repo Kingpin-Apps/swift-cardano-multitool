@@ -145,8 +145,9 @@ extension BuildMainCommand {
                         .address
                         .build(
                             arguments: [
-                                "--stake-verification-key-file", stakeVkey!.string,
-                                "--out-file", stakeAddress.string
+                                // Absolutize — cardano-cli runs in its own working dir.
+                                "--stake-verification-key-file", FileUtils.absolutePath(stakeVkey!).string,
+                                "--out-file", FileUtils.absolutePath(stakeAddress).string
                             ]
                         )
                     address = try Address.load(from: stakeAddress.string)
