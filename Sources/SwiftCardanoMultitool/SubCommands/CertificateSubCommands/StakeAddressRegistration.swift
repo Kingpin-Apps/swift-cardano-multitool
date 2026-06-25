@@ -271,12 +271,20 @@ extension CertificateMainCommand {
                 let logger = getLogger(config: config)
                 let txBuilder = TxBuilder(context: context, logger: logger)
                 
-                let stakeRegistrationCertificate = try SwiftCardanoCore.StakeRegistration.load(
-                    from: outFile.string
-                )
-                txBuilder.certificates = [
-                    .stakeRegistration(stakeRegistrationCertificate)
-                ]
+                // Load the certificate using the type that matches the era it was
+                // generated in: Conway+ produces a deposit-bearing Register cert
+                // (type 7), while legacy eras use StakeRegistration (type 0).
+                let txEra = try await context.era()
+                let isLegacyEra = txEra.map {
+                    [.babbage, .alonzo, .mary, .allegra, .shelley].contains($0)
+                } ?? false
+                if isLegacyEra {
+                    let cert = try SwiftCardanoCore.StakeRegistration.load(from: outFile.string)
+                    txBuilder.certificates = [.stakeRegistration(cert)]
+                } else {
+                    let cert = try SwiftCardanoCore.Register.load(from: outFile.string)
+                    txBuilder.certificates = [.register(cert)]
+                }
                 
                 guard let feePaymentAddress = transactionOptions.feePaymentAddress else {
                     noora.error(.alert(
@@ -327,7 +335,7 @@ extension CertificateMainCommand {
                 }
                 
                 let signingKeysArgs: [String] = signingKeys.flatMap {
-                    ["--signing-key-file", $0]
+                    ["--signing-keys", $0]
                 }
                 
                 await TransactionMainCommand.Sign.main([

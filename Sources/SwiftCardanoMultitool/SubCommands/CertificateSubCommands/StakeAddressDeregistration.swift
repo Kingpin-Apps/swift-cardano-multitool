@@ -333,7 +333,7 @@ extension CertificateMainCommand {
                 }
                 
                 let signingKeysArgs: [String] = signingKeys.flatMap {
-                    ["--signing-key-file", $0]
+                    ["--signing-keys", $0]
                 }
                 
                 await TransactionMainCommand.Sign.main([

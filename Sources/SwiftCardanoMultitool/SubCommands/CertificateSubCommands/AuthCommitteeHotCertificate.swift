@@ -203,7 +203,7 @@ extension CertificateMainCommand {
                 if transactionOptions.save { args.append("--save") }
                 if transactionOptions.submit { args.append("--submit") }
 
-                let signingKeysArgs = signingKeys.flatMap { ["--signing-key-file", $0] }
+                let signingKeysArgs = signingKeys.flatMap { ["--signing-keys", $0] }
                 await TransactionMainCommand.Sign.main([
                     "--tx-file", txFile.string,
                     "--out-file", txSignedFile.string
