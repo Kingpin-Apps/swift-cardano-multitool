@@ -17,7 +17,7 @@ extension TransactionMainCommand {
             abstract: "Generates a rewards withdrawal transaction to withdraw staking rewards.",
             usage: """
             scm transaction rewards-withdraw \\
-                --stake-address-name owner \\
+                --stake-address owner.stake \\
                 --to-address owner.payment
             
             scm transaction rewards-withdraw \\
