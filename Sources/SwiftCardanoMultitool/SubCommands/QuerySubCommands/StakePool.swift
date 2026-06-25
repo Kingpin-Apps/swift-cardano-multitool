@@ -31,7 +31,10 @@ extension QueryMainCommand {
         
         @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")
         var poolJSON: FilePath?
-        
+
+        @Flag(name: .long, help: "Download the pool's off-chain metadata and verify its hash; fail if it is unreachable or does not match. By default metadata problems are tolerated and on-chain parameters are still shown.")
+        var strict: Bool = false
+
         // MARK: - Input Method Selection
         
         enum SelectOption: String, CaseIterable, AlignedChoiceDescribable {
@@ -135,7 +138,9 @@ extension QueryMainCommand {
             let poolIdBech32 = try poolOperator.id(.bech32)
             
             spacedPrint("Querying stake pool information for \(.primary(poolIdBech32))...")
-            
+
+            // Capture locally so the escaping retry closure doesn't capture mutating `self`.
+            let useStrict = strict
             let poolInfo = try await noora.progressStep(
                 message: "Fetching stake pool information via \(context.name)...",
                 successMessage: "Successfully retrieved stake pool information.",
@@ -143,7 +148,7 @@ extension QueryMainCommand {
                 showSpinner: true
             ) { updateMessage in
                 return try await withRetry() {
-                    try await context.stakePoolInfo(poolId: poolIdBech32)
+                    try await context.stakePoolInfo(poolId: poolIdBech32, strict: useStrict)
                 }
             }
 
