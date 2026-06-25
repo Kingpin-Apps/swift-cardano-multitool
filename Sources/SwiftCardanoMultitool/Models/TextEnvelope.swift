@@ -167,7 +167,7 @@ public struct TextEnvelope: JSONLoadable, Sendable {
         if !textEnvelope.isEncrypted {
             print(
                 noora.format(
-                    "Reading unencrypted file: \(.path(try .init(validating: path.string)))"
+                    "Reading unencrypted file: \(pathComponent(path.string))"
                 ),
                 terminator: "\n\n"
             )
@@ -199,7 +199,7 @@ public struct TextEnvelope: JSONLoadable, Sendable {
                 viaEnv = "via ENV_DECRYPT_PASSWORD "
             } else {
                 password = try await PasswordUtils.getSecurePassword(
-                    prompt: "Enter the Password to decrypt: \(.path(try .init(validating: path.string)))",
+                    prompt: "Enter the Password to decrypt: \(pathComponent(path.string))",
                     allowEmpty: false,
                     validateStrength: true
                 )
@@ -227,7 +227,7 @@ public struct TextEnvelope: JSONLoadable, Sendable {
             
             print(
                 noora.format(
-                    "Decrypting the file: \(.path(try .init(validating: path.string))) \(viaEnv)..."
+                    "Decrypting the file: \(pathComponent(path.string)) \(viaEnv)..."
                 ),
                 terminator: "\n\n"
             )

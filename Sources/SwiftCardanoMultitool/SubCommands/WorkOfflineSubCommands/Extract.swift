@@ -57,7 +57,7 @@ extension WorkOfflineMainCommand {
                 return
             }
 
-            spacedPrint("Extracting \(transfer.files.count) file(s) to: \(.path(try .init(validating: outputDir.string)))")
+            spacedPrint("Extracting \(transfer.files.count) file(s) to: \(pathComponent(outputDir.string))")
 
             var extractedCount = 0
             for fileEntry in transfer.files {

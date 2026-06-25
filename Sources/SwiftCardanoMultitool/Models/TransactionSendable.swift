@@ -679,7 +679,7 @@ extension TransactionSendable {
             }
             if auxilliaryData != nil {
                 spacedPrint(
-                    "Include Transaction-Message-Metadata-File: \(.path(try AbsolutePath(validating: metadataFile.string)))"
+                    "Include Transaction-Message-Metadata-File: \(pathComponent(metadataFile.string))"
                 )
             }
         }
@@ -743,7 +743,7 @@ extension TransactionSendable {
         noora.success(.alert(
             "Transaction build completed.",
             takeaways: [
-                "Saved to: \(.path(try AbsolutePath(validating: txFile.string))) \n"
+                "Saved to: \(pathComponent(txFile.string)) \n"
             ]
         ))
     }

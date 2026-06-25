@@ -190,17 +190,17 @@ extension GenerateMainCommand {
                 try await FileUtils.fileLock(drepId)
 
                 print(noora.format(
-                    "\nDRep-Verification-Key\(extraDescription): \(.path(try .init(validating: drepVKey.string)))\n"
+                    "\nDRep-Verification-Key\(extraDescription): \(pathComponent(drepVKey.string))\n"
                 ))
                 try await FileUtils.displayFile(drepVKey)
 
                 print(noora.format(
-                    "\nDRep-Signing-Key\(extraDescription): \(.path(try .init(validating: drepSKey.string)))\n"
+                    "\nDRep-Signing-Key\(extraDescription): \(pathComponent(drepSKey.string))\n"
                 ))
                 try await FileUtils.displayFile(drepSKey)
 
                 print(noora.format(
-                    "\nDRep-ID\(extraDescription): \(.path(try .init(validating: drepId.string)))\n"
+                    "\nDRep-ID\(extraDescription): \(pathComponent(drepId.string))\n"
                 ))
                 try await FileUtils.displayFile(drepId)
 
@@ -214,7 +214,7 @@ extension GenerateMainCommand {
                         options: .atomic
                     )
                     print(noora.format(
-                        "Mnemonics written to file: \(.path(try .init(validating: path.string)))"
+                        "Mnemonics written to file: \(pathComponent(path.string))"
                     ))
                 } catch {
                     noora.error(

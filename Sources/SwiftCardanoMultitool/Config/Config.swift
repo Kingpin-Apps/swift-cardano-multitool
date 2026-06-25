@@ -636,7 +636,7 @@ public struct MultitoolConfig: Codable, Sendable {
 
         if !quiet {
             spacedPrint(
-                "\nUsing config from: \(.path(try .init(validating: "/" + absolute)))"
+                "\nUsing config from: \(pathComponent("/" + absolute))"
             )
         }
         

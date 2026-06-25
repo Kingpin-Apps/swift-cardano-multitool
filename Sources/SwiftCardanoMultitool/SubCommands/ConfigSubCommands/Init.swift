@@ -128,7 +128,7 @@ extension ConfigMainCommand {
                 let absolute = FileManager.default.currentDirectoryPath + "/" + configPath.string
 
                 spacedPrint(
-                    "Configuration file saved to: \(.path(try .init(validating: "/" + absolute)))"
+                    "Configuration file saved to: \(pathComponent("/" + absolute))"
                 )
 
                 noora.success(

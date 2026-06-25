@@ -336,12 +336,12 @@ extension GenerateMainCommand {
             try await FileUtils.fileLock(sidecarPath)
 
             print(noora.format(
-                "\nRegistry Entry: \(.path(try .init(validating: registryFilePath.string)))\n"
+                "\nRegistry Entry: \(pathComponent(registryFilePath.string))\n"
             ))
             try await FileUtils.displayJSONFile(registryFilePath)
 
             print(noora.format(
-                "\nAsset Sidecar: \(.path(try .init(validating: sidecarPath.string)))\n"
+                "\nAsset Sidecar: \(pathComponent(sidecarPath.string))\n"
             ))
             try await FileUtils.displayJSONFile(sidecarPath)
 

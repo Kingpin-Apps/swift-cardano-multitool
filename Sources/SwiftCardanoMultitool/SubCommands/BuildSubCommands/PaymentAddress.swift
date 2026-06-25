@@ -228,7 +228,7 @@ extension BuildMainCommand {
             }
             
             print(
-                noora.format("Payment Address File: \(.path(try .init(validating: paymentAddress.string)))"),
+                noora.format("Payment Address File: \(pathComponent(paymentAddress.string))"),
                 terminator: "\n\n"
             )
             

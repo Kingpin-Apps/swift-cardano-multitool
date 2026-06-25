@@ -165,7 +165,7 @@ extension TransactionMainCommand {
             noora.info(.alert(
                 "Assemble the unsigned transaction \(.primary("\(txId)")) with:",
                 takeaways: try witnessFiles.map {
-                    "  - Witness File: \(.path(try AbsolutePath(validating: $0.string)))"
+                    "  - Witness File: \(pathComponent($0.string))"
                 }
             ))
             
@@ -211,7 +211,7 @@ extension TransactionMainCommand {
             
             if save {
                 spacedPrint(
-                    "Signed transaction saved to: \(.path(try AbsolutePath(validating: outFile.string))) \n\n \(signedTx.debugDescription)"
+                    "Signed transaction saved to: \(pathComponent(outFile.string)) \n\n \(signedTx.debugDescription)"
                 )
             } else {
                 spacedPrint(

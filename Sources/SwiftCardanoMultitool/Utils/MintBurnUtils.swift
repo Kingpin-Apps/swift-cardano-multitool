@@ -489,7 +489,7 @@ extension TransactionSendable {
             noora.success(.alert(
                 "\(inputs.action.verb) sidecar updated.",
                 takeaways: [
-                    "Path: \(.path(try AbsolutePath(validating: sidecarPath.string)))",
+                    "Path: \(pathComponent(sidecarPath.string))",
                     "lastAction: \"\(inputs.action.pastTense) \(inputs.amount) tokens\""
                 ]
             ))

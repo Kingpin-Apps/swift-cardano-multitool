@@ -201,12 +201,12 @@ extension GenerateMainCommand {
                 try await FileUtils.fileLock(paymentSKey)
                 
                 print(noora.format(
-                    "\nPayment(Base)-Verification-Key\(extraDescription): \(.path(try .init(validating: paymentVKey.string)))\n"
+                    "\nPayment(Base)-Verification-Key\(extraDescription): \(pathComponent(paymentVKey.string))\n"
                 ))
                 try await FileUtils.displayFile(paymentVKey)
                 
                 print(noora.format(
-                    "\nPayment(Base)-Signing-Key\(extraDescription): \(.path(try .init(validating: paymentSKey.string)))\n"
+                    "\nPayment(Base)-Signing-Key\(extraDescription): \(pathComponent(paymentSKey.string))\n"
                 ))
                 try await FileUtils.displayFile(paymentSKey)
                 
@@ -218,12 +218,12 @@ extension GenerateMainCommand {
                 try await FileUtils.fileLock(stakeSKey)
                 
                 print(noora.format(
-                    "\n\(prefix)Stake(Rewards)-Verification-Key\(extraDescription): \(.path(try .init(validating: paymentVKey.string)))\n"
+                    "\n\(prefix)Stake(Rewards)-Verification-Key\(extraDescription): \(pathComponent(paymentVKey.string))\n"
                 ))
                 try await FileUtils.displayFile(paymentVKey)
                 
                 print(noora.format(
-                    "\n\(prefix)Stake(Rewards)-Signing-Key\(extraDescription): \(.path(try .init(validating: paymentSKey.string)))\n"
+                    "\n\(prefix)Stake(Rewards)-Signing-Key\(extraDescription): \(pathComponent(paymentSKey.string))\n"
                 ))
                 try await FileUtils.displayFile(paymentSKey)
                 
@@ -238,7 +238,7 @@ extension GenerateMainCommand {
                         options: .atomic
                     )
                     print(noora.format(
-                        "Mnemonics written to file: \(.path(try .init(validating: path.string)))"
+                        "Mnemonics written to file: \(pathComponent(path.string))"
                     ))
                 } catch {
                     noora.error(
@@ -831,10 +831,10 @@ extension GenerateMainCommand {
             try await FileUtils.fileLock(paymentAddress)
             try await FileUtils.fileLock(stakeAddress)
             
-            spacedPrint("\nPayment(Base)-Address built: \(.path(try .init(validating: paymentAddress.string)))")
+            spacedPrint("\nPayment(Base)-Address built: \(pathComponent(paymentAddress.string))")
             try await FileUtils.displayFile(paymentAddress)
             
-            spacedPrint("\nStaking(Rewards)-Address built: \(.path(try .init(validating: stakeAddress.string)))")
+            spacedPrint("\nStaking(Rewards)-Address built: \(pathComponent(stakeAddress.string))")
             try await FileUtils.displayFile(stakeAddress)
         }
     }

@@ -72,7 +72,7 @@ public struct FileUtils {
         } catch {
             noora.error(
                 .alert(
-                    "File already exists at path: \(.path(try .init(validating: path.string)))",
+                    "File already exists at path: \(pathComponent(path.string))",
                     takeaways: [
                         "Delete the file and try again.",
                         "Use a different name for the file."
@@ -105,7 +105,7 @@ public struct FileUtils {
         do {
             try chmodFile(path, perms: "400")
         } catch {
-            noora.warning(.alert("Could not lock file: \(.path(try .init(validating: path.string)))"))
+            noora.warning(.alert("Could not lock file: \(pathComponent(path.string))"))
         }
     }
     
@@ -119,7 +119,7 @@ public struct FileUtils {
             } catch {
                 noora.error(
                     .alert(
-                        "Could not unlock file: \(.path(try .init(validating: path.string)))",
+                        "Could not unlock file: \(pathComponent(path.string))",
                         takeaways: [
                             "Check the file permissions and try again.",
                             "Make sure you have the necessary permissions to modify the file."

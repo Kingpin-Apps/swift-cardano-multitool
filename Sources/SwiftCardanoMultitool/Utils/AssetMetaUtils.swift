@@ -281,7 +281,7 @@ func loadPolicyForAssetMeta(name: String, in dir: FilePath) throws -> LoadedAsse
             ))
         } else {
             noora.error(.alert(
-                "Missing signing key file: \(.path(try .init(validating: skeyFile.string)))",
+                "Missing signing key file: \(pathComponent(skeyFile.string))",
                 takeaways: ["Expected \(name).policy.skey alongside the .policy.id and .policy.script files."]
             ))
         }
@@ -335,7 +335,7 @@ func loadAssetMetaSigner(skeyPath: FilePath) async throws -> AssetMetaSigner {
 
     guard let envType = envelope.type, let cborHex = envelope.cborHex else {
         noora.error(.alert(
-            "Invalid signing key envelope at \(.path(try .init(validating: skeyPath.string))).",
+            "Invalid signing key envelope at \(pathComponent(skeyPath.string)).",
             takeaways: [
                 "Expected a cardano-cli text envelope with `type` and `cborHex` fields.",
                 "If the key is encrypted, decryption must have succeeded before this point."

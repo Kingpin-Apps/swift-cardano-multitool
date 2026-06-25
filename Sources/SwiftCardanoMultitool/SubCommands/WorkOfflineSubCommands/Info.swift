@@ -45,7 +45,7 @@ extension WorkOfflineMainCommand {
                 try FileUtils.checkFileExists(inFile)
             } catch {
                 noora.error(.alert(
-                    "Offline transfer file not found at: \(.path(try .init(validating: inFile.string)))",
+                    "Offline transfer file not found at: \(pathComponent(inFile.string))",
                     takeaways: ["Run 'scm work-offline new' to create a fresh file."]
                 ))
                 throw ExitCode.validationFailure
@@ -53,7 +53,7 @@ extension WorkOfflineMainCommand {
 
             let transfer = try OfflineTransfer.load(from: inFile)
 
-            spacedPrint("Checking contents of: \(.path(try .init(validating: inFile.string)))\n")
+            spacedPrint("Checking contents of: \(pathComponent(inFile.string))\n")
 
             // Protocol
             if transfer.protocol.protocolParameters != nil {

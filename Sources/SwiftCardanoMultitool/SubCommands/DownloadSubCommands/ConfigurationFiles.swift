@@ -76,7 +76,7 @@ extension DownloadMainCommand {
             )
             
             print(
-                noora.format("Downloading configs to: \(.path(try .init(validating: downloadDir.string)))"),
+                noora.format("Downloading configs to: \(pathComponent(downloadDir.string))"),
                 terminator: "\n\n"
             )
             let baseUrl = "https://book.world.dev.cardano.org/environments/\(network!.description)/"
@@ -140,7 +140,7 @@ extension DownloadMainCommand {
                     try data.write(to: URL(fileURLWithPath: destination.string))
                     
                     noora.success(
-                        .alert("Downloaded \(.primary(file)) to \(.path(try .init(validating: destination.string)))")
+                        .alert("Downloaded \(.primary(file)) to \(pathComponent(destination.string))")
                     )
                 } catch {
                     noora.error(

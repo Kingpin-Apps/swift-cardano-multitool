@@ -81,12 +81,12 @@ extension GenerateMainCommand {
                 try await FileUtils.fileLock(vrfSKey)
                 
                 print(noora.format(
-                    "\nNode operational VRF-Verification-Key: \(.path(try .init(validating: vrfVKey.string)))\n"
+                    "\nNode operational VRF-Verification-Key: \(pathComponent(vrfVKey.string))\n"
                 ))
                 try await FileUtils.displayFile(vrfVKey)
                 
                 print(noora.format(
-                    "\nNode operational VRF-Signing-Key: \(.path(try .init(validating: vrfSKey.string)))\n"
+                    "\nNode operational VRF-Signing-Key: \(pathComponent(vrfSKey.string))\n"
                 ))
                 try await FileUtils.displayFile(vrfSKey)
                 

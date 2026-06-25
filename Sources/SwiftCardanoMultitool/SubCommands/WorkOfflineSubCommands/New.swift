@@ -54,7 +54,7 @@ extension WorkOfflineMainCommand {
             
             let absolute = FileManager.default.currentDirectoryPath + "/" + outFile.string
             
-            spacedPrint("\nBuilding a fresh new offline transfer JSON at: \(.path(try .init(validating: absolute)))")
+            spacedPrint("\nBuilding a fresh new offline transfer JSON at: \(pathComponent(absolute))")
             
             let protocolParameters = try await getProtocolParameters(
                 context: context

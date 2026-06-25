@@ -206,22 +206,22 @@ extension GenerateMainCommand {
                 try await FileUtils.fileLock(policyId)
 
                 print(noora.format(
-                    "\nPolicy-Verification-Key\(extraDescription): \(.path(try .init(validating: policyVKey.string)))\n"
+                    "\nPolicy-Verification-Key\(extraDescription): \(pathComponent(policyVKey.string))\n"
                 ))
                 try await FileUtils.displayFile(policyVKey)
 
                 print(noora.format(
-                    "\nPolicy-Signing-Key\(extraDescription): \(.path(try .init(validating: policySKey.string)))\n"
+                    "\nPolicy-Signing-Key\(extraDescription): \(pathComponent(policySKey.string))\n"
                 ))
                 try await FileUtils.displayFile(policySKey)
 
                 print(noora.format(
-                    "\nPolicy-Script\(extraDescription): \(.path(try .init(validating: policyScript.string)))\n"
+                    "\nPolicy-Script\(extraDescription): \(pathComponent(policyScript.string))\n"
                 ))
                 try await FileUtils.displayFile(policyScript)
 
                 print(noora.format(
-                    "\nPolicy-ID\(extraDescription): \(.path(try .init(validating: policyId.string)))\n"
+                    "\nPolicy-ID\(extraDescription): \(pathComponent(policyId.string))\n"
                 ))
                 try await FileUtils.displayFile(policyId)
 
@@ -235,7 +235,7 @@ extension GenerateMainCommand {
                         options: .atomic
                     )
                     print(noora.format(
-                        "Mnemonics written to file: \(.path(try .init(validating: path.string)))"
+                        "Mnemonics written to file: \(pathComponent(path.string))"
                     ))
                 } catch {
                     noora.error(

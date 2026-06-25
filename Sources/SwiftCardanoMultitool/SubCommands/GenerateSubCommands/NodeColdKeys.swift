@@ -116,17 +116,17 @@ extension GenerateMainCommand {
                 try await FileUtils.fileLock(poolSKey)
                 
                 print(noora.format(
-                    "\nNode Cold Verification-Key: \(.path(try .init(validating: poolVKey.string)))\n"
+                    "\nNode Cold Verification-Key: \(pathComponent(poolVKey.string))\n"
                 ))
                 try await FileUtils.displayFile(poolVKey)
                 
                 print(noora.format(
-                    "\nNode Cold Signing-Key: \(.path(try .init(validating: poolSKey.string)))\n"
+                    "\nNode Cold Signing-Key: \(pathComponent(poolSKey.string))\n"
                 ))
                 try await FileUtils.displayFile(poolSKey)
                 
                 print(noora.format(
-                    "\nNode Operational-Certificate-Issue-Counter: \(.path(try .init(validating: poolCounter.string)))\n"
+                    "\nNode Operational-Certificate-Issue-Counter: \(pathComponent(poolCounter.string))\n"
                 ))
                 try await FileUtils.displayFile(poolCounter)
                 

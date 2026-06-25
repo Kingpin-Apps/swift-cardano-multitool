@@ -112,7 +112,7 @@ extension GenerateMainCommand {
                     nextKESnumber = "000"
                 }
                 
-                spacedPrint("KES Counter Next file not found. Creating new counter file at: \(.path(try .init(validating: kesCounterNextFile.string))) with : \(nextKESnumber)")
+                spacedPrint("KES Counter Next file not found. Creating new counter file at: \(pathComponent(kesCounterNextFile.string)) with : \(nextKESnumber)")
                 
                 try FileUtils
                     .dumpFile(kesCounterNextFile, data: nextKESnumber)
@@ -120,7 +120,7 @@ extension GenerateMainCommand {
             } catch SwiftCardanoMultitoolError.fileAlreadyExists {
                 nextKESnumber = try! FileUtils.loadFile(FilePath(kesCounterNextFile.string))
                 
-                spacedPrint("KES Counter Next loaded from file at: \(.path(try .init(validating: kesCounterNextFile.string)))")
+                spacedPrint("KES Counter Next loaded from file at: \(pathComponent(kesCounterNextFile.string))")
             }
             
             spacedPrint("Current KES number: \(currentKESnumber)")
@@ -150,12 +150,12 @@ extension GenerateMainCommand {
                 try await FileUtils.fileLock(kesSKey)
                 
                 spacedPrint(
-                    "Node operational KES-Verification-Key: \(.path(try .init(validating: kesVKey.string)))"
+                    "Node operational KES-Verification-Key: \(pathComponent(kesVKey.string))"
                 )
                 try await FileUtils.displayFile(kesVKey)
                 
                 spacedPrint(
-                    "Node operational KES-Verification-Key: \(.path(try .init(validating: kesSKey.string)))"
+                    "Node operational KES-Verification-Key: \(pathComponent(kesSKey.string))"
                 )
                 try await FileUtils.displayFile(kesSKey)
             }
@@ -260,7 +260,7 @@ extension GenerateMainCommand {
             try await FileUtils.dumpLockedFile(kesCounterFile, data: nextKESnumber)
             
             spacedPrint(
-                "Updated KES-Counter: \(.path(try .init(validating: kesCounterFile.string)))"
+                "Updated KES-Counter: \(pathComponent(kesCounterFile.string))"
             )
             try await FileUtils.displayFile(kesCounterFile)
         }

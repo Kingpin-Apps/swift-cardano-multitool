@@ -98,7 +98,7 @@ extension QueryMainCommand {
                 }
                 try protocolParameters.save(to: path.string, overwrite: true)
                 
-                noora.success(.alert("Protocol parameters saved to file:  \(.path(try .init(validating: path.string)))."))
+                noora.success(.alert("Protocol parameters saved to file:  \(pathComponent(path.string))."))
             }
         }
     }

@@ -193,9 +193,9 @@ extension CertificateMainCommand {
             }
 
             print(noora.format("\nGenerating genesis key delegation certificate"))
-            print(noora.format("  Genesis VKey:   \(.path(try .init(validating: genesisVKeyFilePath)))"))
-            print(noora.format("  Delegate VKey:  \(.path(try .init(validating: delegateVKeyFilePath)))"))
-            print(noora.format("  VRF VKey:       \(.path(try .init(validating: vrfVKeyFilePath)))"))
+            print(noora.format("  Genesis VKey:   \(pathComponent(genesisVKeyFilePath))"))
+            print(noora.format("  Delegate VKey:  \(pathComponent(delegateVKeyFilePath))"))
+            print(noora.format("  VRF VKey:       \(pathComponent(vrfVKeyFilePath))"))
 
             do {
                 if transactionOptions.useCardanoCLI {

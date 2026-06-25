@@ -144,13 +144,13 @@ extension CertificateMainCommand {
             ))
             
             print(noora.format(
-                "• Stake Vkey: \(.path(try .init(validating: stakeVkeyFilePath.string)))"
+                "• Stake Vkey: \(pathComponent(stakeVkeyFilePath.string))"
             ))
             print(noora.format(
                 "• Pool ID: \(.primary("\(try poolOperator.id())"))"
             ))
             print(noora.format(
-                "• Output: \(.path(try .init(validating: outFile.string)))"
+                "• Output: \(pathComponent(outFile.string))"
             ))
             print()
             

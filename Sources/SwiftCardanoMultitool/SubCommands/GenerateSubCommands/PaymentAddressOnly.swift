@@ -184,12 +184,12 @@ extension GenerateMainCommand {
                 try await FileUtils.fileLock(paymentSKey)
 
                 print(noora.format(
-                    "\nPaymentOnly(Enterprise)-Verification-Key\(extraDescription): \(.path(try .init(validating: paymentVKey.string)))\n"
+                    "\nPaymentOnly(Enterprise)-Verification-Key\(extraDescription): \(pathComponent(paymentVKey.string))\n"
                 ))
                 try await FileUtils.displayFile(paymentVKey)
 
                 print(noora.format(
-                    "\nPaymentOnly(Enterprise)-Signing-Key\(extraDescription): \(.path(try .init(validating: paymentSKey.string)))\n"
+                    "\nPaymentOnly(Enterprise)-Signing-Key\(extraDescription): \(pathComponent(paymentSKey.string))\n"
                 ))
                 try await FileUtils.displayFile(paymentSKey)
 
@@ -203,7 +203,7 @@ extension GenerateMainCommand {
                         options: .atomic
                     )
                     print(noora.format(
-                        "Mnemonics written to file: \(.path(try .init(validating: path.string)))"
+                        "Mnemonics written to file: \(pathComponent(path.string))"
                     ))
                 } catch {
                     noora.error(

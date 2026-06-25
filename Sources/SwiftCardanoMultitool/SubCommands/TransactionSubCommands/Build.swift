@@ -893,7 +893,7 @@ extension TransactionMainCommand {
                 "Transaction built successfully.",
                 takeaways: [
                     "Fee: \(.primary("\(lovelaceToAdaString(UInt64(fee)))")) / \(.primary("\(fee)")) lovelace",
-                    "Saved to: \(.path(try AbsolutePath(validating: outFile.string)))"
+                    "Saved to: \(pathComponent(outFile.string))"
                 ]
             ))
         }
@@ -1043,7 +1043,7 @@ extension TransactionMainCommand {
                     "Fee: \(.primary("\(lovelaceToAdaString(UInt64(txBody.fee)))")) / \(.primary("\(txBody.fee)")) lovelace",
                     "Inputs: \(.primary("\(txBody.inputs.count)"))",
                     "Outputs: \(.primary("\(txBody.outputs.count)"))",
-                    "Saved to: \(.path(try AbsolutePath(validating: outFile.string)))"
+                    "Saved to: \(pathComponent(outFile.string))"
                 ]
             ))
         }

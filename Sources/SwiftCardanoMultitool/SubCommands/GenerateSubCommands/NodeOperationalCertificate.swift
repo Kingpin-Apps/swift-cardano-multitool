@@ -241,7 +241,7 @@ extension GenerateMainCommand {
                     if confirm {
                         try await createNewOpCertCounter(newCounter: 0)
                         noora.warning(
-                            .alert("A new counter file was created at \(.path(try .init(validating: nodeCounter.string))) with index 0.",
+                            .alert("A new counter file was created at \(pathComponent(nodeCounter.string)) with index 0.",
                                    takeaway: "You can now rerun this script \(.command("scm generate node-operational-certificate")) again to generate the opcert."
                               )
                         )
@@ -254,7 +254,7 @@ extension GenerateMainCommand {
                     }
                 }
                 
-                spacedPrint("Issue a new node operational certificate using KES-vKey \(.path(try .init(validating: kesVkeyFile.string))) and Cold-sKey \(.path(try .init(validating: poolSKey.string)))")
+                spacedPrint("Issue a new node operational certificate using KES-vKey \(pathComponent(kesVkeyFile.string)) and Cold-sKey \(pathComponent(poolSKey.string))")
                 
                 let cardanoConfig = try getCardanoConfig(config: config)
                 
@@ -277,7 +277,7 @@ extension GenerateMainCommand {
                     byronToShelleyEpochTransition: Int(config.byronToShelleyEpoch)
                 )
                 
-                spacedPrint("Issue a new node operational certificate using KES-vKey \(.path(try .init(validating: kesVkeyFile.string))) and Cold-sKey \(.path(try .init(validating: poolSKey.string)))")
+                spacedPrint("Issue a new node operational certificate using KES-vKey \(pathComponent(kesVkeyFile.string)) and Cold-sKey \(pathComponent(poolSKey.string))")
                 
                 kesExpireJson = cwd.appending("\(poolName!).kes-expire.json")
                 try await FileUtils
@@ -295,7 +295,7 @@ extension GenerateMainCommand {
                 
                 if skey.keyGenType == .cli || skey.keyGenType == .enc {
                     
-                    spacedPrint("Generating a new opcert from a cli signing key \(.path(try .init(validating: poolSKey.string)))")
+                    spacedPrint("Generating a new opcert from a cli signing key \(pathComponent(poolSKey.string))")
                     
                     let tempDirectory = FileManager.default.temporaryDirectory
                     let tempFile = tempDirectory.appendingPathComponent(UUID().uuidString + ".skey")
@@ -334,7 +334,7 @@ extension GenerateMainCommand {
                 else if skey.keyGenType == .hw {
                     let confirm = noora.yesOrNoChoicePrompt(
                         title: "Confirm Hardware Wallet Key",
-                        question: "Generating the new opcert from a local Hardware-Wallet keyfile \(.path(try .init(validating: poolSKey.string))), continue?",
+                        question: "Generating the new opcert from a local Hardware-Wallet keyfile \(pathComponent(poolSKey.string)), continue?",
                         defaultAnswer: true,
                     )
                     

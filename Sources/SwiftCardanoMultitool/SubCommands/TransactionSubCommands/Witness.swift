@@ -162,12 +162,12 @@ extension TransactionMainCommand {
             
             noora.info(.alert(
                 "Witness the unsigned transaction \(.primary("\(txId)")) with:",
-                takeaways: try signingMethods.map {
+                takeaways: signingMethods.map {
                     switch $0 {
                         case .hardwareWallet(let hwsfile):
-                            return "  - Hardware Wallet signing key: \(.path(try AbsolutePath(validating: hwsfile.string)))"
+                            return "  - Hardware Wallet signing key: \(pathComponent(hwsfile.string))"
                         case .softwareKey(let skey):
-                            return "  - Software signing key: \(.path(try AbsolutePath(validating: skey.string)))"
+                            return "  - Software signing key: \(pathComponent(skey.string))"
                     }
                 }
             ))
