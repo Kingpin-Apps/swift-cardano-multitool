@@ -2,6 +2,7 @@ import Foundation
 import ArgumentParser
 
 enum SendCommands: String, Subcommandable, AlignedChoiceDescribable {
+    case ada
     case all
     case assets
     case lovelaces
@@ -10,6 +11,7 @@ enum SendCommands: String, Subcommandable, AlignedChoiceDescribable {
 
     var name: String {
         switch self {
+            case .ada: return "ADA"
             case .all: return "All"
             case .assets: return "Assets"
             case .lovelaces: return "Lovelaces"
@@ -20,6 +22,7 @@ enum SendCommands: String, Subcommandable, AlignedChoiceDescribable {
 
     var details: String {
         switch self {
+            case .ada: return "Send an ADA amount (specific or minimum) to an address."
             case .all: return "Send all ADA and assets, all assets, or all ADA from an address."
             case .assets: return "Send a specific native asset (amount, all, or min) to an address."
             case .lovelaces: return "Send a lovelace amount (specific or minimum) to an address."
@@ -41,6 +44,7 @@ enum SendCommands: String, Subcommandable, AlignedChoiceDescribable {
     
     func command() -> any AsyncParsableCommand.Type {
         switch self {
+            case .ada: return SendMainCommand.Ada.self
             case .all: return SendMainCommand.All.self
             case .assets: return SendMainCommand.Assets.self
             case .lovelaces: return SendMainCommand.Lovelaces.self
