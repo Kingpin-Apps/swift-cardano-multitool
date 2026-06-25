@@ -1,3 +1,9 @@
+## 0.8.2 (2026-06-25)
+
+### Fix
+
+- make CODESIGN_IDENTITY lazy so release-universal builds without it
+
 ## 0.8.1 (2026-06-25)
 
 ### Feat
