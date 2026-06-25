@@ -74,11 +74,14 @@ public struct KESUtils {
         }
         
         public func toDictionary() -> [String: Any] {
+            // `expireDate` must be a JSON-serialisable type — a raw `Date` makes
+            // `JSONSerialization` throw "Invalid type in JSON write (__NSTaggedDate)".
+            // Emit a human-readable ISO-8601 string.
             [
                 CodingKeys.latestKESFileIndex.rawValue: latestKESFileIndex,
                 CodingKeys.currentKESPeriod.rawValue: currentKESPeriod,
                 CodingKeys.expireKESPeriod.rawValue: expireKESPeriod,
-                CodingKeys.expireDate.rawValue: expireDate
+                CodingKeys.expireDate.rawValue: ISO8601DateFormatter().string(from: expireDate)
             ]
         }
     }

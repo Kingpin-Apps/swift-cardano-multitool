@@ -302,7 +302,7 @@ extension GenerateMainCommand {
                     
                     defer { try? FileManager.default.removeItem(at: tempFile) }
                     
-                    try skey.save(to: tempFile.absoluteString)
+                    try skey.save(to: tempFile.path)
                     
                     switch tool {
                         case .cardanoCLI:
@@ -312,7 +312,7 @@ extension GenerateMainCommand {
                             
                             let _ = try await cli.node.issueOpCert(
                                 kesVerificationKeyFile: kesVkeyFile.string,
-                                coldSigningKeyFile: tempFile.absoluteString,
+                                coldSigningKeyFile: tempFile.path,
                                 operationalCertificateIssueCounterFile: nodeCounter.string,
                                 kesPeriod: kesExpire.currentKESPeriod,
                                 outFile: opcert.string
@@ -322,7 +322,7 @@ extension GenerateMainCommand {
                             var issueCounter = try OperationalCertificateIssueCounter.load(from: nodeCounter.string)
                             let operationalCertificate = try OperationalCertificate.issue(
                                 kesVerificationKey: KESVerificationKey.load(from: kesVkeyFile.string),
-                                coldSigningKey: StakePoolSigningKey.load(from: tempFile.absoluteString),
+                                coldSigningKey: StakePoolSigningKey.load(from: tempFile.path),
                                 operationalCertificateIssueCounter: &issueCounter,
                                 kesPeriod: UInt64(kesExpire.currentKESPeriod)
                             )
