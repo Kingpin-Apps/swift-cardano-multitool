@@ -118,8 +118,11 @@ extension TransactionMainCommand {
                 // render and leave the node rejection invisible — the process
                 // appears to hang silently at "Submitting transaction...". Emit
                 // the reason synchronously to stderr (unbuffered) so it is always
-                // shown, and flush stdout for good measure.
-                fflush(stdout)
+                // shown, and flush buffered output for good measure.
+                // `fflush(nil)` flushes every open stream — using it instead of
+                // `fflush(stdout)` avoids referencing the global `stdout` var,
+                // which is not concurrency-safe under strict concurrency on Linux.
+                fflush(nil)
                 FileHandle.standardError.write(
                     Data("Transaction submission failed: \(error)\n".utf8)
                 )
