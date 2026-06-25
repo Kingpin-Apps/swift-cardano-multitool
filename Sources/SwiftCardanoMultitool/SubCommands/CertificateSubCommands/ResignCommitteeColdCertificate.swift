@@ -32,6 +32,9 @@ extension CertificateMainCommand {
         @Option(name: .long, help: "Committee cold credential. Supports: bech32 (cc_cold1...), hex hash, .cc-cold.vkey file.")
         var committeeColdCredential: CommitteeColdCredential?
 
+        @Option(name: .long, help: "Path to the committee cold signing key (.cc-cold.skey). Required to sign when generating a transaction.")
+        var coldSigningKey: FilePath?
+
         // MARK: - CertificateCommandable Arguments
 
         @OptionGroup var certificateOptions: SharedCertificateOptions
@@ -165,14 +168,17 @@ extension CertificateMainCommand {
                     throw ExitCode.validationFailure
                 }
 
-                let signingKeys: [String] = [
+                var signingKeys: [String] = [
                     try feePaymentAddress.info.getSigningMethod().path.string
                 ]
-
-                noora.warning(.alert(
-                    "Remember to also sign with the cold key.",
-                    takeaway: "Add the --signing-key-file for your cc-cold.skey when submitting."
-                ))
+                if let coldSigningKey {
+                    signingKeys.append(coldSigningKey.string)
+                } else {
+                    noora.warning(.alert(
+                        "No committee cold signing key provided; the submitted transaction will be missing its witness.",
+                        takeaway: "Pass --cold-signing-key <name>.cc-cold.skey so the certificate can be signed."
+                    ))
+                }
 
                 let protocolParamsFile = cwd.appending("protocol-parameters.json")
                 _ = try await getProtocolParameters(context: context, protocolParamsFile: protocolParamsFile)
