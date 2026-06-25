@@ -1,6 +1,6 @@
 # ── Configurable variables ───────────────────────────────────────────────────
 # Developer ID Application certificate (set with CODESIGN_IDENTITY=... just sign)
-CODESIGN_IDENTITY := env_var("CODESIGN_IDENTITY")
+CODESIGN_IDENTITY := env_var_or_default("CODESIGN_IDENTITY", "")
 
 # Keychain profile for notarytool — set up once with:
 #   xcrun notarytool store-credentials "scm-notarytool" \
