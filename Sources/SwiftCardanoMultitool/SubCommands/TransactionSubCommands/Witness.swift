@@ -275,7 +275,20 @@ extension TransactionMainCommand {
                         switch method {
                             case .softwareKey(let skeyPath):
                                 skeyType = try SigningKeyType.load(from: skeyPath.string)
-                                witnessFile = witnessFiles.first { $0.stem == "\(skeyPath.stem!).witness"}!
+                                // witnessFiles are built as "<skey-stem>.witness";
+                                // match on the full file name. (`FilePath.stem`
+                                // strips the .witness extension, so comparing it to
+                                // "<stem>.witness" never matched → force-unwrap crash.)
+                                guard let match = witnessFiles.first(
+                                    where: { $0.lastComponent?.string == "\(skeyPath.stem!).witness" }
+                                ) else {
+                                    noora.error(.alert(
+                                        "Could not determine the witness output file for \(skeyPath.string).",
+                                        takeaways: ["Expected a witness file named \(skeyPath.stem!).witness."]
+                                    ))
+                                    throw ExitCode.failure
+                                }
+                                witnessFile = match
                             case .hardwareWallet:
                                 noora.error("Hardware wallet signing is not supported in software key signing method.")
                                 throw ExitCode.validationFailure
