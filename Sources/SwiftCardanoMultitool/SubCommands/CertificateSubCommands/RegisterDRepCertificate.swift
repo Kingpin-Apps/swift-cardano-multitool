@@ -33,6 +33,9 @@ extension CertificateMainCommand {
         @Option(name: .long, help: "DRep credential. Supports: bech32 (drep1...), hex hash, .drep.vkey file.")
         var drepCredential: DRepCredential?
 
+        @Option(name: .long, help: "Path to the DRep signing key (.drep.skey). Required to sign the registration when generating a transaction.")
+        var drepSigningKey: FilePath?
+
         // MARK: - CertificateCommandable Arguments
 
         @OptionGroup var certificateOptions: SharedCertificateOptions
@@ -174,15 +177,19 @@ extension CertificateMainCommand {
                     throw ExitCode.validationFailure
                 }
 
-                // DRep registration requires signing with the DRep key
-                let signingKeys: [String] = [
+                // DRep registration must be signed by the DRep key as well as the
+                // fee payer, otherwise the node rejects it (MissingVKeyWitness).
+                var signingKeys: [String] = [
                     try feePaymentAddress.info.getSigningMethod().path.string
                 ]
-
-                noora.warning(.alert(
-                    "Remember to also sign with the DRep key.",
-                    takeaway: "Add the --signing-key-file for your .drep.skey when submitting."
-                ))
+                if let drepSigningKey {
+                    signingKeys.append(drepSigningKey.string)
+                } else {
+                    noora.warning(.alert(
+                        "No DRep signing key provided; the submitted transaction will be missing the DRep witness.",
+                        takeaway: "Pass --drep-signing-key <name>.drep.skey so the registration can be signed."
+                    ))
+                }
 
                 spacedPrint("\nSubmit DRep Registration Certificate \(.primary(outFile.string)) with funds from \(.primary(feePaymentAddress.info.name!))")
 

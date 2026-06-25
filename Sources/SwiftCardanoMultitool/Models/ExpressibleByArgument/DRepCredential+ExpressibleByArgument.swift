@@ -47,7 +47,9 @@ extension DRepCredential: @retroactive ExpressibleByArgument {
         ]
 
         for fileName in variations {
-            let filePath = currentDir.appending(fileName)
+            let filePath = fileName.hasPrefix("/")
+                ? fileName
+                : currentDir + "/" + fileName
             if fileManager.fileExists(atPath: filePath) {
                 if let vkey = try? DRepVerificationKey.load(from: filePath) {
                     if let hash = try? vkey.hash() {
