@@ -175,12 +175,16 @@ extension TransactionMainCommand {
                     logger: logger
                 )
                 
-                let witnessArgs = witnessFiles.flatMap { ["--witness-file", $0.string] }
-                
+                // Absolutize paths — cardano-cli does not resolve relative paths
+                // against the user's cwd (e.g. user-supplied --tx-file / --witness-file).
+                let witnessArgs = witnessFiles.flatMap {
+                    ["--witness-file", FileUtils.absolutePath($0).string]
+                }
+
                 _ = try await cli.transaction.assemble(
                     arguments: [
-                        "--tx-body-file", effectiveTxFile.string,
-                        "--out-file", outFile.string
+                        "--tx-body-file", FileUtils.absolutePath(effectiveTxFile).string,
+                        "--out-file", FileUtils.absolutePath(outFile).string
                     ] + witnessArgs
                 )
             } else {

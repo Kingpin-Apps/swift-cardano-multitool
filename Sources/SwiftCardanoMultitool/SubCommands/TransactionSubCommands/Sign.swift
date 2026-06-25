@@ -254,12 +254,17 @@ extension TransactionMainCommand {
                         logger: logger
                     )
                     
-                    let skeyArgs = signingKeys.flatMap { ["--signing-key-file", $0.string] }
+                    // Absolutize paths: cardano-cli does not resolve them against the
+                    // user's cwd, so relative paths (e.g. a relative --signing-keys)
+                    // would not be found.
+                    let skeyArgs = signingKeys.flatMap {
+                        ["--signing-key-file", FileUtils.absolutePath($0).string]
+                    }
 
                     _ = try await cli.transaction.sign(
                         arguments: [
-                            "--tx-body-file", effectiveTxFile.string,
-                            "--out-file", outFile.string
+                            "--tx-body-file", FileUtils.absolutePath(effectiveTxFile).string,
+                            "--out-file", FileUtils.absolutePath(outFile).string
                         ] + skeyArgs
                     )
                 } else {

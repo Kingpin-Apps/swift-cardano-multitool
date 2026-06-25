@@ -244,19 +244,24 @@ extension TransactionMainCommand {
                     for signingKey in signingKeys {
                         let witnessFile = witnessFiles.first { $0.stem == "\(signingKey.stem!).witness"}!
                         
+                        // Absolutize input/output paths — cardano-cli does not resolve
+                        // relative paths against the user's cwd.
+                        let resolvedTxFile = try await effectiveTxFile
+                        let txBodyArg = FileUtils.absolutePath(resolvedTxFile).string
+                        let signingKeyArg = FileUtils.absolutePath(signingKey).string
                         if save {
                             _ = try await cli.transaction.witness(
                                 arguments: [
-                                    "--tx-body-file", effectiveTxFile.string,
-                                    "--signing-key-file", signingKey.string,
-                                    "--out-file", witnessFile.string
+                                    "--tx-body-file", txBodyArg,
+                                    "--signing-key-file", signingKeyArg,
+                                    "--out-file", FileUtils.absolutePath(witnessFile).string
                                 ]
                             )
                         } else {
                             let witness = try await cli.transaction.witness(
                                 arguments: [
-                                    "--tx-body-file", effectiveTxFile.string,
-                                    "--signing-key-file", signingKey.string,
+                                    "--tx-body-file", txBodyArg,
+                                    "--signing-key-file", signingKeyArg,
                                     "--out-file", "/dev/stdout"
                                 ]
                             )

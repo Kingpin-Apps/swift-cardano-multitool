@@ -338,6 +338,20 @@ public struct FileUtils {
         }
     }
 
+    /// Resolve `path` against the process's current working directory when it is
+    /// relative; returns it unchanged when already absolute.
+    ///
+    /// Delegated binaries — notably `cardano-cli` — are launched with a working
+    /// directory taken from `cardano.working_dir` (often the project directory),
+    /// **not** the user's shell cwd. A relative file path the user typed on the
+    /// command line must therefore be made absolute before it is forwarded to them,
+    /// otherwise the binary resolves it against its own working directory and fails
+    /// with a confusing "file not found".
+    public static func absolutePath(_ path: FilePath) -> FilePath {
+        guard !path.string.hasPrefix("/") else { return path }
+        return FilePath(FileManager.default.currentDirectoryPath).appending(path.string)
+    }
+
     /// Prints a `noora.info` alert summarizing a file's name, path, size, permissions,
     /// and modification time. Best-effort: any attribute that can't be read is skipped.
     /// - Parameter path: The file to describe.
@@ -346,13 +360,7 @@ public struct FileUtils {
 
         var takeaways: [TerminalText] = []
 
-        let absolutePath: String
-        if path.string.hasPrefix("/") {
-            absolutePath = path.string
-        } else {
-            absolutePath = FilePath(FileManager.default.currentDirectoryPath)
-                .appending(path.string).string
-        }
+        let absolutePath = Self.absolutePath(path).string
         if let validatedPath = try? AbsolutePath(validating: absolutePath) {
             takeaways.append("Path: \(.path(validatedPath))")
         } else {

@@ -299,12 +299,16 @@ extension QueryMainCommand {
                 throw ExitCode.failure
             }
             
-            // Build CLI arguments
+            // Build CLI arguments. Absolutize the VRF signing key path: cardano-cli
+            // runs with its own working directory (cardano.working_dir), so a
+            // relative path (from --vrf-skey or a pool.json vrf_skey) would not be
+            // found relative to the user's cwd.
+            let vrfSkeyArg = FileUtils.absolutePath(resolvedVrfSkey).string
             let epochFlag = "--\(whichEpoch == .next ? "next" : "current")"
             let arguments: [String] = [
                 "--genesis", shelleyGenesisFilePath,
                 "--stake-pool-id", resolvedPoolId,
-                "--vrf-signing-key-file", resolvedVrfSkey.string,
+                "--vrf-signing-key-file", vrfSkeyArg,
                 epochFlag,
             ]
             
