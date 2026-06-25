@@ -129,7 +129,14 @@ extension SignMainCommand {
                     ? Array(repeating: 1, count: votePublicKeys.count)
                     : voteWeights
                 let delegations: [Signer.CIP36.Delegation] = try zip(votePublicKeys, weights).map { (key, weight) in
-                    let bytes = try SignerUtils.resolveRawKey(key)
+                    var bytes = try SignerUtils.resolveRawKey(key)
+                    // `generate vote-key` emits an extended CIP-36 vote vkey (64 bytes:
+                    // 32-byte ed25519 public key + 32-byte chain code). A CIP-36
+                    // registration delegation takes only the 32-byte voting public key,
+                    // so unwrap the extended form to its leading 32 bytes.
+                    if bytes.count == 64 {
+                        bytes = Data(bytes.prefix(32))
+                    }
                     return Signer.CIP36.Delegation(votingKey: bytes, weight: weight)
                 }
                 aux = try Signer.CIP36.makeRegistration(
