@@ -1024,7 +1024,13 @@ extension TransactionSendable {
             }
         }
         
-        if lovelacesToReturn < minOutUtxo {
+        // When the change is redirected to another address (e.g. `send all`,
+        // which sweeps everything to the destination), the fee-payment address
+        // legitimately receives no change output, so a `lovelacesToReturn` of 0
+        // is expected and correct — the builder already enforces the minimum-UTxO
+        // requirement on the real change output at the destination. Only validate
+        // the fee-payment change output when change actually flows back to it.
+        if changeAddressOverride == nil, lovelacesToReturn < minOutUtxo {
             noora.error(.alert(
                 "Not enough funds on the source address! Final output amount \(.primary("\(lovelacesToReturn)")) lovelaces is less than the minimum required UTXO of \(.primary("\(minOutUtxo)")) lovelaces.",
                 takeaways: [
@@ -1034,7 +1040,7 @@ extension TransactionSendable {
             ))
             throw ExitCode.validationFailure
         }
-        
+
         let tx = Transaction(
             transactionBody: txBody,
             transactionWitnessSet: try txBuilder.buildWitnessSet(),
