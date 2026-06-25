@@ -670,7 +670,32 @@ extension CertificateMainCommand {
                     ))
                     throw ExitCode.validationFailure
                 }
-                
+
+                // Each pool owner must witness the registration with their stake
+                // signing key — otherwise the ledger rejects the tx with
+                // MissingVKeyWitnessesUTXOW for the owner's key hash.
+                for owner in pool.owners {
+                    guard let ownerStakeSkey = owner.stakeSkey else {
+                        noora.error(.alert(
+                            "Owner '\(owner.name ?? "unknown")' is missing a stake signing key (stake_skey).",
+                            takeaways: ["Every pool owner must sign the registration; set stake_skey for each owner in the pool JSON."]
+                        ))
+                        throw ExitCode.validationFailure
+                    }
+                    do {
+                        try FileUtils.checkFileExists(ownerStakeSkey)
+                    } catch {
+                        noora.error(.alert(
+                            "Owner stake signing key not found: \(ownerStakeSkey.string)",
+                            takeaways: ["Ensure the file exists for owner '\(owner.name ?? "unknown")'."]
+                        ))
+                        throw ExitCode.validationFailure
+                    }
+                    if !signingKeys.contains(ownerStakeSkey.string) {
+                        signingKeys.append(ownerStakeSkey.string)
+                    }
+                }
+
                 spacedPrint(
                     "\nSubmit Pool Registration Certificate \(.primary("\(outFile.string)")) with funds from Address \(.primary("\(feePaymentAddress.info.name!)"))"
                 )
