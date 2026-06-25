@@ -100,7 +100,7 @@ Propose a new constitution document.
 
 ### hard-fork-initiation
 
-Propose advancing the protocol to a new major version. Pass `--major <version>` and the previous hard-fork action ID via `--prev-action-id`.
+Propose advancing the protocol to a new major version. Pass `--protocol-version <major>.<minor>` (e.g. `10.0`) and the previous hard-fork action ID via `--prev-action-id`.
 
 ### update-committee
 

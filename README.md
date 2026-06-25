@@ -19,7 +19,17 @@ A comprehensive command-line tool for managing the Cardano blockchain ecosystem 
 
 ## Installation
 
-### Option 1 — Build from source
+### Option 1 — Homebrew (recommended)
+
+Install the signed, notarized universal binary from the Kingpin Apps tap:
+
+```bash
+brew install Kingpin-Apps/tap/scm
+```
+
+Upgrade later with `brew upgrade scm`.
+
+### Option 2 — Build from source
 
 Clone the repository and build with Swift Package Manager:
 
@@ -35,7 +45,7 @@ The compiled binary is at `.build/release/scm`. Copy it somewhere on your `PATH`
 cp .build/release/scm ~/.local/bin/scm
 ```
 
-### Option 2 — Build & install with `just`
+### Option 3 — Build & install with `just`
 
 If you have [just](https://github.com/casey/just) installed, the `Justfile` automates building a universal binary (arm64 + x86_64), codesigning, and installing:
 
@@ -59,6 +69,10 @@ Other useful `just` targets:
 | `just sign` | Build universal + codesign |
 | `just notarize` | Build, sign, and notarize for Gatekeeper |
 | `just uninstall` | Remove from `$INSTALL_DIR` |
+| `just bump` | Bump the version from the changelog and regenerate `Version.swift` |
+| `just tap-bump <version>` | Point the Homebrew tap formula at a release (run by CI on tag) |
+
+Tagged releases are built, codesigned, notarized, published to GitHub Releases, and pushed to the Homebrew tap automatically by the `Release` GitHub Actions workflow.
 
 ### Verify the installation
 
@@ -104,6 +118,8 @@ Most commands require a configuration file that tells `scm` how to connect to th
 | `CARDANO_MULTITOOL_SKIP_PROMPT` | Set to `1` to skip interactive confirmations |
 | `CARDANO_MULTITOOL_USE_CARDANO_CLI` | Set to `1` to force cardano-cli backend |
 | `CARDANO_MULTITOOL_USE_SWIFT_CARDANO` | Set to `1` to force Swift Cardano backend |
+| `CARDANO_NODE_SOCKET_PATH` | Node socket path; autodetected by `config init` (the canonical cardano-cli/node variable) |
+| `CARDANO_SOCKET_PATH` | Alternative node socket path, used as a fallback by `config init` |
 
 ### Initialize a config file
 
@@ -111,7 +127,7 @@ Most commands require a configuration file that tells `scm` how to connect to th
 scm config init
 ```
 
-This wizard walks you through creating a config file for your chosen network (mainnet, preprod, preview) and saves it at a path you specify.
+This wizard walks you through creating a config file for your chosen network (mainnet, preprod, preview, guildnet, sanchonet) and saves it at a path you specify. It autodetects the node socket (`CARDANO_NODE_SOCKET_PATH`, falling back to `CARDANO_SOCKET_PATH`) and the `config.json` + `topology.json` shipped in the cardano-node install's `share/<network>/` directory, filling in any paths you haven't set explicitly.
 
 ### Config file format
 
@@ -121,8 +137,9 @@ The config file supports JSON, TOML, and YAML. Example (JSON):
 {
   "cardano": {
     "network": "mainnet",
-    "node_socket_path": "/run/cardano-node/node.socket",
-    "node_config_path": "/opt/cardano/config/mainnet/config.json"
+    "socket": "/run/cardano-node/node.socket",
+    "config": "/opt/cardano/config/mainnet/config.json",
+    "topology": "/opt/cardano/config/mainnet/topology.json"
   },
   "blockfrost_project_id": "mainnetXXXXXXXXXXXXXXXX",
   "mode": "auto",
@@ -444,6 +461,7 @@ scm run kupo             # Start Kupo
 Build and submit a transaction to transfer ADA or native assets.
 
 ```bash
+scm send ada         # Send a specific ADA amount (denominated in ADA)
 scm send lovelaces   # Send a specific lovelace amount
 scm send assets      # Send specific native assets
 scm send all         # Send the entire wallet balance

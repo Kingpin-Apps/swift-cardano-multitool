@@ -17,6 +17,8 @@ Set up your environment and configuration file for `scm`.
 | `CARDANO_MULTITOOL_SKIP_PROMPT` | Set to `1` / `true` / `yes` to suppress interactive confirmations. |
 | `CARDANO_MULTITOOL_USE_CARDANO_CLI` | Set to `1` to force the `cardano-cli` execution backend. |
 | `CARDANO_MULTITOOL_USE_SWIFT_CARDANO` | Set to `1` to force the Swift Cardano execution backend. |
+| `CARDANO_NODE_SOCKET_PATH` | Node socket path autodetected by `config init` (falls back to `CARDANO_SOCKET_PATH`). |
+| `CARDANO_SOCKET_PATH` | Fallback node socket path used by `config init` autodetection. |
 
 ## Creating a config file
 
@@ -39,10 +41,10 @@ The following is a fully annotated JSON example. Omit any optional field to use 
 
   "cardano": {
     "network": "mainnet",
-    "node_socket_path": "/run/cardano-node/node.socket",
-    "node_config_path": "/opt/cardano/config/mainnet/config.json",
-    "node_topology_path": "/opt/cardano/config/mainnet/topology.json",
-    "node_database_path": "/opt/cardano/db"
+    "socket": "/run/cardano-node/node.socket",
+    "config": "/opt/cardano/config/mainnet/config.json",
+    "topology": "/opt/cardano/config/mainnet/topology.json",
+    "database": "/opt/cardano/db"
   },
 
   "mithril": {
@@ -96,8 +98,8 @@ blockfrost_project_id = "mainnetXXXXXXXXXXXXXXXX"
 
 [cardano]
 network = "mainnet"
-node_socket_path = "/run/cardano-node/node.socket"
-node_config_path = "/opt/cardano/config/mainnet/config.json"
+socket = "/run/cardano-node/node.socket"
+config = "/opt/cardano/config/mainnet/config.json"
 
 [ogmios]
 host = "localhost"
@@ -135,10 +137,10 @@ log_level = "info"
 | Field | Description |
 |-------|-------------|
 | `network` | Network name: `mainnet`, `preprod`, `preview`, `guildnet`, `sanchonet` |
-| `node_socket_path` | Path to the `cardano-node` Unix socket |
-| `node_config_path` | Path to the node's `config.json` |
-| `node_topology_path` | Path to the node's `topology.json` |
-| `node_database_path` | Path to the node's chain database directory |
+| `socket` | Path to the `cardano-node` Unix socket |
+| `config` | Path to the node's `config.json` |
+| `topology` | Path to the node's `topology.json` |
+| `database` | Path to the node's chain database directory |
 
 ### mithril section
 

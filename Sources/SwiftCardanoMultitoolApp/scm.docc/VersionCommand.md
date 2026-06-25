@@ -16,10 +16,13 @@ scm --version
 ## Sample output
 
 ```
-SwiftCardanoMultitool v1.x.y
-Chain Context: CardanoCliChainContext
+SwiftCardanoMultitool v0.8.0
+Chain Context: Cardano-CLI
 Scripts-Mode: Auto
 Platform: Version 15.5 (Build ...)
+Testnet: Preview (magic 2)
+Cardano-CLI: 11.0.0.0
+Cardano-Node: 11.0.1
 ```
 
 When the chain context is backed by cardano-cli, the installed `cardano-cli` and `cardano-node` versions are also shown. The exact fields depend on the loaded configuration — see <doc:Configuration> for what determines the network and backend.

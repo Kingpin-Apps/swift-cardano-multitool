@@ -21,7 +21,7 @@ Mint `<amount>` tokens of `<policyId>.<assetName>` back to the fee payment addre
 
 ```bash
 # Combined positional identifier
-scm asset mint myPolicy.MYTOK 1000 \
+scm asset mint myPolicy.MYTOK --amount 1000 \
   --fee-payment-address owner.payment \
   --submit
 
@@ -54,7 +54,7 @@ Burn `<amount>` tokens by submitting a transaction with a negative mint value. T
 
 ```bash
 # Combined positional identifier
-scm asset burn myPolicy.MYTOK 200 \
+scm asset burn myPolicy.MYTOK --amount 200 \
   --fee-payment-address owner.payment \
   --submit
 

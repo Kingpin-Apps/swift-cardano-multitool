@@ -21,7 +21,7 @@ Encrypt a file with a password. The original file is replaced by an encrypted ve
 scm protect encrypt --file-name payment.skey
 ```
 
-The wizard prompts for a password (and a confirmation) unless `CARDANO_MULTITOOL_DECRYPT_PASSWORD` is set in the environment.
+The wizard always prompts interactively for a password (and a confirmation) — there is no command-line flag or environment variable to supply the encryption password.
 
 **Options:**
 

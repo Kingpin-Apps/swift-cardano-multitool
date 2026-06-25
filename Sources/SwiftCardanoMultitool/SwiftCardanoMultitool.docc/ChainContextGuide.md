@@ -63,12 +63,15 @@ You can construct a ``MultitoolConfig`` directly without a file:
 ```swift
 import SwiftCardanoMultitool
 import SwiftCardanoChain
+import SystemPackage
 
 let config = MultitoolConfig(
     blockfrostProjectId: "mainnetXXXXXXXXXXXXXXXX",
     cardano: CardanoConfig(
+        socket: FilePath("/run/cardano-node/node.socket"),
         network: .mainnet,
-        nodeSocketPath: "/run/cardano-node/node.socket"
+        era: .conway,
+        ttlBuffer: 3600
     ),
     mode: .lite,
     tokenMetaServer: TokenMetaServerURLs(),

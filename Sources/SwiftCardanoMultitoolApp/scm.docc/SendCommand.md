@@ -17,6 +17,35 @@ All `send` subcommands compose with `SharedTransactionOptions`, so flags like `-
 
 ## Subcommands
 
+### ada
+
+Send a specific amount of ADA (denominated in ADA, not lovelace) to a recipient address.
+
+```bash
+scm send ada \
+  --amount 5 \
+  --to-address addr1... \
+  --fee-payment-address owner.payment
+
+# Send the protocol-defined minimum UTXO instead of an exact amount
+scm send ada \
+  --amount min \
+  --to-address recipient.payment \
+  --fee-payment-address owner.payment
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--amount` | ADA amount to send (e.g. `1.5` = 1.5 ₳), or `min` for the protocol minimum UTXO. Add an explicit unit (`100000 lovelace`) to override the denomination. |
+| `--to-address`, `-t` | Recipient address (bech32, file stem like `recipient.payment`, key hash, or `$adahandle`). |
+| `--fee-payment-address`, `-f` | Sender's address — used to find UTxOs and pay fees. Same input forms as `--to-address`. |
+| `--message`, `-m` | Optional transaction message (CIP-20). Repeatable. |
+| `--submit` | Broadcast the signed transaction to the chain. |
+
+Native assets at the source are not affected — only ADA is sent. Change (remaining ADA and any assets) is returned to the source address.
+
 ### lovelaces
 
 Send a specific amount of lovelace (1 ADA = 1,000,000 lovelace) to a recipient address.

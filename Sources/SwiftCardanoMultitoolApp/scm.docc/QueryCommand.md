@@ -106,6 +106,7 @@ scm query stake-pool --pool-name myPool
 | `--pool-operator`, `-o` | The pool: bech32 (`pool1...`), hex hash, or `.node.vkey` file. |
 | `--pool-name`, `-p` | Pool name — resolves `<poolName>.vrf.skey` and `<poolName>.pool.id-bech` in the current directory. |
 | `--pool-json`, `-j` | Path to the `pool.json` file. |
+| `--strict` | Download the pool's off-chain metadata and verify its hash; fail if it is unreachable or does not match. By default metadata problems are tolerated and on-chain parameters are still shown. |
 
 ### kes-period-info
 
