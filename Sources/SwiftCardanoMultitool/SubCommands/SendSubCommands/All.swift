@@ -157,7 +157,9 @@ extension SendMainCommand {
                 ))
             }
 
-            let confirmed = noora.yesOrNoChoicePrompt(
+            // Non-interactive callers invoked `send all` explicitly, so proceed
+            // rather than aborting on a confirmation prompt that can't be shown.
+            let confirmed = !isInteractiveSession() || noora.yesOrNoChoicePrompt(
                 title: "Confirm Send All",
                 question: "Are you sure you want to proceed?",
                 defaultAnswer: false,

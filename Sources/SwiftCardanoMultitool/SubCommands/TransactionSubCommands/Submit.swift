@@ -61,7 +61,10 @@ extension TransactionMainCommand {
             let context = try await getContext(config: config)
             try await printContextInfo(config: config, context: context)
             
-            let confirm = noora.yesOrNoChoicePrompt(
+            // Non-interactive callers reach this point only by explicitly asking
+            // to submit (e.g. a txFile + the submit flow), so proceed without a
+            // prompt that would otherwise abort the process.
+            let confirm = !isInteractiveSession() || noora.yesOrNoChoicePrompt(
                 title: "Confim Submission",
                 question: "Does this look good for you, continue?",
                 defaultAnswer: false,
