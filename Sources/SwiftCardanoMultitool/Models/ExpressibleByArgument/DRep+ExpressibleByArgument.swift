@@ -8,7 +8,20 @@ extension DRep: @retroactive _SendableMetatype {}
 extension DRep: @retroactive ExpressibleByArgument {
     public init?(argument: String) {
         let trimmed = argument.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
+        // Predefined DReps (CIP-1694): vote-delegation to the always-abstain or
+        // always-no-confidence options requires no on-chain DRep credential.
+        switch trimmed.lowercased() {
+            case "always-abstain", "alwaysabstain", "abstain":
+                self = DRep(credential: .alwaysAbstain)
+                return
+            case "always-no-confidence", "alwaysnoconfidence", "no-confidence", "noconfidence":
+                self = DRep(credential: .alwaysNoConfidence)
+                return
+            default:
+                break
+        }
+
         // Try Bech32 first
         if trimmed.hasPrefix("drep") {
             try? self.init(from: trimmed)
