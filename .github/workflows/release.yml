@@ -1,0 +1,137 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  # Gate the release on a green build + test of the exact tagged commit. The
+  # Swift workflow only runs on branch/PR pushes, not tags, so we re-run the
+  # suite here rather than assuming `main` was green when the tag was cut.
+  test:
+    name: Build & test
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Print toolchain
+        run: swift --version
+      - name: Build
+        run: swift build -v
+      - name: Test
+        run: swift test -v --parallel
+
+  release:
+    needs: test
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Print toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Import Developer ID cert into temporary keychain
+        env:
+          CODESIGN_P12_BASE64: ${{ secrets.CODESIGN_P12_BASE64 }}
+          CODESIGN_P12_PASSWORD: ${{ secrets.CODESIGN_P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          CERT_PATH="$RUNNER_TEMP/cert.p12"
+          echo "$CODESIGN_P12_BASE64" | base64 --decode > "$CERT_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$CODESIGN_P12_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychain -d user | tr -d '"')
+          rm -f "$CERT_PATH"
+
+      - name: Install just + jq
+        run: brew install just jq
+
+      - name: Build universal binary
+        run: just release-universal
+
+      - name: Codesign
+        env:
+          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
+        run: just sign
+
+      - name: Notarize
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          BIN_PATH=".build/universal/release"
+          STAGING=$(mktemp -d)
+          cp "$BIN_PATH/scm" "$STAGING/"
+          ZIPFILE=$(mktemp /tmp/scm-notarize-XXXXXX.zip)
+          ditto -c -k --keepParent "$STAGING" "$ZIPFILE"
+          xcrun notarytool submit "$ZIPFILE" \
+            --apple-id "$NOTARY_APPLE_ID" \
+            --team-id "$NOTARY_TEAM_ID" \
+            --password "$NOTARY_PASSWORD" \
+            --wait
+          rm -f "$ZIPFILE"
+          rm -rf "$STAGING"
+
+      - name: Tarball + extract release notes
+        id: package
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME}"
+          BIN_PATH=".build/universal/release"
+          TARBALL="$BIN_PATH/scm-${VERSION}-macos-universal.tar.gz"
+          (cd "$BIN_PATH" && tar -czf "scm-${VERSION}-macos-universal.tar.gz" scm)
+          shasum -a 256 "$TARBALL"
+          awk -v v="^## ${VERSION//./\\.}" '$0 ~ v {flag=1; print; next} /^## /{flag=0} flag' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          if [ ! -s "$RUNNER_TEMP/notes.md" ]; then
+            echo "No CHANGELOG entry for $VERSION" >&2
+            exit 1
+          fi
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          echo "notes=$RUNNER_TEMP/notes.md" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file "${{ steps.package.outputs.notes }}" \
+            "${{ steps.package.outputs.tarball }}"
+
+      - name: Bump Homebrew tap formula
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN secret is not set; cannot update Kingpin-Apps/homebrew-tap." >&2
+            echo "Create a fine-grained PAT with Contents: read/write on the tap repo and add it as the HOMEBREW_TAP_TOKEN secret." >&2
+            exit 1
+          fi
+          just tap-bump "$GITHUB_REF_NAME" "${{ steps.package.outputs.tarball }}"

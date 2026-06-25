@@ -108,3 +108,39 @@ version-file:
 # Bump version according to changelog and regenerate Version.swift
 bump: changelog
 	cz bump
+
+# Update the Homebrew tap formula (Kingpin-Apps/homebrew-tap → Formula/scm.rb) to
+# point at a release's universal tarball + sha256. The Release workflow calls this
+# automatically; run manually to recover a release, e.g. `just tap-bump 0.8.0`.
+# Pass a local tarball as the 2nd arg to skip the download when computing sha256.
+tap-bump version tarball="":
+	#!/usr/bin/env bash
+	set -euo pipefail
+	VERSION="{{ version }}"
+	TARBALL="{{ tarball }}"
+	TAP="Kingpin-Apps/homebrew-tap"
+	FORMULA="Formula/scm.rb"
+	URL="https://github.com/Kingpin-Apps/swift-cardano-multitool/releases/download/${VERSION}/scm-${VERSION}-macos-universal.tar.gz"
+	WORK=$(mktemp -d)
+	trap 'rm -rf "$WORK"' EXIT
+	if [ -n "$TARBALL" ] && [ -f "$TARBALL" ]; then
+	    SHA256=$(shasum -a 256 "$TARBALL" | awk '{print $1}')
+	else
+	    echo "Downloading release asset to compute sha256..."
+	    curl --fail --location --silent --show-error -o "$WORK/asset.tar.gz" "$URL"
+	    SHA256=$(shasum -a 256 "$WORK/asset.tar.gz" | awk '{print $1}')
+	fi
+	gh api "repos/${TAP}/contents/${FORMULA}" > "$WORK/resp.json"
+	jq -r '.content' "$WORK/resp.json" | base64 --decode > "$WORK/formula.rb"
+	FILE_SHA=$(jq -r '.sha' "$WORK/resp.json")
+	sed -i.bak -E "s|^( *url )\".*\"|\\1\"${URL}\"|" "$WORK/formula.rb"
+	sed -i.bak -E "s|^( *sha256 )\".*\"|\\1\"${SHA256}\"|" "$WORK/formula.rb"
+	rm -f "$WORK/formula.rb.bak"
+	echo "→ formula now:"
+	grep -E '^[[:space:]]*(url|sha256) ' "$WORK/formula.rb"
+	gh api "repos/${TAP}/contents/${FORMULA}" -X PUT \
+	    -f message="scm ${VERSION}" \
+	    -f content="$(base64 -i "$WORK/formula.rb" | tr -d '\n')" \
+	    -f sha="$FILE_SHA" \
+	    -f branch="main"
+	echo "✓ Bumped ${TAP} → ${VERSION}"
