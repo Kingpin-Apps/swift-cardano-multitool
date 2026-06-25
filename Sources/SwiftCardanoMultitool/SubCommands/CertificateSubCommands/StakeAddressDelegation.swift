@@ -337,15 +337,13 @@ extension CertificateMainCommand {
                             ))
                         }
                     } catch {
-                        noora.error(.alert(
-                            "Unable to fetch stake pool list from the chain.",
-                            takeaways: [
-                                "Error: \(error.localizedDescription)",
-                                "Ensure your network context supports stake pool queries.",
-                                "You may need to verify your network connection or API access."
-                            ]
+                        // Pool existence is only a courtesy pre-flight check, so a
+                        // failure to fetch the on-chain pool list shouldn't block a
+                        // valid delegation — the node rejects a bad pool at submit.
+                        noora.warning(.alert(
+                            "Could not verify the pool against the on-chain stake pool list; proceeding anyway.",
+                            takeaway: "Error: \(error.localizedDescription)"
                         ))
-                        throw ExitCode.failure
                     }
                     
                 }
