@@ -1,3 +1,51 @@
+## 0.8.0 (2026-06-25)
+
+### Feat
+
+- add 'query stake-pool --strict' for off-chain metadata verification (lenient by default)
+- add send ada command (amount denominated in ADA)
+- add config node-config, genesis, and topology subcommands
+
+### Fix
+
+- config show degrades gracefully in non-interactive sessions instead of fatalError on the wizard prompt
+- sign cip36 accepts the extended .vote.vkey from generate vote-key (unwrap 64-byte key to 32-byte voting key)
+- key-rotation builds sub-commands via parse([]) so opcert generation runs (was: unset-arg trap, no opcert)
+- build stake-address via cli uses stake-address builder (not payment) and avoids double-write
+- absolutize pool.json key paths and build-address vkey paths passed to cardano-cli
+- absolutize file paths passed to cardano-cli (cli runs in cardano.working_dir, not user cwd)
+- node opcert generation — JSON-safe KES expire date + use temp file path (not file:// URL)
+- match witness output file by full name (transaction witness crashed on force-unwrap)
+- don't reject send-all sweep on zero fee-payment change output
+- make pool.json round-trip robust (optional FilePath keys, ISO-8601 dates)
+- sign pool registration with each owner's stake key (MissingVKeyWitnessesUTXOW)
+- parse always-abstain/always-no-confidence for --drep arguments
+- always surface transaction submission failures (emit to stderr before exit)
+- correct asset mint/burn usage examples to use --amount
+- add --cold-signing-key to committee auth/resign certificate commands
+- add --drep-signing-key to update and unregister drep commands
+- join credential file paths with a separator in argument parsers
+- add --drep-signing-key and resolve .drep.vkey credential file path
+- don't fail delegation when on-chain pool-list check errors
+- load Conway Unregister cert in stake deregistration tx flow
+- lovelace amount units, payment-address-only addr file, cli stake addr build, blockfrost 404 empty
+- load Conway Register cert and use --signing-keys in certificate tx flow
+- auto-proceed transaction submission confirmations when non-interactive
+- gate certificate prompts behind isInteractiveSession to avoid non-interactive crashes
+- remove leftover try after path-helper refactor
+- route query/governance/transaction prompts through isInteractiveSession to avoid non-interactive crashes
+- tolerate relative paths in path-styled output via pathComponent helper
+- replace non-interactive prompt crashes with clean errors and relative-path support
+- resolve tool and apply key-gen defaults so generate/build don't crash non-interactively
+- accept advertised --tool value and correct certificate usage strings
+- ignore empty blockfrost/koios config values and emit placeholders
+- avoid spurious offline fallback and duplicate lite-mode retry
+
+### Refactor
+
+- rename config show/set type 'node-config' to 'node'
+- unify config show/set with a type argument and wizards
+
 ## 0.7.0 (2026-06-13)
 
 ### Feat
