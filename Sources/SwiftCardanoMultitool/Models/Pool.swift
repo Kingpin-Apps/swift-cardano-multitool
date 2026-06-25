@@ -495,8 +495,14 @@ public struct Pool: Codable, Sendable {
     /// - Returns: The StakePool object
     public static func load(from poolJsonFile: FilePath) throws -> Pool {
         let data = try Data(contentsOf: URL(fileURLWithPath: poolJsonFile.string))
-        let poolJson = try JSONDecoder().decode(Pool.self, from: data)
-        
+        let decoder = JSONDecoder()
+        // `save(to:)` encodes dates (e.g. registration.cert_created / submitted)
+        // with `.iso8601`; decode them the same way. The default strategy is
+        // `.deferredToDate` (a Double), which throws `typeMismatch: expected
+        // Double, found a string` when re-loading a saved pool.json.
+        decoder.dateDecodingStrategy = .iso8601
+        let poolJson = try decoder.decode(Pool.self, from: data)
+
         return poolJson
     }
     

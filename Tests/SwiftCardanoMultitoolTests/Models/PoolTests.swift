@@ -282,6 +282,57 @@ struct PoolSaveLoadTests {
             _ = try Pool.load(from: FilePath(path.path))
         }
     }
+
+    @Test("load tolerates a hand-written pool.json that omits all optional @FilePathCodable keys")
+    func loadToleratesOmittedFilePathKeys() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let path = dir.appendingPathComponent("minimal.pool.json")
+
+        // Only the genuinely-required keys (owners, relays) plus a couple of
+        // scalars — none of the @FilePathCodable keys (cold_vkey, id_hex_file,
+        // kes_*, payment_*, stake_*, …). Before the fix this threw `keyNotFound`.
+        let json = """
+        {
+            "name": "minimal_pool",
+            "margin": 0.1,
+            "meta_ticker": "MIN",
+            "owners": [],
+            "relays": []
+        }
+        """
+        try Data(json.utf8).write(to: path)
+
+        let loaded = try Pool.load(from: FilePath(path.path))
+        #expect(loaded.name == "minimal_pool")
+        #expect(loaded.margin == 0.1)
+        #expect(loaded.metaTicker == "MIN")
+        // Omitted @FilePathCodable keys decode to nil rather than throwing.
+        #expect(loaded.coldVkey == nil)
+        #expect(loaded.idHexFile == nil)
+        #expect(loaded.paymentSkey == nil)
+        #expect(loaded.kesVkey == nil)
+    }
+
+    @Test("a registration record's Date (cert_created) round-trips through save/load")
+    func registrationDateRoundTrips() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let path = FilePath(dir.appendingPathComponent("reg.pool.json").path)
+
+        var pool = try Pool(name: "reg_pool", margin: 0.1)
+        let created = Date(timeIntervalSince1970: 1_700_000_000)
+        pool.registration = PoolRegistration(certCreated: created, epoch: 42)
+        try pool.save(to: path)
+
+        // Before the fix, save wrote cert_created as an ISO-8601 string but load
+        // used the default (.deferredToDate = Double) strategy → typeMismatch.
+        let loaded = try Pool.load(from: path)
+        #expect(loaded.registration != nil)
+        #expect(loaded.registration?.epoch == 42)
+        let roundTripped = loaded.registration?.certCreated?.timeIntervalSince1970 ?? .nan
+        #expect(abs(roundTripped - created.timeIntervalSince1970) < 1.0)
+    }
 }
 
 // MARK: - Pool.init(config:)
