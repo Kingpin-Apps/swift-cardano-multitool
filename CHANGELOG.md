@@ -1,3 +1,14 @@
+## 0.8.1 (2026-06-25)
+
+### Feat
+
+- config init autodetects node socket (CARDANO_NODE_SOCKET_PATH) and share/<network> config+topology; dry-run no longer requires a config path
+
+### Fix
+
+- use fflush(nil) so Submit builds on Linux (global 'stdout' var is not concurrency-safe under strict concurrency)
+- rewards-withdraw usage example shows --stake-address (not the nonexistent --stake-address-name)
+
 ## 0.8.0 (2026-06-25)
 
 ### Feat
