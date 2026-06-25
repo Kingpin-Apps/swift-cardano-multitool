@@ -1,5 +1,5 @@
 {
-  "originHash" : "907b4121b17f99aa3774c4545b5c32d316462169e9105611058b0b45895ce5c8",
+  "originHash" : "7f64bb46b4b7084247f5a3ce9b9a1172e0215c8b3adbaea10866569499217e41",
   "pins" : [
     {
       "identity" : "base32",
@@ -177,8 +177,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
       "state" : {
-        "revision" : "1853c4d6f53fd5a249d06e77f4fce3ddd7f255f5",
-        "version" : "0.6.1"
+        "revision" : "3c9421161b43dc26dc22ca5d37ae144203544b42",
+        "version" : "0.6.2"
       }
     },
     {
@@ -195,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "c04b14b1160dbfc7a1d796f0c4f26ebf0830dd23",
-        "version" : "0.4.11"
+        "revision" : "5ba05aa9df1211ef499fd3b61427ebb58e2dca87",
+        "version" : "0.4.12"
       }
     },
     {
@@ -661,7 +661,7 @@
     {
       "identity" : "yams",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/jpsim/Yams.git",
+      "location" : "https://github.com/jpsim/Yams",
       "state" : {
         "revision" : "3d6871d5b4a5cd519adf233fbb576e0a2af71c17",
         "version" : "5.4.0"
