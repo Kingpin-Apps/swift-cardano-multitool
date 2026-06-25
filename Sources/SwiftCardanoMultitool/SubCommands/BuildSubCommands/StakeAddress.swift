@@ -141,8 +141,11 @@ extension BuildMainCommand {
                         configuration: config.toSwiftCardanoUtilsConfig()
                     )
                     
+                    // Use the stake-address builder, not the payment-address builder
+                    // (`address build` requires payment key/script inputs and errors
+                    // "Missing --payment-script-file" when given only a stake vkey).
                     _ = try await cli
-                        .address
+                        .stakeAddress
                         .build(
                             arguments: [
                                 // Absolutize — cardano-cli runs in its own working dir.
@@ -169,15 +172,16 @@ extension BuildMainCommand {
                         network: cardanoConfig.network.networkId
                     )
 
+                    // cardano-cli already wrote the address file via its --out-file;
+                    // only the in-memory (SwiftCardano) path needs to persist it.
+                    try address.save(to: stakeAddress.string)
             }
-            
+
             print(
                 noora.format("Stake Address File: \(.primary(stakeAddress.string))"),
                 terminator: "\n\n"
             )
-            
-            try address.save(to: stakeAddress.string)
-            
+
             print(
                 noora.format("Stake Address: \(.primary(try address.toBech32()))"),
                 terminator: "\n\n"
