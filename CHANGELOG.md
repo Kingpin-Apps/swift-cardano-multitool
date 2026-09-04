@@ -1,3 +1,9 @@
+## 0.8.3 (2026-09-03)
+
+### Fix
+
+- correct zero ADA balances when using the Koios backend
+
 ## 0.8.2 (2026-06-25)
 
 ### Fix
