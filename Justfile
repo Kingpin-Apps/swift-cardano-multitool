@@ -45,9 +45,14 @@ release-universal:
         .build/x86_64-apple-macosx/release/scm
     echo "✓ Universal binary ready (architectures: $(lipo -archs .build/universal/release/scm))"
 
-# Codesign the universal binary
-sign: release-universal
+# Codesign the universal binary (builds it first)
+sign: release-universal sign-only
+
+# Codesign an already-built universal binary (CI builds it in a separate step)
+sign-only:
     #!/usr/bin/env bash
+    # No release-universal dependency here: CI already built the binary, and
+    # rebuilding it a second time is what pushed the release job past its timeout.
     set -euo pipefail
     BIN_PATH="{{ justfile_directory() }}/.build/universal/release"
     echo "Signing binary..."
