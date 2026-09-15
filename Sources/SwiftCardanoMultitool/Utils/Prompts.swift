@@ -164,13 +164,13 @@ func getDestinationAddress(title: TerminalText? = nil) async throws -> PaymentAd
             info = try AddressInfo(name: name, adaHandle: adaHandle)
         case .path:
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let addressFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".payment.addr") }
+            let addressFiles = try PaymentAddressFiles.list(in: cwd)
             
             if addressFiles.isEmpty {
                 noora.error(.alert(
                     "No payment address files found in current directory.",
                     takeaways: [
+                        "Looked for '<name>.payment.addr' and '<name>.addr' files.",
                         "Please create an address first using the 'generate payment-and-stake-address' command."
                     ]
                 ))
@@ -181,12 +181,12 @@ func getDestinationAddress(title: TerminalText? = nil) async throws -> PaymentAd
                 title: "Payment Address",
                 question: "Select the address file:",
                 options: addressFiles,
-                description: "Available .addr files in current directory"
+                description: "Available .payment.addr and .addr files in current directory"
             )
             
             info = try AddressInfo(
                 fromFile: cwd.appending(addressFileName),
-                name: addressFileName.replacingOccurrences(of: ".addr", with: "")
+                name: PaymentAddressFiles.stem(of: addressFileName)
             )
     }
         
@@ -208,13 +208,13 @@ func getFeePaymentAddress(title: TerminalText? = nil) async throws -> PaymentAdd
     switch addressBy {
         case .path:
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let addressFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".payment.addr") }
+            let addressFiles = try PaymentAddressFiles.list(in: cwd)
             
             if addressFiles.isEmpty {
                 noora.error(.alert(
                     "No payment address files found in current directory.",
                     takeaways: [
+                        "Looked for '<name>.payment.addr' and '<name>.addr' files.",
                         "Please create an address first using the 'generate payment-and-stake-address' command."
                     ]
                 ))
@@ -225,12 +225,12 @@ func getFeePaymentAddress(title: TerminalText? = nil) async throws -> PaymentAdd
                 title: "Fee Payment Address",
                 question: "Select the fee payment address file:",
                 options: addressFiles,
-                description: "Available .payment.addr files in current directory"
+                description: "Available .payment.addr and .addr files in current directory"
             )
             
             info = try AddressInfo(
                 fromFile: cwd.appending(addressFileName),
-                name: addressFileName.replacingOccurrences(of: ".payment.addr", with: "")
+                name: PaymentAddressFiles.stem(of: addressFileName)
             )
         case .name:
             let addressName = noora.textPrompt(
@@ -241,11 +241,19 @@ func getFeePaymentAddress(title: TerminalText? = nil) async throws -> PaymentAdd
             ).trimmingCharacters(in: .whitespacesAndNewlines)
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let addressFilePath = cwd.appending("\(addressName).payment.addr")
+            guard let addressFilePath = PaymentAddressFiles.resolve(name: addressName, in: cwd) else {
+                let searched = PaymentAddressFiles.candidateFileNames(for: addressName)
+                    .joined(separator: ", ")
+                noora.error(.alert(
+                    "No payment address file found for '\(addressName)'.",
+                    takeaways: ["Searched (in order): \(searched)"]
+                ))
+                throw ExitCode.failure
+            }
             
             info = try AddressInfo(
                 fromFile: addressFilePath,
-                name: addressName
+                name: PaymentAddressFiles.stem(of: addressName)
             )
     }
     

@@ -43,19 +43,11 @@ public struct PaymentAddressInfo: ExpressibleByArgument {
                 return
             }
 
-            // Try common file name variations in the current directory
-            let variations = [
-                "\(addressFileName).payment.addr",
-                "\(addressFileName).addr"
-            ]
-
-            let foundFiles = variations.filter { fileManager.fileExists(atPath: $0) }
-
-            guard foundFiles.count == 1, let firstFile = foundFiles.first else {
-                return nil
-            }
-
-            guard let info = try? AddressInfo(fromFile: FilePath(firstFile)) else {
+            // Try `<name>.payment.addr`, then `<name>.addr` (enterprise), in the current directory
+            let cwd = FilePath(fileManager.currentDirectoryPath)
+            guard let found = PaymentAddressFiles.resolve(name: addressFileName, in: cwd, fileManager: fileManager),
+                  let info = try? AddressInfo(fromFile: found)
+            else {
                 return nil
             }
             self.init(info: info)

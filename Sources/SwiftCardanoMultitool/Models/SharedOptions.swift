@@ -25,7 +25,7 @@ struct SharedTransactionOptions: ParsableArguments {
     @Option(name: [.short, .long], help: "Destination for rewards. Accepts: bech32 address, file base name, payment key hash, or $adahandle")
     var toAddress: PaymentAddressInfo?
     
-    @Option(name: [.short, .long], help: "Address to pay transaction fees from.")
+    @Option(name: [.short, .long], help: "Address to pay transaction fees from. Accepts: bech32 address, file base name (resolves <name>.payment.addr, then <name>.addr), or $adahandle")
     var feePaymentAddress: PaymentAddressInfo?
     
     @Option(name: [.short, .customLong("message")], parsing: .upToNextOption, help: "Transaction message(s). Max 64 bytes each. Can be specified multiple times.")

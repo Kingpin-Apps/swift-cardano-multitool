@@ -47,13 +47,9 @@ extension AddressInfo: @retroactive ExpressibleByArgument {
                 "\(addressFileName).addr"
             ]
 
-            let foundFiles = variations.filter { fileManager.fileExists(atPath: $0) }
-
-            guard foundFiles.count == 1, let firstFile = foundFiles.first else {
-                return nil
-            }
-
-            guard let info = try? AddressInfo(fromFile: FilePath(firstFile)) else {
+            guard let firstFile = variations.first(where: { fileManager.fileExists(atPath: $0) }),
+                  let info = try? AddressInfo(fromFile: FilePath(firstFile))
+            else {
                 return nil
             }
             self = info
