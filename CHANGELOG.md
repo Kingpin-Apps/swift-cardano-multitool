@@ -1,3 +1,14 @@
+## 0.9.0 (2026-09-14)
+
+### Feat
+
+- accept enterprise <name>.addr files wherever a payment address name is given
+
+### Fix
+
+- require swift-cardano-chain 0.7.3 (Koios protocol parameters crash)
+- bump swift-cardano-core to 0.5.1 to fix redeemer decode crash
+
 ## 0.8.3 (2026-09-03)
 
 ### Fix
