@@ -1,3 +1,9 @@
+## 0.10.1 (2026-09-16)
+
+### Fix
+
+- fix the Linux release build with cached dependencies (0.10.0 was tagged but never published; this release contains all of its changes)
+
 ## 0.10.0 (2026-09-16)
 
 ### Feat
