@@ -1,0 +1,28 @@
+name: Build Cache
+
+# Keeps the release build caches warm on the default branch, where tag-triggered
+# Release runs can read them. Rebuilds when dependencies or the build change, and
+# weekly so GitHub doesn't evict caches that go 7 days without being used.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Package.swift
+      - Package.resolved
+      - Justfile
+      - .github/workflows/build.yml
+      - .github/workflows/build-cache.yml
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: build-cache
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      save-cache: true

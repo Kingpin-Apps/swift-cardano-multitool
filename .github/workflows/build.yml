@@ -1,0 +1,146 @@
+name: Build binaries
+
+# Reusable release build: one job per platform/arch, all in parallel, each
+# restoring its compiled dependencies from the Actions cache.
+#
+# Caches are keyed on the toolchain + Package.resolved. Tag runs can only read
+# caches saved on the default branch, so the Release workflow restores only and
+# the Build Cache workflow (on main) is what saves them.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Release version. When set, Linux binaries are packaged and install-tested.
+        type: string
+        default: ""
+      save-cache:
+        description: Save the build cache on a miss (only useful on the default branch).
+        type: boolean
+        default: false
+
+jobs:
+  macos:
+    name: macOS ${{ matrix.arch }}
+    runs-on: macos-15
+    timeout-minutes: 60
+    strategy:
+      fail-fast: true
+      matrix:
+        arch: [arm64, x86_64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: extractions/setup-just@v2
+
+      - name: Cache key
+        id: key
+        run: |
+          swift --version
+          TOOLCHAIN=$(swift --version 2>&1 | shasum -a 256 | cut -c1-16)
+          echo "prefix=swiftpm-macos-release-${{ matrix.arch }}-${TOOLCHAIN}-" >> "$GITHUB_OUTPUT"
+
+      - name: Restore build cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .build
+          key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
+          restore-keys: ${{ steps.key.outputs.prefix }}
+
+      - name: Build
+        run: just release-arch ${{ matrix.arch }}
+
+      - name: Save build cache
+        if: inputs.save-cache && steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .build
+          key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scm-macos-${{ matrix.arch }}
+          path: .build/${{ matrix.arch }}-apple-macosx/release/scm
+          if-no-files-found: error
+          retention-days: 1
+
+  linux:
+    name: Linux ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    env:
+      SWIFT_LINUX_IMAGE: swift:6.2-jammy
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: extractions/setup-just@v2
+
+      # The image tag floats across 6.2.x patch releases; key on its digest.
+      - name: Cache key
+        id: key
+        run: |
+          docker pull -q "$SWIFT_LINUX_IMAGE"
+          IMAGE=$(docker image inspect --format '{{.Id}}' "$SWIFT_LINUX_IMAGE" | cut -d: -f2 | cut -c1-16)
+          echo "prefix=swiftpm-linux-release-${{ matrix.arch }}-${IMAGE}-" >> "$GITHUB_OUTPUT"
+
+      - name: Restore build cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .build/linux
+          key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
+          restore-keys: ${{ steps.key.outputs.prefix }}
+
+      - name: Build (swift:6.2-jammy container)
+        run: |
+          just release-linux
+          # The container builds as root; hand the tree back so the cache can be saved.
+          sudo chown -R "$(id -u):$(id -g)" .build
+
+      - name: Save build cache
+        if: inputs.save-cache && steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .build/linux
+          key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
+
+      - name: Package tarball + .deb
+        if: inputs.version != ''
+        run: just package-linux "${{ inputs.version }}" "${{ matrix.arch }}"
+
+      # Install the .deb on clean images so a missing Depends or glibc mismatch
+      # fails here instead of on a user's machine.
+      - name: Install test (Debian 12, Ubuntu 22.04, Ubuntu 24.04)
+        if: inputs.version != ''
+        run: |
+          set -euo pipefail
+          for image in debian:12 ubuntu:22.04 ubuntu:24.04; do
+            echo "::group::$image"
+            docker run --rm -v "$PWD/dist:/dist" "$image" bash -c '
+              set -e
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -qq
+              apt-get install -y -qq /dist/*.deb
+              scm --version'
+            echo "::endgroup::"
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: inputs.version != ''
+        with:
+          name: dist-linux-${{ matrix.arch }}
+          path: dist/
+          if-no-files-found: error

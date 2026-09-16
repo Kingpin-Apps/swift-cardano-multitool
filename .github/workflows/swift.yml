@@ -13,16 +13,37 @@ jobs:
 
   macos:
     name: Test on macOS
-    runs-on: macos-latest
+    # Same runner as the Release workflow's test job, which restores this cache.
+    runs-on: macos-15
     steps:
     - uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: latest-stable
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    - name: Cache key
+      id: key
+      run: |
+        swift --version
+        TOOLCHAIN=$(swift --version 2>&1 | shasum -a 256 | cut -c1-16)
+        echo "prefix=swiftpm-macos-debug-${TOOLCHAIN}-" >> "$GITHUB_OUTPUT"
+    - name: Restore build cache
+      id: cache
+      uses: actions/cache/restore@v4
+      with:
+        path: .build
+        key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
+        restore-keys: ${{ steps.key.outputs.prefix }}
     - name: Build
       run: swift build -v
     - name: Build and test
       run: swift test -v --parallel --enable-test-discovery
+    # Only main-branch caches are visible to other branches, PRs and tag runs.
+    - name: Save build cache
+      if: github.event_name == 'push' && steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: .build
+        key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
       
   # build:
   #   name: Swift ${{ matrix.swift }} on ${{ matrix.os }}

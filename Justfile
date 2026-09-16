@@ -40,19 +40,19 @@ release:
 # ── Distribution tasks ───────────────────────────────────────────────────────
 
 # Build universal binary (arm64 + x86_64) via lipo
-release-universal:
+release-universal: (release-arch "arm64") (release-arch "x86_64") lipo-universal
+
+# Release build for one macOS architecture (arm64 or x86_64)
+release-arch arch:
+    swift build -c release --arch {{ arch }}
+
+# Combine per-arch release binaries into .build/universal/release/scm. CI builds
+# each arch in its own job and passes the downloaded binaries here.
+lipo-universal arm64=".build/arm64-apple-macosx/release/scm" x86_64=".build/x86_64-apple-macosx/release/scm":
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "Building arm64..."
-    swift build -c release --arch arm64
-    echo "Building x86_64..."
-    swift build -c release --arch x86_64
-    echo "Combining with lipo..."
     mkdir -p .build/universal/release
-    lipo -create \
-        -output .build/universal/release/scm \
-        .build/arm64-apple-macosx/release/scm \
-        .build/x86_64-apple-macosx/release/scm
+    lipo -create -output .build/universal/release/scm "{{ arm64 }}" "{{ x86_64 }}"
     echo "✓ Universal binary ready (architectures: $(lipo -archs .build/universal/release/scm))"
 
 # Codesign the universal binary (builds it first)

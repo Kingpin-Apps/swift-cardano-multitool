@@ -9,9 +9,10 @@ permissions:
   contents: write
 
 jobs:
-  # Gate the release on a green build + test of the exact tagged commit. The
+  # Gate publishing on a green build + test of the exact tagged commit. The
   # Swift workflow only runs on branch/PR pushes, not tags, so we re-run the
   # suite here rather than assuming `main` was green when the tag was cut.
+  # It runs alongside the builds; only the publish job waits for it.
   test:
     name: Build & test
     runs-on: macos-15
@@ -21,19 +22,35 @@ jobs:
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
-      - name: Print toolchain
-        run: swift --version
+      - name: Cache key
+        id: key
+        run: |
+          swift --version
+          TOOLCHAIN=$(swift --version 2>&1 | shasum -a 256 | cut -c1-16)
+          echo "prefix=swiftpm-macos-debug-${TOOLCHAIN}-" >> "$GITHUB_OUTPUT"
+      # Saved by the Swift workflow on pushes to main.
+      - name: Restore build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .build
+          key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
+          restore-keys: ${{ steps.key.outputs.prefix }}
       - name: Build
         run: swift build -v
       - name: Test
         run: swift test -v --parallel
 
+  # Per-arch macOS binaries and packaged Linux binaries, all in parallel.
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ github.ref_name }}
+
   macos:
     name: macOS universal binary
-    needs: test
+    needs: build
     runs-on: macos-15
-    # The universal build alone takes ~35m and grows with the dependency graph.
-    timeout-minutes: 75
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -41,11 +58,6 @@ jobs:
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
-
-      - name: Print toolchain
-        run: |
-          swift --version
-          xcodebuild -version
 
       - name: Import Developer ID cert into temporary keychain
         env:
@@ -69,16 +81,22 @@ jobs:
           security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychain -d user | tr -d '"')
           rm -f "$CERT_PATH"
 
-      - name: Install just + jq
-        run: brew install just jq
+      - uses: extractions/setup-just@v2
 
-      - name: Build universal binary
-        run: just release-universal
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: scm-macos-*
+          path: bin
+
+      - name: Combine into universal binary
+        run: |
+          set -euo pipefail
+          just lipo-universal bin/scm-macos-arm64/scm bin/scm-macos-x86_64/scm
+          chmod +x .build/universal/release/scm
 
       - name: Codesign
         env:
           CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
-        # sign-only, not sign: the binary was built by the previous step
         run: just sign-only
 
       - name: Notarize
@@ -134,55 +152,9 @@ jobs:
           uname -m
           arch -x86_64 ./scm --version
 
-  linux:
-    name: Linux ${{ matrix.arch }}
-    needs: test
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 75
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - arch: amd64
-            runner: ubuntu-22.04
-          - arch: arm64
-            runner: ubuntu-22.04-arm
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: extractions/setup-just@v2
-
-      - name: Build (swift:6.2-jammy container)
-        run: just release-linux
-
-      - name: Package tarball + .deb
-        run: just package-linux "$GITHUB_REF_NAME" "${{ matrix.arch }}"
-
-      # Install the .deb on clean images so a missing Depends or glibc mismatch
-      # fails here instead of on a user's machine.
-      - name: Install test (Debian 12, Ubuntu 22.04, Ubuntu 24.04)
-        run: |
-          set -euo pipefail
-          for image in debian:12 ubuntu:22.04 ubuntu:24.04; do
-            echo "::group::$image"
-            docker run --rm -v "$PWD/dist:/dist" "$image" bash -c '
-              set -e
-              export DEBIAN_FRONTEND=noninteractive
-              apt-get update -qq
-              apt-get install -y -qq /dist/*.deb
-              scm --version'
-            echo "::endgroup::"
-          done
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist-linux-${{ matrix.arch }}
-          path: dist/
-          if-no-files-found: error
-
   publish:
     name: Publish
-    needs: [macos-intel, linux]
+    needs: [test, build, macos-intel]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
