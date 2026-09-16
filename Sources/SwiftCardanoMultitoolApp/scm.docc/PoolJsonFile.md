@@ -40,6 +40,10 @@ For a pool that is already registered, pass `--pool-operator` (or keep `<poolNam
 
 `scm certificate pool-registration --pool-operator ...` can also update a registered pool without a pool.json, and offers to save the result to one.
 
+Key files are the normal way to work with pool keys, and a key file set in the pool JSON must exist. The hashes stored in the pool JSON are for pools where some key files are not available (for example, only the cold keys and a payment key): a hash is used when its key file is not set, or — with a warning — when the set file is missing and the matching hash is stored. For the registration certificate these are `cold_vkey` or the pool ID, `vrf_vkey` or `vrf_key_hash`, each owner's `stake_vkey` or `stake_key_hash`, and the rewards owner's `stake_vkey`, `reward_account` or `stake_key_hash`. Signing the transaction always needs the cold signing key and every owner's stake signing key; when `cold_skey` or an owner's `stake_skey` is not set, a matching signing key in the current directory is used. If the metadata fields no longer produce the stored `metadata_hash` but still match the file hosted at `meta_url` (typical for a pool JSON generated from on-chain parameters), the registered hash is kept and nothing needs re-uploading.
+
+The file is written with keys in alphabetical order so it stays stable across saves.
+
 The `pool-registration` and `pool-deregistration` certificate commands also offer to create a template pool.json if none is found for the given pool name.
 
 ## Standard file naming
@@ -66,7 +70,7 @@ Keys use snake_case. File-path fields may point anywhere; relative paths are res
 |-------|-------------|
 | `name` | Pool name used for file naming (max 50 chars). |
 | `owners` | Array of pool owners. Each has `name`, `witness` (`local` or `external`), `stake_vkey`, `stake_skey`, and `stake_key_hash` (used when `stake_vkey` is missing). |
-| `rewards_owner` | Rewards destination: `name`, `stake_vkey`, `stake_skey`, and `reward_account` (reward address bytes in hex, used when `stake_vkey` is missing). May be the same as an owner. |
+| `rewards_owner` | Rewards destination: `name`, `stake_vkey`, `stake_skey`, `reward_account` (reward address bytes in hex) and `stake_key_hash`. The last two are used when `stake_vkey` is missing. May be the same as an owner. |
 | `pledge` | Pledge in lovelace. |
 | `cost` | Fixed cost per epoch in lovelace (minimum 170 ADA). |
 | `margin` | Margin as a decimal (`0.10` = 10%, must be ≤ `1.00`). |

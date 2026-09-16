@@ -324,7 +324,7 @@ public struct FileUtils {
 
             let jsonData = try JSONSerialization.data(
                 withJSONObject: obj,
-                options: [.prettyPrinted, .withoutEscapingSlashes]
+                options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
             )
 
             if let jsonString = String(data: jsonData, encoding: .utf8) {

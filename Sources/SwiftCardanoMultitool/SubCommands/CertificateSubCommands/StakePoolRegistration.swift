@@ -305,8 +305,15 @@ extension CertificateMainCommand {
             let minPoolCost = protocolParams.minPoolCost
             let stakePoolDeposit = protocolParams.stakePoolDeposit
             
-            guard let poolCost = pool.cost else {
-                fatalError("Pool cost is nil")
+            guard let poolCost = pool.cost, pool.pledge != nil, pool.margin != nil else {
+                noora.error(.alert(
+                    "The pool JSON is missing pledge, cost or margin.",
+                    takeaways: [
+                        "Set pledge, cost and margin in \(poolJSON.string).",
+                        "For a registered pool, regenerate it with \(.command("scm generate pool-json --pool-operator <pool id>"))."
+                    ]
+                ))
+                throw ExitCode.validationFailure
             }
             
             if poolCost < minPoolCost {
@@ -344,74 +351,74 @@ extension CertificateMainCommand {
                 throw ExitCode.validationFailure
             }
             
-            // Filter out forbidden chars and replace with _ in ticker
-            guard let tickerOriginal = pool.metaTicker else {
-                noora.error("Pool JSON is missing the required metaTicker field.")
-                throw ExitCode.validationFailure
-            }
-            
-            // Replace non-alphanumeric characters with underscore
-            let tickerCorrected = String(tickerOriginal.map { $0.isLetter || $0.isNumber ? $0 : Character("_") })
-            
-            if tickerCorrected.count < 3 || tickerCorrected.count > 5 {
-                noora.error("The poolMetaTicker entry must be between 3-5 chars long!")
-                throw ExitCode.validationFailure
-            }
-            
-            if tickerCorrected != tickerOriginal {
-                let acceptCorrected = noora.yesOrNoChoicePrompt(
-                    title: "Pool Ticker Correction",
-                    question: "Your poolMetaTicker was corrected from '\(tickerOriginal)' to '\(tickerCorrected)' to fit the rules. Are you ok with this?",
-                    defaultAnswer: false
-                )
-                
-                if acceptCorrected {
-                    pool.metaTicker = tickerCorrected
-                    try pool.save(to: poolJSON, overwrite: true)
-                } else {
-                    noora.warning("Please re-edit the poolMetaTicker entry in your \(poolJSON.string) and try again.")
+            // Key material. Key files are the normal way to work: a file set in the pool
+            // JSON must exist. The hashes stored in the pool JSON (e.g. generated from
+            // on-chain parameters) are only used when no file is set, or — with a
+            // warning — when the set file is missing but the matching hash is stored.
+            func keyFile(
+                _ path: FilePath?,
+                label: String,
+                storedHash: String?,
+                missingTakeaway: String
+            ) throws -> FilePath? {
+                guard let path else { return nil }
+                if FileManager.default.fileExists(atPath: path.string) { return path }
+                guard let storedHash else {
+                    noora.error(.alert(
+                        "\(label) file not found: \(path.string)",
+                        takeaways: [TerminalText(stringLiteral: missingTakeaway)]
+                    ))
                     throw ExitCode.validationFailure
                 }
+                noora.warning(.alert(
+                    "\(label) file not found: \(path.string)",
+                    takeaway: "Using \(storedHash) from the pool JSON instead."
+                ))
+                return nil
+            }
+            func nonEmpty(_ value: String?) -> String? {
+                guard let value, !value.isEmpty else { return nil }
+                return value
             }
 
-            // Validate required key files
-            guard let coldVkeyPath = pool.coldVkey else {
+            // Cold verification key, else the pool ID
+            let storedPoolOperator = nonEmpty(pool.idBech).flatMap { try? PoolOperator(from: $0) }
+                ?? nonEmpty(pool.idHex).flatMap { try? PoolOperator(from: $0.hexStringToData) }
+            let coldVkeyPath = try keyFile(
+                pool.coldVkey,
+                label: "Cold verification key",
+                storedHash: storedPoolOperator.map { _ in "the pool ID" },
+                missingTakeaway: "Ensure the file exists or run 'scm generate node-cold-keys' first."
+            )
+            let poolKeyHash: PoolKeyHash
+            if let coldVkeyPath {
+                poolKeyHash = try StakePoolVerificationKey.load(from: coldVkeyPath.string).poolKeyHash()
+            } else if let storedPoolOperator {
+                poolKeyHash = storedPoolOperator.poolKeyHash
+            } else {
                 noora.error(.alert(
                     "Cold verification key file not found in pool JSON.",
-                    takeaways: ["Ensure \(poolName).cold.vkey exists and is referenced in the pool JSON."]
+                    takeaways: ["Ensure \(poolName).cold.vkey exists and is referenced in the pool JSON, or set id_bech to the pool ID."]
                 ))
                 throw ExitCode.validationFailure
             }
 
-            do {
-                try FileUtils.checkFileExists(coldVkeyPath)
-            } catch {
-                noora.error(.alert(
-                    "Cold verification key file not found: \(coldVkeyPath.string)",
-                    takeaways: ["Ensure the file exists or run 'scm generate node-cold-keys' first."]
-                ))
-                throw ExitCode.validationFailure
-            }
-
-            guard let vrfVkeyPath = pool.vrfVkey else {
+            // VRF verification key, else vrf_key_hash
+            let vrfVkeyPath = try keyFile(
+                pool.vrfVkey,
+                label: "VRF verification key",
+                storedHash: nonEmpty(pool.vrfKeyHash).map { _ in "vrf_key_hash" },
+                missingTakeaway: "Ensure the file exists or run 'scm generate node-vrf-keys' first."
+            )
+            if vrfVkeyPath == nil && nonEmpty(pool.vrfKeyHash) == nil {
                 noora.error(.alert(
                     "VRF verification key file not found in pool JSON.",
-                    takeaways: ["Ensure \(poolName).vrf.vkey exists and is referenced in the pool JSON."]
+                    takeaways: ["Ensure \(poolName).vrf.vkey exists and is referenced in the pool JSON, or set vrf_key_hash."]
                 ))
                 throw ExitCode.validationFailure
             }
 
-            do {
-                try FileUtils.checkFileExists(vrfVkeyPath)
-            } catch {
-                noora.error(.alert(
-                    "VRF verification key file not found: \(vrfVkeyPath.string)",
-                    takeaways: ["Ensure the file exists or run 'scm generate node-vrf-keys' first."]
-                ))
-                throw ExitCode.validationFailure
-            }
-
-            // Validate owner stake vkeys
+            // Owners: stake verification key, else stake_key_hash
             guard !pool.owners.isEmpty else {
                 noora.error(.alert(
                     "No pool owners found in the pool JSON.",
@@ -421,30 +428,44 @@ extension CertificateMainCommand {
             }
 
             spacedPrint("\n\(.primary("━━━ Pool Owner Validation ━━━"))\n")
+            var ownerVkeyPaths: [FilePath] = []
             for (i, owner) in pool.owners.enumerated() {
-                guard let ownerStakeVkeyPath = owner.stakeVkey else {
+                let label = owner.name ?? "#\(i + 1)"
+                let ownerVkey = try keyFile(
+                    owner.stakeVkey,
+                    label: "Owner \(label) stake verification key",
+                    storedHash: nonEmpty(owner.stakeKeyHash).map { _ in "stake_key_hash" },
+                    missingTakeaway: "Ensure the file exists or update the path in the pool JSON."
+                )
+                if let ownerVkey {
+                    ownerVkeyPaths.append(ownerVkey)
+                    spacedPrint("  Owner \(.primary(label)): \(ownerVkey.lastComponent?.string ?? ownerVkey.string)")
+                } else if let hash = nonEmpty(owner.stakeKeyHash) {
+                    spacedPrint("  Owner \(.primary(label)): stake key hash \(hash)")
+                } else {
                     noora.error(.alert(
-                        "Owner \(owner.name ?? "#\(i + 1)") is missing a stake_vkey.",
-                        takeaways: ["Set stake_vkey for each owner in the pool JSON."]
-                    ))
-                    throw ExitCode.validationFailure
-                }
-                do {
-                    try FileUtils.checkFileExists(ownerStakeVkeyPath)
-                    spacedPrint("  Owner \(.primary(owner.name ?? "#\(i + 1)")): \(ownerStakeVkeyPath.lastComponent?.string ?? ownerStakeVkeyPath.string)")
-                } catch {
-                    noora.error(.alert(
-                        "Stake verification key not found for owner \(owner.name ?? "#\(i + 1)"): \(ownerStakeVkeyPath.string)",
-                        takeaways: ["Ensure the file exists or update the path in the pool JSON."]
+                        "Owner \(label) is missing a stake_vkey.",
+                        takeaways: ["Set stake_vkey for each owner in the pool JSON (or stake_key_hash when the key file is not available)."]
                     ))
                     throw ExitCode.validationFailure
                 }
             }
 
-            // Generate Pool IDs from cold vkey
+            // Rewards: the rewards owner's stake verification key, else its reward_account
+            // or stake_key_hash; the first owner only when the rewards owner has none of these
+            let rewardsStoredHash = nonEmpty(pool.rewardsOwner?.rewardAccount).map { _ in "rewards_owner.reward_account" }
+                ?? nonEmpty(pool.rewardsOwner?.stakeKeyHash).map { _ in "rewards_owner.stake_key_hash" }
+            let rewardsOwnerVkey = try keyFile(
+                pool.rewardsOwner?.stakeVkey,
+                label: "Rewards stake verification key",
+                storedHash: rewardsStoredHash,
+                missingTakeaway: "Ensure the file exists or update rewards_owner.stake_vkey in the pool JSON."
+            )
+            let rewardsVkeyPath = rewardsOwnerVkey
+                ?? (rewardsStoredHash == nil ? ownerVkeyPaths.first : nil)
+
+            // Pool IDs
             spacedPrint("\n\(.primary("━━━ Pool ID Generation ━━━"))\n")
-            let stakePoolVKey = try StakePoolVerificationKey.load(from: coldVkeyPath.string)
-            let poolKeyHash = try stakePoolVKey.poolKeyHash()
             let poolOperatorId = PoolOperator(poolKeyHash: poolKeyHash)
             let poolIdBech = try poolOperatorId.toBech32()
             let poolIdHex = try poolOperatorId.toBytes().toHex
@@ -454,44 +475,99 @@ extension CertificateMainCommand {
 
             let idHexFile = pool.idHexFile ?? cwd.appending("\(poolName).pool.id")
             let idBechFile = pool.idBechFile ?? cwd.appending("\(poolName).pool.id-bech")
-            try poolOperatorId.save(to: idHexFile.string, format: .hex)
-            try poolOperatorId.save(to: idBechFile.string, format: .bech32)
+            // Refresh the ID files; they may already exist (e.g. from generate pool-json)
+            try poolOperatorId.save(to: idHexFile.string, format: .hex, overwrite: true)
+            try poolOperatorId.save(to: idBechFile.string, format: .bech32, overwrite: true)
             pool.idHexFile = idHexFile
             pool.idBechFile = idBechFile
 
             spacedPrint("Pool ID (Bech32): \(.primary(poolIdBech))")
             spacedPrint("Pool ID (Hex):    \(.primary(poolIdHex))")
 
-            // Generate metadata.json
+            // Metadata
             spacedPrint("\n\(.primary("━━━ Pool Metadata Generation ━━━"))\n")
 
-            guard let metaUrl = pool.metaUrl else {
-                noora.error(.alert(
-                    "Pool metadata URL (meta_url) is missing from the pool JSON.",
-                    takeaways: ["Set meta_url to the URL where you will host the metadata.json file."]
-                ))
-                throw ExitCode.validationFailure
-            }
+            let metaUrl = pool.metaUrl
+            let hasMetadataContent = pool.metaName != nil || pool.metaTicker != nil
+                || pool.metaDescription != nil || pool.metaHomepage != nil
+            // Set when a new metadata.json was written and must be uploaded
+            var metadataFilePath: FilePath? = nil
+            var metadataHash: String? = pool.metadataHash
 
-            let metadataFilePath = pool.metadataFile ?? cwd.appending("\(poolName).metadata.json")
-            pool.metadataFile = metadataFilePath
-
-            if pool.extendedMetaUrl != nil && !transactionOptions.useCardanoCLI {
-                noora.warning(
-                    .alert(
-                        "Extended metadata URL is set but --use-cardano-cli is not specified.",
-                        takeaway: "The extended URL will be included in the metadata file, but the hash will be computed from the standard 4-field JSON. Use --use-cardano-cli to hash the full file including the extended URL."
-                    )
+            if metaUrl == nil {
+                if hasMetadataContent || pool.metadataHash != nil {
+                    noora.error(.alert(
+                        "Pool metadata URL (meta_url) is missing from the pool JSON.",
+                        takeaways: ["Set meta_url to the URL where you will host the metadata.json file."]
+                    ))
+                    throw ExitCode.validationFailure
+                }
+                // A pool without metadata is valid, but usually a missing field in the pool JSON
+                let registerWithout = isInteractiveSession() && noora.yesOrNoChoicePrompt(
+                    title: "No Pool Metadata",
+                    question: "The pool JSON has no metadata (meta_url). Register the pool without metadata?",
+                    defaultAnswer: false,
+                    description: "Wallets and explorers will show no name or ticker for the pool."
                 )
-            }
+                guard registerWithout else {
+                    noora.error(.alert(
+                        "Pool metadata URL (meta_url) is missing from the pool JSON.",
+                        takeaways: ["Set meta_url to the URL where you will host the metadata.json file."]
+                    ))
+                    throw ExitCode.validationFailure
+                }
+                metadataHash = nil
+            } else if !hasMetadataContent {
+                guard let registeredHash = pool.metadataHash, !registeredHash.isEmpty else {
+                    noora.error(.alert(
+                        "The pool JSON has a meta_url but no metadata content or metadata_hash.",
+                        takeaways: [
+                            "Set meta_name, meta_ticker, meta_description and meta_homepage to generate the metadata file,",
+                            "or set metadata_hash to the hash of the file already hosted at meta_url."
+                        ]
+                    ))
+                    throw ExitCode.validationFailure
+                }
+                spacedPrint("Using the metadata hosted at \(.primary(metaUrl!.absoluteString)) with hash \(.primary(registeredHash)).")
+            } else {
+                // Filter out forbidden chars and replace with _ in ticker
+                guard let tickerOriginal = pool.metaTicker else {
+                    noora.error("Pool JSON is missing the required metaTicker field.")
+                    throw ExitCode.validationFailure
+                }
+            
+                // Replace non-alphanumeric characters with underscore
+                let tickerCorrected = String(tickerOriginal.map { $0.isLetter || $0.isNumber ? $0 : Character("_") })
+            
+                if tickerCorrected.count < 3 || tickerCorrected.count > 5 {
+                    noora.error("The poolMetaTicker entry must be between 3-5 chars long!")
+                    throw ExitCode.validationFailure
+                }
+            
+                if tickerCorrected != tickerOriginal {
+                    let acceptCorrected = noora.yesOrNoChoicePrompt(
+                        title: "Pool Ticker Correction",
+                        question: "Your poolMetaTicker was corrected from '\(tickerOriginal)' to '\(tickerCorrected)' to fit the rules. Are you ok with this?",
+                        defaultAnswer: false
+                    )
+                
+                    if acceptCorrected {
+                        pool.metaTicker = tickerCorrected
+                        try pool.save(to: poolJSON, overwrite: true)
+                    } else {
+                        noora.warning("Please re-edit the poolMetaTicker entry in your \(poolJSON.string) and try again.")
+                        throw ExitCode.validationFailure
+                    }
+                }
 
-            let metadataHash: String
-            let metadataJsonContent: String
-
-            if transactionOptions.useCardanoCLI {
-                // Build metadata JSON with optional extended URL
-                if let extendedMetaUrl = pool.extendedMetaUrl {
-                    metadataJsonContent = """
+                // Normally the metadata file is (re)generated from these fields, as before.
+                // When the stored hash is not the hash of that generated file (e.g. the
+                // pool JSON was built from on-chain parameters and the pool hosts its own
+                // file), keep the registered hash if the hosted file still matches the fields,
+                // so an unchanged pool doesn't need a new upload.
+                let candidateJSON: String?
+                if transactionOptions.useCardanoCLI, let extendedMetaUrl = pool.extendedMetaUrl {
+                    candidateJSON = """
                     {
                         "name": "\(pool.metaName ?? "")",
                         "description": "\(pool.metaDescription ?? "")",
@@ -501,58 +577,119 @@ extension CertificateMainCommand {
                     }
                     """
                 } else {
-                    let poolMetadata = try PoolMetadata(
+                    let candidate = try? PoolMetadata(
                         name: pool.metaName,
                         description: pool.metaDescription,
                         ticker: pool.metaTicker,
                         homepage: pool.metaHomepage.flatMap { try? Url($0.absoluteString) }
                     )
-                    metadataJsonContent = try poolMetadata.toJSON()!
+                    candidateJSON = (try? candidate?.toJSON()) ?? nil
+                }
+                let candidateHash = candidateJSON.flatMap { try? poolMetadataHash(of: Data($0.utf8)) }
+
+                var hostedMatches = false
+                if let registeredHash = pool.metadataHash, !registeredHash.isEmpty, let metaUrl,
+                   let candidateHash, candidateHash != registeredHash,
+                   let hosted = try? await PoolMetadata.fetch(
+                       url: try Url(metaUrl.absoluteString),
+                       poolMetadataHash: PoolMetadataHash(payload: registeredHash.hexStringToData)
+                   ),
+                   hosted.name != nil || hosted.ticker != nil {
+                    hostedMatches = hosted.name == pool.metaName
+                        && hosted.desc == pool.metaDescription
+                        && hosted.ticker == pool.metaTicker
+                        && hosted.homepage?.absoluteString == pool.metaHomepage?.absoluteString
                 }
 
-                guard metadataJsonContent.utf8.count <= 512 else {
-                    noora.error(.alert(
-                        "Pool metadata.json is too large (\(metadataJsonContent.utf8.count) bytes, max 512 bytes).",
-                        takeaways: ["Shorten the pool name, description, or ticker."]
-                    ))
-                    throw ExitCode.validationFailure
+                if hostedMatches {
+                    spacedPrint("The metadata hosted at \(.primary(metaUrl!.absoluteString)) matches the pool JSON; keeping hash \(.primary(pool.metadataHash ?? "")).")
+                } else {
+                    let generatedPath = pool.metadataFile ?? cwd.appending("\(poolName).metadata.json")
+                    pool.metadataFile = generatedPath
+
+                    if pool.extendedMetaUrl != nil && !transactionOptions.useCardanoCLI {
+                        noora.warning(
+                            .alert(
+                                "Extended metadata URL is set but --use-cardano-cli is not specified.",
+                                takeaway: "The extended URL will be included in the metadata file, but the hash will be computed from the standard 4-field JSON. Use --use-cardano-cli to hash the full file including the extended URL."
+                            )
+                        )
+                    }
+
+                    let generatedHash: String
+                    let metadataJsonContent: String
+
+                    if transactionOptions.useCardanoCLI {
+                        // Build metadata JSON with optional extended URL
+                        if let extendedMetaUrl = pool.extendedMetaUrl {
+                            metadataJsonContent = """
+                            {
+                                "name": "\(pool.metaName ?? "")",
+                                "description": "\(pool.metaDescription ?? "")",
+                                "ticker": "\(pool.metaTicker ?? "")",
+                                "homepage": "\(pool.metaHomepage?.absoluteString ?? "")",
+                                "extended": "\(extendedMetaUrl.absoluteString)"
+                            }
+                            """
+                        } else {
+                            let poolMetadata = try PoolMetadata(
+                                name: pool.metaName,
+                                description: pool.metaDescription,
+                                ticker: pool.metaTicker,
+                                homepage: pool.metaHomepage.flatMap { try? Url($0.absoluteString) }
+                            )
+                            metadataJsonContent = try poolMetadata.toJSON()!
+                        }
+
+                        guard metadataJsonContent.utf8.count <= 512 else {
+                            noora.error(.alert(
+                                "Pool metadata.json is too large (\(metadataJsonContent.utf8.count) bytes, max 512 bytes).",
+                                takeaways: ["Shorten the pool name, description, or ticker."]
+                            ))
+                            throw ExitCode.validationFailure
+                        }
+
+                        try FileUtils.dumpFile(generatedPath, data: metadataJsonContent)
+
+                        let logger = getLogger(config: config)
+                        let cli = try await CardanoCLI(
+                            configuration: config.toSwiftCardanoUtilsConfig(),
+                            logger: logger
+                        )
+                        generatedHash = try await cli.stakePool.metadataHash(arguments: [
+                            "--pool-metadata-file", FileUtils.absolutePath(generatedPath).string
+                        ]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    } else {
+                        let poolMetadata = try PoolMetadata(
+                            name: pool.metaName,
+                            description: pool.metaDescription,
+                            ticker: pool.metaTicker,
+                            homepage: pool.metaHomepage.flatMap { try? Url($0.absoluteString) }
+                        )
+                        metadataJsonContent = try poolMetadata.toJSON()!
+
+                        guard metadataJsonContent.utf8.count <= 512 else {
+                            noora.error(.alert(
+                                "Pool metadata.json is too large (\(metadataJsonContent.utf8.count) bytes, max 512 bytes).",
+                                takeaways: ["Shorten the pool name, description, or ticker."]
+                            ))
+                            throw ExitCode.validationFailure
+                        }
+
+                        try FileUtils.dumpFile(generatedPath, data: metadataJsonContent)
+                        generatedHash = try poolMetadata.hash()
+                    }
+
+                    metadataFilePath = generatedPath
+                    metadataHash = generatedHash
+                    spacedPrint("Metadata file:  \(.primary(generatedPath.lastComponent?.string ?? generatedPath.string))")
                 }
-
-                try FileUtils.dumpFile(metadataFilePath, data: metadataJsonContent)
-
-                let logger = getLogger(config: config)
-                let cli = try await CardanoCLI(
-                    configuration: config.toSwiftCardanoUtilsConfig(),
-                    logger: logger
-                )
-                metadataHash = try await cli.stakePool.metadataHash(arguments: [
-                    "--pool-metadata-file", FileUtils.absolutePath(metadataFilePath).string
-                ]).trimmingCharacters(in: .whitespacesAndNewlines)
-            } else {
-                let poolMetadata = try PoolMetadata(
-                    name: pool.metaName,
-                    description: pool.metaDescription,
-                    ticker: pool.metaTicker,
-                    homepage: pool.metaHomepage.flatMap { try? Url($0.absoluteString) }
-                )
-                metadataJsonContent = try poolMetadata.toJSON()!
-
-                guard metadataJsonContent.utf8.count <= 512 else {
-                    noora.error(.alert(
-                        "Pool metadata.json is too large (\(metadataJsonContent.utf8.count) bytes, max 512 bytes).",
-                        takeaways: ["Shorten the pool name, description, or ticker."]
-                    ))
-                    throw ExitCode.validationFailure
-                }
-
-                try FileUtils.dumpFile(metadataFilePath, data: metadataJsonContent)
-                metadataHash = try poolMetadata.hash()
             }
 
             pool.metadataHash = metadataHash
-
-            spacedPrint("Metadata file:  \(.primary(metadataFilePath.lastComponent?.string ?? metadataFilePath.string))")
-            spacedPrint("Metadata hash:  \(.primary(metadataHash))")
+            if let metadataHash {
+                spacedPrint("Metadata hash:  \(.primary(metadataHash))")
+            }
 
             // Print registration summary
             spacedPrint("""
@@ -583,7 +720,18 @@ extension CertificateMainCommand {
 
             // Generate the registration certificate
             do {
-                if transactionOptions.useCardanoCLI {
+                // cardano-cli needs every verification key as a file; with hashes from
+                // the pool JSON the certificate is built natively (it is identical).
+                let cliReady = coldVkeyPath != nil && vrfVkeyPath != nil && rewardsVkeyPath != nil
+                    && ownerVkeyPaths.count == pool.owners.count
+                if transactionOptions.useCardanoCLI && !cliReady {
+                    noora.warning(.alert(
+                        "Building the certificate without cardano-cli.",
+                        takeaway: "cardano-cli needs the cold, VRF, reward and owner verification key files, and the pool JSON only has hashes for some of them. The certificate is identical either way."
+                    ))
+                }
+
+                if transactionOptions.useCardanoCLI, cliReady, let coldVkeyPath, let vrfVkeyPath, let rewardsVkeyPath {
                     let logger = getLogger(config: config)
                     let cli = try await CardanoCLI(
                         configuration: config.toSwiftCardanoUtilsConfig(),
@@ -599,19 +747,12 @@ extension CertificateMainCommand {
                         "--pool-pledge", "\(pool.pledge ?? 0)",
                         "--pool-cost", "\(pool.cost ?? 0)",
                         "--pool-margin", "\(pool.margin ?? 0)",
+                        "--pool-reward-account-verification-key-file", FileUtils.absolutePath(rewardsVkeyPath).string,
                     ]
 
-                    // Rewards stake vkey
-                    let rewardsVkeyPath = pool.rewardsOwner?.stakeVkey ?? pool.owners.first?.stakeVkey
-                    if let rewardsVkeyPath {
-                        cliArgs += ["--pool-reward-account-verification-key-file", FileUtils.absolutePath(rewardsVkeyPath).string]
-                    }
-
                     // Owner stake vkeys
-                    for owner in pool.owners {
-                        if let ownerVkey = owner.stakeVkey {
-                            cliArgs += ["--pool-owner-stake-verification-key-file", FileUtils.absolutePath(ownerVkey).string]
-                        }
+                    for ownerVkey in ownerVkeyPaths {
+                        cliArgs += ["--pool-owner-stake-verification-key-file", FileUtils.absolutePath(ownerVkey).string]
                     }
 
                     // Relays
@@ -643,11 +784,10 @@ extension CertificateMainCommand {
                     }
 
                     // Metadata
-                    cliArgs += [
-                        "--metadata-url", metaUrl.absoluteString,
-                        "--metadata-hash", metadataHash,
-                        "--out-file", FileUtils.absolutePath(outFile).string
-                    ]
+                    if let metaUrl, let metadataHash {
+                        cliArgs += ["--metadata-url", metaUrl.absoluteString, "--metadata-hash", metadataHash]
+                    }
+                    cliArgs += ["--out-file", FileUtils.absolutePath(outFile).string]
 
                     _ = try await cli.stakePool.registrationCertificate(arguments: cliArgs)
                 } else {
@@ -675,19 +815,23 @@ extension CertificateMainCommand {
             try pool.save(to: poolJSON, overwrite: true)
 
             // Display results
-            noora.success(.alert(
-                "Pool registration certificate created successfully.",
-                takeaways: [
-                    "Certificate: \(outFile.string)",
-                    "Pool ID (bech32): \(poolIdBech)",
-                    "Metadata hash: \(metadataHash)",
-                    "Upload \(.primary(metadataFilePath.lastComponent?.string ?? "metadata.json")) to \(metaUrl.absoluteString) BEFORE submitting the transaction.",
-                    "Include this certificate when building your pool registration transaction."
-                ]
-            ))
+            var takeaways: [TerminalText] = [
+                "Certificate: \(outFile.string)",
+                "Pool ID (bech32): \(poolIdBech)",
+            ]
+            if let metadataHash {
+                takeaways.append("Metadata hash: \(metadataHash)")
+            }
+            if let metadataFilePath, let metaUrl {
+                takeaways.append("Upload \(.primary(metadataFilePath.lastComponent?.string ?? "metadata.json")) to \(metaUrl.absoluteString) BEFORE submitting the transaction.")
+            }
+            takeaways.append("Include this certificate when building your pool registration transaction.")
+            noora.success(.alert("Pool registration certificate created successfully.", takeaways: takeaways))
 
             try await FileUtils.displayFile(outFile)
-            try await FileUtils.displayJSONFile(metadataFilePath)
+            if let metadataFilePath {
+                try await FileUtils.displayJSONFile(metadataFilePath)
+            }
             
             if certificateOptions.generateTransaction {
                 let logger = getLogger(config: config)
@@ -748,7 +892,12 @@ extension CertificateMainCommand {
                     throw ExitCode.validationFailure
                 }
 
-                // Pool cold signing key
+                // Signing keys: the paths in the pool JSON when the files exist, otherwise
+                // local signing keys that match the pool's hashes
+                let keys = PoolKeyFileMatcher()
+
+                // Pool cold signing key: cold_skey when set (it must exist), else a local
+                // cold signing key matching the pool
                 let coldSkeyPath: FilePath
                 if let path = pool.coldSkey {
                     do {
@@ -761,10 +910,13 @@ extension CertificateMainCommand {
                         ))
                         throw ExitCode.validationFailure
                     }
+                } else if let found = keys.coldSkey(for: poolKeyHash) {
+                    spacedPrint("Using cold signing key \(.primary(found.lastComponent?.string ?? found.string)) (matches the pool).")
+                    coldSkeyPath = found
                 } else {
                     noora.error(.alert(
                         "Cold signing key path is not set in the pool JSON.",
-                        takeaways: ["Ensure the pool JSON contains a valid cold_skey path."]
+                        takeaways: ["Ensure the pool JSON contains a valid cold_skey path, or put the pool's cold signing key in the current directory."]
                     ))
                     throw ExitCode.validationFailure
                 }
@@ -772,25 +924,33 @@ extension CertificateMainCommand {
                 // Each pool owner must witness the registration with their stake
                 // signing key — otherwise the ledger rejects the tx with
                 // MissingVKeyWitnessesUTXOW for the owner's key hash.
+                let registeredParams = try pool.toPoolParams(network: config.cardano?.network.networkId ?? .mainnet)
+                let ownerHashes = registeredParams.poolOwners.asArray
                 var ownerSkeys: [FilePath] = []
-                for owner in pool.owners {
-                    guard let ownerStakeSkey = owner.stakeSkey else {
+                for (index, owner) in pool.owners.enumerated() {
+                    let ownerLabel = owner.name ?? owner.stakeKeyHash ?? "#\(index + 1)"
+                    if let path = owner.stakeSkey {
+                        // stake_skey set: it must exist, as before
+                        do {
+                            try FileUtils.checkFileExists(path)
+                        } catch {
+                            noora.error(.alert(
+                                "Owner stake signing key not found: \(path.string)",
+                                takeaways: ["Ensure the file exists for owner '\(ownerLabel)'."]
+                            ))
+                            throw ExitCode.validationFailure
+                        }
+                        ownerSkeys.append(path)
+                    } else if index < ownerHashes.count, let found = keys.stakeSkey(for: ownerHashes[index]) {
+                        spacedPrint("Using stake signing key \(.primary(found.lastComponent?.string ?? found.string)) for owner \(.primary(ownerLabel)) (matches the owner).")
+                        ownerSkeys.append(found)
+                    } else {
                         noora.error(.alert(
-                            "Owner '\(owner.name ?? "unknown")' is missing a stake signing key (stake_skey).",
-                            takeaways: ["Every pool owner must sign the registration; set stake_skey for each owner in the pool JSON."]
+                            "Owner '\(ownerLabel)' is missing a stake signing key (stake_skey).",
+                            takeaways: ["Every pool owner must sign the registration; set stake_skey for each owner in the pool JSON, or put their stake signing key in the current directory."]
                         ))
                         throw ExitCode.validationFailure
                     }
-                    do {
-                        try FileUtils.checkFileExists(ownerStakeSkey)
-                    } catch {
-                        noora.error(.alert(
-                            "Owner stake signing key not found: \(ownerStakeSkey.string)",
-                            takeaways: ["Ensure the file exists for owner '\(owner.name ?? "unknown")'."]
-                        ))
-                        throw ExitCode.validationFailure
-                    }
-                    ownerSkeys.append(ownerStakeSkey)
                 }
 
                 try await buildAndSignRegistrationTransaction(

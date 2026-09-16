@@ -42,7 +42,9 @@ struct PoolParamsDraft: Equatable {
         self.vrfKeyHash = params.vrfKeyHash
         self.pledge = params.pledge
         self.cost = params.cost
-        self.margin = params.margin
+        // Backends that report margin as a decimal return unreduced fractions
+        // (e.g. 10000000/100000000); reduce so certificates encode it canonically.
+        self.margin = Self.reduced(params.margin)
         self.rewardAccount = params.rewardAccount
         self.owners = params.poolOwners.asArray
         self.relays = (params.relays ?? []).map { PoolRelay(relay: $0) }
@@ -66,6 +68,13 @@ struct PoolParamsDraft: Equatable {
             && (try? lhs.relays.map { try $0.toRelay().toCBORData() }) == (try? rhs.relays.map { try $0.toRelay().toCBORData() })
             && lhs.metadataUrl == rhs.metadataUrl
             && lhs.metadataHash == rhs.metadataHash
+    }
+
+    static func reduced(_ interval: UnitInterval) -> UnitInterval {
+        func gcd(_ a: UInt64, _ b: UInt64) -> UInt64 { b == 0 ? a : gcd(b, a % b) }
+        let divisor = gcd(interval.numerator, interval.denominator)
+        guard divisor > 1 else { return interval }
+        return UnitInterval(numerator: interval.numerator / divisor, denominator: interval.denominator / divisor)
     }
 
     var poolOperator: PoolOperator { PoolOperator(poolKeyHash: poolKeyHash) }
@@ -514,7 +523,8 @@ extension Pool {
             name: rewardVkey.flatMap(PoolKeyFileMatcher.keyName),
             stakeVkey: rewardVkey,
             stakeSkey: rewardHash.flatMap { keys.stakeSkey(for: $0) },
-            rewardAccount: draft.rewardAccount.payload.toHex
+            rewardAccount: draft.rewardAccount.payload.toHex,
+            stakeKeyHash: rewardHash?.payload.toHex
         )
 
         let margin = Double(draft.margin.numerator) / Double(max(draft.margin.denominator, 1))

@@ -94,6 +94,14 @@ struct PoolParamsDraftTests {
         #expect(margin.numerator == 1 && margin.denominator == 3)
     }
 
+    @Test("reduces unreduced on-chain margins")
+    func reducesMargin() throws {
+        let reduced = PoolParamsDraft.reduced(UnitInterval(numerator: 10_000_000, denominator: 100_000_000))
+        #expect(reduced.numerator == 1 && reduced.denominator == 10)
+        let zero = PoolParamsDraft.reduced(UnitInterval(numerator: 0, denominator: 100_000_000))
+        #expect(zero.numerator == 0 && zero.denominator == 1)
+    }
+
     @Test("reports the reward account's stake key hash")
     func rewardStakeKeyHash() throws {
         let draft = PoolParamsDraft(params: try Self.sampleParams())
@@ -132,6 +140,76 @@ struct PoolParamsDraftTests {
         #expect(pool.vrfVkey == nil)
         #expect(pool.owners.first?.stakeKeyHash == Data(repeating: 0x4f, count: 28).toHex)
         #expect(try pool.toPoolParams(network: .testnet).toCBORData() == draft.toPoolParams().toCBORData())
+    }
+}
+
+@Suite("Pool JSON key hash fallbacks")
+struct PoolJSONHashFallbackTests {
+
+    static func hashOnlyPool(dir: URL) throws -> (Pool, PoolParamsDraft) {
+        let params = try PoolParamsDraftTests.sampleParams()
+        var draft = PoolParamsDraft(params: params)
+        draft.margin = UnitInterval(numerator: 1, denominator: 10)
+        let keys = PoolKeyFileMatcher(directory: FilePath(dir.path))
+        return (try Pool.fromOnChain(draft: draft, name: "scm_hash_only_test_xyz", keys: keys), draft)
+    }
+
+    static func tempDir() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    @Test("rewards owner with only stake_key_hash builds the same reward account")
+    func rewardsOwnerStakeKeyHashOnly() throws {
+        let dir = try Self.tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        var (pool, draft) = try Self.hashOnlyPool(dir: dir)
+        #expect(pool.rewardsOwner?.stakeKeyHash == Data(repeating: 0x4f, count: 28).toHex)
+
+        pool.rewardsOwner?.rewardAccount = nil
+        #expect(try pool.toPoolParams(network: .testnet).toCBORData() == draft.toPoolParams().toCBORData())
+    }
+
+    @Test("falls back to the first owner's stake_key_hash when the rewards owner has nothing")
+    func firstOwnerHashFallback() throws {
+        let dir = try Self.tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        var (pool, draft) = try Self.hashOnlyPool(dir: dir)
+        pool.rewardsOwner = nil
+        #expect(try pool.toPoolParams(network: .testnet).toCBORData() == draft.toPoolParams().toCBORData())
+    }
+
+    @Test("stale key file paths fall back to the stored hashes")
+    func staleFilePathsFallBack() throws {
+        let dir = try Self.tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        var (pool, draft) = try Self.hashOnlyPool(dir: dir)
+        pool.vrfVkey = FilePath(dir.appendingPathComponent("missing.vrf.vkey").path)
+        pool.coldVkey = FilePath(dir.appendingPathComponent("missing.cold.vkey").path)
+        pool.owners[0].stakeVkey = FilePath(dir.appendingPathComponent("missing.stake.vkey").path)
+        pool.rewardsOwner?.stakeVkey = FilePath(dir.appendingPathComponent("missing.stake.vkey").path)
+        #expect(try pool.toPoolParams(network: .testnet).toCBORData() == draft.toPoolParams().toCBORData())
+    }
+
+    @Test("pool.json is saved with sorted keys and unescaped slashes")
+    func savesSortedJSON() throws {
+        let dir = try Self.tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (pool, _) = try Self.hashOnlyPool(dir: dir)
+        let path = FilePath(dir.appendingPathComponent("sorted.pool.json").path)
+        try pool.save(to: path)
+
+        let text = try String(contentsOfFile: path.string, encoding: .utf8)
+        #expect(!text.contains("\\/"))
+        let topLevelKeys = text.split(separator: "\n")
+            .filter { $0.hasPrefix("  \"") }
+            .compactMap { $0.split(separator: "\"").dropFirst().first.map(String.init) }
+        #expect(!topLevelKeys.isEmpty)
+        #expect(topLevelKeys == topLevelKeys.sorted())
+
+        let reloaded = try Pool.load(from: path)
+        #expect(try reloaded.toPoolParams(network: .testnet).toCBORData() == pool.toPoolParams(network: .testnet).toCBORData())
     }
 }
 

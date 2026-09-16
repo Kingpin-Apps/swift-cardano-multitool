@@ -574,7 +574,8 @@ public struct Pool: Codable, Sendable {
         }
         
         let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        // Sorted keys keep the file stable across saves, so diffs and hand edits stay readable
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         encoder.dateEncodingStrategy = .iso8601
         
         let data = try encoder.encode(self)
@@ -712,6 +713,15 @@ public struct Pool: Codable, Sendable {
     
     // MARK: - PoolParameters Generation
 
+    /// The stake key hash of a stake verification key file. Extended (bip32) keys are
+    /// hashed from their 32-byte key; any other file is loaded as a plain stake key, as before.
+    private static func stakeKeyHash(ofVkeyFile path: FilePath) throws -> VerificationKeyHash {
+        if let hash = PoolKeyFileMatcher.stakeKeyHash(ofVkeyFile: path) {
+            return hash
+        }
+        return try StakeVerificationKey.load(from: path.string).hash()
+    }
+
     /// Whether `path` is set and points to an existing file.
     private static func existingFile(_ path: FilePath?) -> FilePath? {
         guard let path, FileManager.default.fileExists(atPath: path.string) else { return nil }
@@ -775,19 +785,29 @@ public struct Pool: Codable, Sendable {
             denominator: denominator
         )
         
-        // Reward account: rewards owner stake vkey, reward_account, else first owner's stake vkey
+        // Reward account: the rewards owner's stake vkey, reward_account or stake_key_hash,
+        // else the first owner's stake vkey or stake_key_hash
+        func rewardAccountHash(forKeyHash hex: String) throws -> RewardAccountHash {
+            let address = try Address(
+                stakingPart: .verificationKeyHash(VerificationKeyHash(payload: hex.hexStringToData)),
+                network: network
+            )
+            return RewardAccountHash(payload: address.toBytes())
+        }
         let rewardAccount: RewardAccountHash
         if let rewardsVkeyPath = Self.existingFile(rewardsOwner?.stakeVkey) {
-            rewardAccount = try StakeVerificationKey.load(from: rewardsVkeyPath.string)
-                .rewardAccountHash(network: network)
+            rewardAccount = try rewardAccountHash(forKeyHash: Self.stakeKeyHash(ofVkeyFile: rewardsVkeyPath).payload.toHex)
         } else if let hex = rewardsOwner?.rewardAccount, !hex.isEmpty {
             rewardAccount = RewardAccountHash(payload: hex.hexStringToData)
+        } else if let hex = rewardsOwner?.stakeKeyHash, !hex.isEmpty {
+            rewardAccount = try rewardAccountHash(forKeyHash: hex)
         } else if let ownerVkeyPath = Self.existingFile(owners.first?.stakeVkey) {
-            rewardAccount = try StakeVerificationKey.load(from: ownerVkeyPath.string)
-                .rewardAccountHash(network: network)
+            rewardAccount = try rewardAccountHash(forKeyHash: Self.stakeKeyHash(ofVkeyFile: ownerVkeyPath).payload.toHex)
+        } else if let hex = owners.first?.stakeKeyHash, !hex.isEmpty {
+            rewardAccount = try rewardAccountHash(forKeyHash: hex)
         } else {
             throw SwiftCardanoMultitoolError.valueError(
-                "A rewards owner (stake verification key or reward_account) is required."
+                "A rewards owner (stake verification key, reward_account or stake_key_hash) is required."
             )
         }
         
@@ -795,8 +815,7 @@ public struct Pool: Codable, Sendable {
         var ownerHashes: [VerificationKeyHash] = []
         for owner in owners {
             if let ownerStakeVkeyPath = Self.existingFile(owner.stakeVkey) {
-                let ownerStakeVKey = try StakeVerificationKey.load(from: ownerStakeVkeyPath.string)
-                ownerHashes.append(try ownerStakeVKey.hash())
+                ownerHashes.append(try Self.stakeKeyHash(ofVkeyFile: ownerStakeVkeyPath))
             } else if let hex = owner.stakeKeyHash, !hex.isEmpty {
                 ownerHashes.append(VerificationKeyHash(payload: hex.hexStringToData))
             } else {
