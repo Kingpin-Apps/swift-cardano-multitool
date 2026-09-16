@@ -40,7 +40,7 @@ extension QueryMainCommand {
         @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")
         var poolJSON: FilePath?
         
-        @Option(name: [.customShort("o"), .long], help: "The pool operator (PoolOperator). Supports: bech32 (pool1...), hex hash, .node.vkey file.")
+        @Option(name: [.customShort("o"), .long], help: "The pool operator (PoolOperator). Supports: pool ID (pool1... or hex), cold verification key (pool_vk1... or hex), .pool.id file, or cold .vkey file.")
         var poolOperator: PoolOperator?
         
         @Option(name: [.customShort("v"), .long], help: "The path to the VRF signing key file (.vrf.skey).")

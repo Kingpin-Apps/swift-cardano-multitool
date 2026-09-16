@@ -24,6 +24,16 @@ extension PoolOperator: @retroactive ExpressibleByArgument {
             return try? PoolOperator(from: trimmed)
         }
 
+        // Bech32 cold verification key (pool_vk1...), as printed by cardano-cli
+        if trimmed.hasPrefix("pool_vk1") {
+            let bech32 = Bech32()
+            guard let (hrp, _, _) = try? bech32.bech32Decode(trimmed), hrp == "pool_vk",
+                  let data = bech32.decode(addr: trimmed) else {
+                return nil
+            }
+            return fromColdVerificationKey(data)
+        }
+
         // Try hex string format (supports optional 0x prefix)
         let hexCandidate: String
         if trimmed.hasPrefix("0x") || trimmed.hasPrefix("0X") {
@@ -39,6 +49,10 @@ extension PoolOperator: @retroactive ExpressibleByArgument {
 
         if isValidHex {
             let data = hexCandidate.hexStringToData
+            // 32 bytes is a cold verification key rather than a pool ID
+            if data.count == 32 {
+                return fromColdVerificationKey(data)
+            }
             if !data.isEmpty {
                 return try? PoolOperator(from: data)
             }
@@ -67,6 +81,13 @@ extension PoolOperator: @retroactive ExpressibleByArgument {
         }
 
         return nil
+    }
+
+    private static func fromColdVerificationKey(_ payload: Data) -> PoolOperator? {
+        guard payload.count == 32,
+              let vkey = try? StakePoolVerificationKey(payload: payload),
+              let poolKeyHash = try? vkey.poolKeyHash() else { return nil }
+        return PoolOperator(poolKeyHash: poolKeyHash)
     }
 
     /// Load a pool operator from a cold verification/signing key file or a pool ID file.

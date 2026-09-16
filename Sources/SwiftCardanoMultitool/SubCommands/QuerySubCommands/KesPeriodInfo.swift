@@ -15,7 +15,7 @@ extension QueryMainCommand {
         @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")
         var poolJSON: FilePath? = nil
         
-        @Option(name: [.customShort("o"), .long], help: "The pool operator (PoolOperator) to delegate to. Supports: bech32 (pool1...), hex hash, .node.vkey file.")
+        @Option(name: [.customShort("o"), .long], help: "The pool operator (PoolOperator) to delegate to. Supports: pool ID (pool1... or hex), cold verification key (pool_vk1... or hex), .pool.id file, or cold .vkey file.")
         var poolOperator: PoolOperator? = nil
         
         @Option(name: .long, help: "The path to the OpCert file.")

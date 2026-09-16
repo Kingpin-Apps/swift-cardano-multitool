@@ -41,7 +41,7 @@ extension CertificateMainCommand {
         @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")
         var poolJSON: FilePath? = nil
 
-        @Option(name: .long, help: "The pool operator to retire, without a pool.json. Supports: bech32 (pool1...), hex hash, .pool.id file, .node.vkey file.")
+        @Option(name: .long, help: "The pool operator to retire, without a pool.json. Supports: pool ID (pool1... or hex), cold verification key (pool_vk1... or hex), .pool.id file, or cold .vkey file.")
         var poolOperator: PoolOperator? = nil
 
         @Option(name: .long, help: "Path to the pool cold signing key (.node.skey). Required to sign the transaction when not using a pool.json.")

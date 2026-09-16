@@ -3,6 +3,7 @@ import ArgumentParser
 import Noora
 import SystemPackage
 import SwiftCardanoCore
+import SwiftCardanoChain
 
 extension GenerateMainCommand {
     struct PoolJSON: AsyncParsableCommand {
@@ -11,14 +12,24 @@ extension GenerateMainCommand {
             abstract: "Create a new pool.json file with the specified pool details.",
             usage: """
             scm generate pool-json --pool-name test
+            scm generate pool-json --pool-name test --pool-operator pool1...
             """,
             discussion: """
             This command helps you create a new pool.json file for your Cardano 
-            stake pool. You can specify the pool name, and the command will 
-            interactively prompt you for all necessary details such as pool 
-            parameters, metadata, relay information, and key file locations. 
-            The generated pool.json file will be saved as <poolName>.pool.json 
-            in the current directory.
+            stake pool. The generated pool.json file will be saved as 
+            <poolName>.pool.json in the current directory.
+
+            If the pool is already registered, its parameters (pledge, cost, 
+            margin, relays, owners, reward account, VRF key and metadata) are 
+            fetched from the chain and saved as-is. The pool is identified by 
+            --pool-operator, or automatically from <poolName>.pool.id-bech, 
+            <poolName>.pool.id, <poolName>.cold.vkey or <poolName>.node.vkey. 
+            Key files in the current directory that match the registered hashes 
+            are linked; missing key files are left empty.
+
+            For a pool that is not registered yet, the command interactively 
+            prompts for all details such as pool parameters, metadata, relay 
+            information, and key file locations.
             """,
             aliases: ["pool"]
         )
@@ -26,6 +37,9 @@ extension GenerateMainCommand {
         @Option(name: .shortAndLong, help: "The name of the pool. The pool file will be saved as <poolName>.pool.json.")
         var poolName: String? = nil
         
+        @Option(name: .long, help: "A registered pool to fetch parameters from. Supports: pool ID (pool1... or hex), cold verification key (pool_vk1... or hex), .pool.id file, or cold .vkey file.")
+        var poolOperator: PoolOperator? = nil
+
         @Flag(name: .shortAndLong, help: "Overwrite the existing pool.json file if it exists.")
         var overwrite: Bool = false
         
@@ -41,7 +55,7 @@ extension GenerateMainCommand {
         ) -> FilePath? {
             let fm = FileManager.default
             
-            let fileName = "\(poolName!).\(fileExtension)"
+            let fileName = "\(poolName).\(fileExtension)"
             let filePath = defaultPath.appending(fileName)
             
             // Check default path
@@ -277,57 +291,7 @@ extension GenerateMainCommand {
             var addMore = true
             
             while addMore {
-                let relayType: SPORelayType = noora.singleChoicePrompt(
-                    title: "Relay Type",
-                    question: "Select the relay type:",
-                    description: "IP for direct IP address, DNS for domain name."
-                )
-                
-                let host = noora.textPrompt(
-                    title: "Relay Host",
-                    prompt: relayType == .ip
-                        ? "Enter the relay IP address:"
-                        : "Enter the relay DNS hostname:",
-                    collapseOnAnswer: true,
-                    validationRules: [
-                        NonEmptyValidationRule(error: "Host cannot be empty."),
-                        LengthValidationRule(max: 64, error: "Host must be 64 chars or less.")
-                    ]
-                ).trimmingCharacters(in: .whitespacesAndNewlines)
-                
-                let portInput = noora.textPrompt(
-                    title: "Relay Port",
-                    prompt: "Enter the relay port (default 3001):",
-                    collapseOnAnswer: true,
-                    validationRules: [
-                        PortOrEmptyValidationRule(error: "Port must be empty or between 1 and 65535.")
-                    ]
-                ).trimmingCharacters(in: .whitespacesAndNewlines)
-                let port = portInput.isEmpty ? "3001" : portInput
-                
-                let hostType: HostType
-                if relayType == .ip {
-                    hostType = noora.singleChoicePrompt(
-                        title: "Host Type",
-                        question: "Select the host type:",
-                        options: [HostType.ipv4, HostType.ipv6],
-                        description: "IPv4 or IPv6 address type."
-                    )
-                } else {
-                    hostType = noora.singleChoicePrompt(
-                        title: "Host Type",
-                        question: "Select the DNS host type:",
-                        options: [HostType.single, HostType.multi],
-                        description: "Single or multi-host DNS relay."
-                    )
-                }
-                
-                relays.append(PoolRelay(
-                    type: relayType,
-                    host: host,
-                    port: port,
-                    hostType: hostType
-                ))
+                relays.append(promptPoolRelay())
                 
                 addMore = noora.yesOrNoChoicePrompt(
                     title: "Add Another Relay",
@@ -486,29 +450,13 @@ extension GenerateMainCommand {
                 collapseOnAnswer: true,
                 validationRules: [
                     NonEmptyValidationRule(error: "Pool ID cannot be empty."),
-                    PoolIdValidationRule(error: "Pool ID must be a valid bech32 (pool1…) or 56-character hex string.")
+                    PoolOperatorValidationRule(error: "Enter a pool ID (pool1… or 56-character hex) or cold verification key (pool_vk1… or 64-character hex).")
                 ]
             ).trimmingCharacters(in: .whitespacesAndNewlines)
 
-            return parsePoolId(input)
+            return PoolOperator(argument: input)
         }
 
-        /// Parse a pool ID string accepting either bech32 (`pool1…`) or hex (with optional `0x` prefix).
-        private func parsePoolId(_ input: String) -> PoolOperator? {
-            let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            if trimmed.hasPrefix("pool") {
-                return try? PoolOperator(from: trimmed)
-            }
-
-            let hexCandidate = (trimmed.hasPrefix("0x") || trimmed.hasPrefix("0X"))
-                ? String(trimmed.dropFirst(2))
-                : trimmed
-            let data = hexCandidate.hexStringToData
-            guard !data.isEmpty else { return nil }
-            return try? PoolOperator(from: data)
-        }
-        
         /// Prompt for payment key files
         private func promptPaymentKeys(cwd: FilePath) -> (
             paymentVkey: FilePath?, paymentSkey: FilePath?, paymentAddr: String?
@@ -746,30 +694,84 @@ extension GenerateMainCommand {
             try self.validate()
         }
         
-        mutating func run() async throws {
-            // This command gathers pledge, margin, cost, metadata, and key file
-            // paths interactively (no CLI flags exist for them yet), so fail with
-            // a clear message instead of aborting deep inside a Noora prompt when
-            // there is no interactive terminal.
-            guard isInteractiveSession() else {
-                noora.error(.alert(
-                    "'generate pool-json' requires an interactive terminal.",
-                    takeaways: [
-                        "It prompts for pledge, margin, cost, metadata, and key files, which have no command-line flags yet.",
-                        "Run it in an interactive shell (not piped/CI), and make sure CARDANO_MULTITOOL_SKIP_PROMPT is not set."
-                    ]
+        /// The registered pool to fetch: --pool-operator, else the pool's ID or cold key files.
+        private func resolvePoolOperator(poolName: String, cwd: FilePath) -> PoolOperator? {
+            if let poolOperator { return poolOperator }
+            let candidates = ["\(poolName).pool.id-bech", "\(poolName).pool.id", "\(poolName).cold.vkey", "\(poolName).node.vkey"]
+            for file in candidates where FileManager.default.fileExists(atPath: cwd.appending(file).string) {
+                if let op = PoolOperator(argument: cwd.appending(file).string) {
+                    return op
+                }
+            }
+            return nil
+        }
+
+        /// Fetch the pool's registered parameters and save them without prompting for any of them.
+        /// Returns false if the pool could not be fetched (e.g. it is not registered).
+        private func generateFromChain(poolOperator: PoolOperator, poolName: String, poolFile: FilePath) async throws -> Bool {
+            let config = try await MultitoolConfig.load()
+            let context = try await getContext(config: config)
+            try await printContextInfo(config: config, context: context)
+
+            let fetched: PoolParamsDraft
+            do {
+                fetched = try await fetchOnChainPoolParams(context: context, poolOperator: poolOperator).draft
+            } catch {
+                noora.warning(.alert(
+                    "Could not fetch registered parameters for \((try? poolOperator.toBech32()) ?? "the pool").",
+                    takeaway: "The pool may not be registered yet. \(error.localizedDescription)"
                 ))
+                return false
+            }
+
+            let keys = PoolKeyFileMatcher()
+            let pool = try Pool.fromOnChain(draft: fetched, name: poolName, keys: keys)
+            PoolParamsFormat.printSummary(fetched, title: "On-chain Pool Parameters", keys: keys)
+            pool.printKeyFileReport()
+
+            // Save the pool ID files so later commands pick up the pool automatically
+            let cwd = FilePath(FileManager.default.currentDirectoryPath)
+            for (file, format) in [("\(poolName).pool.id", CredentialFormat.hex), ("\(poolName).pool.id-bech", .bech32)] {
+                let path = cwd.appending(file)
+                if !FileManager.default.fileExists(atPath: path.string) {
+                    try? fetched.poolOperator.save(to: path.string, format: format)
+                }
+            }
+
+            try pool.save(to: poolFile, overwrite: overwrite)
+            try await FileUtils.displayJSONFile(poolFile)
+
+            noora.success(.alert(
+                "Pool.json file created from the registered pool parameters.",
+                takeaways: [
+                    "File location: \(poolFile.string)",
+                    "To change parameters, run \(.command("scm certificate pool-registration --pool-operator \((try? fetched.poolOperator.toBech32()) ?? "<pool id>")")).",
+                    "Key files that were not found can be added to the file later."
+                ]
+            ))
+            return true
+        }
+
+        mutating func run() async throws {
+            if poolName == nil && isInteractiveSession() {
+                try await self.wizard()
+            }
+            guard let poolName else {
+                noora.error(.alert("A pool name is required.", takeaways: ["Provide --pool-name."]))
                 throw ExitCode.validationFailure
             }
 
-            if poolName == nil {
-                try await self.wizard()
-            }
-
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let poolFile = cwd.appending("\(poolName!).pool.json")
-            
+            let poolFile = cwd.appending("\(poolName).pool.json")
+
             if !overwrite && FileManager.default.fileExists(atPath: poolFile.string) {
+                guard isInteractiveSession() else {
+                    noora.error(.alert(
+                        "Pool.json file already exists at location: \(poolFile.lastComponent?.string ?? poolFile.string)",
+                        takeaways: ["Use the --overwrite flag to overwrite it."]
+                    ))
+                    throw ExitCode.validationFailure
+                }
                 noora.warning(.alert(
                     "Pool.json file already exists at location: \(poolFile.lastComponent?.string ?? poolFile.string)"
                 ))
@@ -779,9 +781,7 @@ extension GenerateMainCommand {
                     defaultAnswer: false,
                     description: "This will replace the existing file with a new one."
                 )
-                if shouldOverwrite {
-                    overwrite = true
-                } else {
+                guard shouldOverwrite else {
                     noora.error(.alert(
                         "Aborted. The existing pool.json file was not overwritten.",
                         takeaways: [
@@ -791,19 +791,59 @@ extension GenerateMainCommand {
                     ))
                     throw ExitCode.validationFailure
                 }
+                overwrite = true
+            }
+
+            // A registered pool: fetch its parameters instead of asking for them
+            var operatorToFetch = resolvePoolOperator(poolName: poolName, cwd: cwd)
+            if operatorToFetch == nil, isInteractiveSession() {
+                let registered = noora.yesOrNoChoicePrompt(
+                    title: "Registered Pool",
+                    question: "Is this pool already registered on-chain?",
+                    defaultAnswer: false,
+                    description: "If so, its parameters are fetched from the chain instead of entered by hand."
+                )
+                if registered {
+                    operatorToFetch = try await getPoolOperator(title: "Registered Pool")
+                }
+            }
+            if let operatorToFetch {
+                if try await generateFromChain(poolOperator: operatorToFetch, poolName: poolName, poolFile: poolFile) {
+                    return
+                }
+                guard isInteractiveSession(), poolOperator == nil else {
+                    throw ExitCode.failure
+                }
+                spacedPrint("Continuing with manual entry.")
+            }
+
+            // This path gathers pledge, margin, cost, metadata, and key file
+            // paths interactively (no CLI flags exist for them), so fail with
+            // a clear message instead of aborting deep inside a Noora prompt when
+            // there is no interactive terminal.
+            guard isInteractiveSession() else {
+                noora.error(.alert(
+                    "'generate pool-json' requires an interactive terminal.",
+                    takeaways: [
+                        "For an unregistered pool it prompts for pledge, margin, cost, metadata, and key files, which have no command-line flags.",
+                        "For a registered pool, pass --pool-operator to fetch its parameters non-interactively.",
+                        "Run it in an interactive shell (not piped/CI), and make sure CARDANO_MULTITOOL_SKIP_PROMPT is not set."
+                    ]
+                ))
+                throw ExitCode.validationFailure
             }
             
             // 1. Pool Parameters
             let params = promptPoolParams()
             
             // 2. Metadata
-            let meta = promptMetadata(poolName: poolName!)
+            let meta = promptMetadata(poolName: poolName)
             
             // 3. Relays
             let relays = promptRelays()
             
             // 4 & 5. Pool Keys (Cold + VRF) & 6. Pool IDs
-            let keys = promptPoolKeys(poolName: poolName!, cwd: cwd)
+            let keys = promptPoolKeys(poolName: poolName, cwd: cwd)
             
             // 7. Payment Keys
             let payment = promptPaymentKeys(cwd: cwd)
@@ -819,7 +859,7 @@ extension GenerateMainCommand {
             
             // Build the Pool
             let pool = try Pool(
-                name: poolName!,
+                name: poolName,
                 owners: owners,
                 pledge: params.pledge,
                 cost: params.cost,

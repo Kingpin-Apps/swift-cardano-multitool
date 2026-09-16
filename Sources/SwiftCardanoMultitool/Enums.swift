@@ -107,16 +107,14 @@ enum EnterDRepBy: String, CaseIterable, AlignedChoiceDescribable {
 }
 
 enum EnterPoolOperatorBy: String, CaseIterable, AlignedChoiceDescribable {
-    case bech32
-    case hex
+    case id
     case path
     case vkey
     case skey
 
     var name: String {
         switch self {
-            case .bech32: return "Bech32"
-            case .hex: return "Hex"
+            case .id: return "Pool ID"
             case .path: return "Path"
             case .vkey: return "Vkey"
             case .skey: return "Skey"
@@ -125,8 +123,7 @@ enum EnterPoolOperatorBy: String, CaseIterable, AlignedChoiceDescribable {
 
     var details: String {
         switch self {
-            case .bech32: return "The Pool Operator ID in Bech32 format."
-            case .hex: return "The Pool Operator ID in Hex format."
+            case .id: return "Type the pool ID (pool1… or hex) or cold verification key (pool_vk1… or hex)."
             case .path: return "The path to the file containing the Pool Operator ID."
             case .vkey: return "The path to the verification key file."
             case .skey: return "The path to the signing key file."

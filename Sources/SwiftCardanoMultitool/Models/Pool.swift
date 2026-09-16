@@ -101,6 +101,10 @@ public struct Pool: Codable, Sendable {
     /// poolname.vrf.vkey - public verification key file for VRF key
     @FilePathCodable
     public var vrfVkey: FilePath?
+
+    /// The VRF key hash (hex), e.g. as registered on-chain. Used when the VRF
+    /// verification key file is not available.
+    public var vrfKeyHash: String?
     
     // MARK: - Rewards
     
@@ -209,6 +213,7 @@ public struct Pool: Codable, Sendable {
         case nodeCounter = "node_counter"
         case vrfSkey = "vrf_skey"
         case vrfVkey = "vrf_vkey"
+        case vrfKeyHash = "vrf_key_hash"
         case rewardsOwner = "rewards_owner"
         case kesVkey = "kes_vkey"
         case kesSkey = "kes_skey"
@@ -262,6 +267,7 @@ public struct Pool: Codable, Sendable {
         nodeCounter: FilePath? = nil,
         vrfSkey: FilePath? = nil,
         vrfVkey: FilePath? = nil,
+        vrfKeyHash: String? = nil,
         rewardsOwner: RewardsOwner? = nil,
         kesVkey: FilePath? = nil,
         kesSkey: FilePath? = nil,
@@ -287,13 +293,14 @@ public struct Pool: Codable, Sendable {
         self.pledge = pledge
         self.cost = cost
         
-        guard let margin = margin, margin <= 1.00 else {
+        if let margin, margin < 0 || margin > 1.00 {
             throw SwiftCardanoMultitoolError.valueError(
-                "Margin must be less than or equal to 1.00 (100%)!"
+                "Margin must be between 0.00 and 1.00 (100%)!"
             )
         }
         
         self.margin = margin
+        self.vrfKeyHash = vrfKeyHash
         self.relays = relays
         self.metaName = metaName
         self.metaDescription = metaDescription
@@ -534,6 +541,7 @@ public struct Pool: Codable, Sendable {
             nodeCounter: self.nodeCounter ?? other.nodeCounter,
             vrfSkey: self.vrfSkey ?? other.vrfSkey,
             vrfVkey: self.vrfVkey ?? other.vrfVkey,
+            vrfKeyHash: self.vrfKeyHash ?? other.vrfKeyHash,
             rewardsOwner: self.rewardsOwner ?? other.rewardsOwner,
             kesVkey: self.kesVkey ?? other.kesVkey,
             kesSkey: self.kesSkey ?? other.kesSkey,
@@ -601,6 +609,7 @@ public struct Pool: Codable, Sendable {
         self.coldSkey = config.string(forKey: CodingKeys.coldSkey.configKey, as: FilePath.self)
         self.vrfSkey = config.string(forKey: CodingKeys.vrfSkey.configKey, as: FilePath.self)
         self.vrfVkey = config.string(forKey: CodingKeys.vrfVkey.configKey, as: FilePath.self)
+        self.vrfKeyHash = config.string(forKey: CodingKeys.vrfKeyHash.configKey)
         self.nodeCounter = config.string(forKey: CodingKeys.nodeCounter.configKey, as: FilePath.self)
         self.kesVkey = config.string(forKey: CodingKeys.kesVkey.configKey, as: FilePath.self)
         self.kesSkey = config.string(forKey: CodingKeys.kesSkey.configKey, as: FilePath.self)
@@ -693,37 +702,54 @@ public struct Pool: Codable, Sendable {
             name: metaName,
             description: metaDescription,
             ticker: metaTicker,
-            homepage: try Url(metaHomepage!.absoluteString),
-            url: metaUrl != nil ? try Url(metaUrl!.absoluteString) : nil,
-            poolMetadataHash: metadataHash != nil ? PoolMetadataHash(payload: metadataHash!.hexStringToData) : nil
+            homepage: try metaHomepage.map { try Url($0.absoluteString) },
+            url: try metaUrl.map { try Url($0.absoluteString) },
+            poolMetadataHash: metadataHash.map { PoolMetadataHash(payload: $0.hexStringToData) }
         )
         
         return poolMetadata
     }
     
     // MARK: - PoolParameters Generation
+
+    /// Whether `path` is set and points to an existing file.
+    private static func existingFile(_ path: FilePath?) -> FilePath? {
+        guard let path, FileManager.default.fileExists(atPath: path.string) else { return nil }
+        return path
+    }
     
-    /// Generate the pool parameters for registration
+    /// Generate the pool parameters for registration.
+    ///
+    /// Key files are preferred; when a file is missing, the matching hash stored in
+    /// the pool JSON (e.g. fetched from on-chain) is used instead.
     /// - Parameter network: The network ID (mainnet or testnet)
     /// - Returns: The pool parameters object
     public func toPoolParams(network: NetworkId) throws -> PoolParams {
-        // Pool operator (from cold verification key)
-        guard let coldVkeyPath = coldVkey else {
+        // Pool operator: cold verification key, else the pool ID
+        let poolOperator: PoolKeyHash
+        if let coldVkeyPath = Self.existingFile(coldVkey) {
+            let stakePoolVKey = try StakePoolVerificationKey.load(from: coldVkeyPath.string)
+            poolOperator = try stakePoolVKey.poolKeyHash()
+        } else if let op = toPoolOperator() {
+            poolOperator = op.poolKeyHash
+        } else {
             throw SwiftCardanoMultitoolError.valueError(
-                "Cold verification key file path is required to generate pool parameters."
+                "A cold verification key file or pool ID is required to generate pool parameters."
             )
         }
-        let stakePoolVKey = try StakePoolVerificationKey.load(from: coldVkeyPath.string)
-        let poolOperator = try stakePoolVKey.poolKeyHash()
         
-        // VRF key hash (from VRF verification key)
-        guard let vrfVkeyPath = vrfVkey else {
+        // VRF key hash: VRF verification key, else vrf_key_hash
+        let vrfKeyHash: VrfKeyHash
+        if let vrfVkeyPath = Self.existingFile(vrfVkey) {
+            let vrfVKey = try VRFVerificationKey.load(from: vrfVkeyPath.string)
+            vrfKeyHash = try vrfVKey.hash()
+        } else if let hex = self.vrfKeyHash, !hex.isEmpty {
+            vrfKeyHash = VrfKeyHash(payload: hex.hexStringToData)
+        } else {
             throw SwiftCardanoMultitoolError.valueError(
-                "VRF verification key file path is required to generate pool parameters."
+                "A VRF verification key file or vrf_key_hash is required to generate pool parameters."
             )
         }
-        let vrfVKey = try VRFVerificationKey.load(from: vrfVkeyPath.string)
-        let vrfKeyHash = try vrfVKey.hash()
         
         // Pledge and cost
         guard let pledge = pledge else {
@@ -749,88 +775,49 @@ public struct Pool: Codable, Sendable {
             denominator: denominator
         )
         
-        // Reward account hash (from rewards owner or first owner stake vkey)
-        let rewardsStakeVkeyPath = rewardsOwner?.stakeVkey
-            ?? owners.first?.stakeVkey
-        guard let rewardsVkeyPath = rewardsStakeVkeyPath else {
+        // Reward account: rewards owner stake vkey, reward_account, else first owner's stake vkey
+        let rewardAccount: RewardAccountHash
+        if let rewardsVkeyPath = Self.existingFile(rewardsOwner?.stakeVkey) {
+            rewardAccount = try StakeVerificationKey.load(from: rewardsVkeyPath.string)
+                .rewardAccountHash(network: network)
+        } else if let hex = rewardsOwner?.rewardAccount, !hex.isEmpty {
+            rewardAccount = RewardAccountHash(payload: hex.hexStringToData)
+        } else if let ownerVkeyPath = Self.existingFile(owners.first?.stakeVkey) {
+            rewardAccount = try StakeVerificationKey.load(from: ownerVkeyPath.string)
+                .rewardAccountHash(network: network)
+        } else {
             throw SwiftCardanoMultitoolError.valueError(
-                "Rewards owner or at least one pool owner with a stake verification key is required."
+                "A rewards owner (stake verification key or reward_account) is required."
             )
         }
-        let rewardsStakeVKey = try StakeVerificationKey.load(from: rewardsVkeyPath.string)
-        let rewardAccount = try rewardsStakeVKey.rewardAccountHash(network: network)
         
-        // Pool owners (verification key hashes from each owner's stake vkey)
+        // Pool owners: each owner's stake vkey, else stake_key_hash
         var ownerHashes: [VerificationKeyHash] = []
         for owner in owners {
-            guard let ownerStakeVkeyPath = owner.stakeVkey else {
+            if let ownerStakeVkeyPath = Self.existingFile(owner.stakeVkey) {
+                let ownerStakeVKey = try StakeVerificationKey.load(from: ownerStakeVkeyPath.string)
+                ownerHashes.append(try ownerStakeVKey.hash())
+            } else if let hex = owner.stakeKeyHash, !hex.isEmpty {
+                ownerHashes.append(VerificationKeyHash(payload: hex.hexStringToData))
+            } else {
                 throw SwiftCardanoMultitoolError.valueError(
-                    "Owner \(owner.name ?? "unknown") is missing a stake verification key file."
+                    "Owner \(owner.name ?? "unknown") is missing a stake verification key file or stake_key_hash."
                 )
             }
-            let ownerStakeVKey = try StakeVerificationKey.load(from: ownerStakeVkeyPath.string)
-            let ownerHash = try ownerStakeVKey.hash()
-            ownerHashes.append(ownerHash)
         }
+        var seen = Set<Data>()
+        let uniqueOwnerHashes = ownerHashes.filter { seen.insert($0.payload).inserted }
         let poolOwners: ListOrOrderedSet<VerificationKeyHash> = .orderedSet(
-            try OrderedSet(Set(ownerHashes))
+            try OrderedSet(uniqueOwnerHashes)
         )
         
         // Relays
-        let cardanoRelays: [Relay] = try relays.map { relay in
-            guard let relayType = relay.type else {
-                throw SwiftCardanoMultitoolError.valueError(
-                    "Relay type is required for each relay."
-                )
-            }
-            let port = relay.port.flatMap { Int($0) }
-            
-            switch relayType {
-            case .ip:
-                let hostType = relay.hostType ?? .ipv4
-                switch hostType {
-                case .ipv4:
-                    return .singleHostAddr(
-                        SingleHostAddr(
-                            port: port,
-                            ipv4: relay.host.flatMap { IPv4Address($0) },
-                            ipv6: nil
-                        )
-                    )
-                case .ipv6:
-                    return .singleHostAddr(
-                        SingleHostAddr(
-                            port: port,
-                            ipv4: nil,
-                            ipv6: relay.host.flatMap { IPv6Address($0) }
-                        )
-                    )
-                default:
-                    return .singleHostAddr(
-                        SingleHostAddr(
-                            port: port,
-                            ipv4: relay.host.flatMap { IPv4Address($0) },
-                            ipv6: nil
-                        )
-                    )
-                }
-            case .dns:
-                let hostType = relay.hostType ?? .single
-                switch hostType {
-                case .multi:
-                    return .multiHostName(
-                        MultiHostName(dnsName: relay.host)
-                    )
-                default:
-                    return .singleHostName(
-                        SingleHostName(port: port, dnsName: relay.host)
-                    )
-                }
-            }
-        }
+        let cardanoRelays: [Relay] = try relays.map { try $0.toRelay() }
         
-        // Pool metadata
-        let poolMetadata: PoolMetadata? = try toPoolMetadata()
+        // Pool metadata: only url + hash go on-chain
+        let poolMetadata: PoolMetadata? = (metaUrl != nil && metadataHash != nil)
+            ? try toPoolMetadata()
+            : nil
         
         return PoolParams(
             poolOperator: poolOperator,

@@ -28,6 +28,20 @@ public struct PoolIdValidationRule: ValidatableRule {
     }
 }
 
+/// A validation rule that accepts any pool operator form `--pool-operator` accepts: pool ID
+/// (bech32 or hex), cold verification key (`pool_vk1…` or hex), or a pool ID / cold key file.
+public struct PoolOperatorValidationRule: ValidatableRule {
+    public let error: ValidatableError
+
+    public init(error: ValidatableError) {
+        self.error = error
+    }
+
+    public func validate(input: String) -> Bool {
+        PoolOperator(argument: input) != nil
+    }
+}
+
 /// A validation rule that accepts an empty string OR a valid TCP/UDP port number (1–65535).
 public struct PortOrEmptyValidationRule: ValidatableRule {
     public let error: ValidatableError

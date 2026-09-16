@@ -185,12 +185,18 @@ scm generate pool-json --pool-name myPool
 
 # Overwrite an existing file
 scm generate pool-json --pool-name myPool --overwrite
+
+# A registered pool: fetch its parameters from the chain
+scm generate pool-json --pool-name myPool --pool-operator pool1...
 ```
 
 | Option | Description |
 |--------|-------------|
 | `--pool-name`, `-p` | Writes `<name>.pool.json` in the current directory. |
+| `--pool-operator` | A registered pool to fetch parameters from: pool ID (`pool1...` or hex), cold verification key (`pool_vk1...` or hex), `.pool.id` file, or cold `.vkey` file. |
 | `--overwrite`, `-o` | Replace the file if it exists. |
+
+If the pool is already registered, its parameters are fetched from the chain and saved without prompting for them. The pool is identified by `--pool-operator`, or automatically from `<name>.pool.id-bech`, `<name>.pool.id`, `<name>.cold.vkey` or `<name>.node.vkey`. Key files in the current directory that match the registered hashes are linked; missing ones are left empty, and the registered hashes are stored instead (`vrf_key_hash`, each owner's `stake_key_hash`, `rewards_owner.reward_account`). This also works non-interactively.
 
 The wizard collects pool ticker, description, homepage URL, optional logo, relays, and key file locations. After generating, host the file at a public HTTPS URL and include the URL and its hash in your pool registration certificate.
 

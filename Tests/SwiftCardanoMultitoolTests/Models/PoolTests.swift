@@ -13,10 +13,16 @@ struct PoolInitTests {
         #expect(pool.margin == 0.5)
     }
 
-    @Test("throws when margin is nil")
-    func rejectsNilMargin() {
+    @Test("accepts a nil margin (params not known yet)")
+    func acceptsNilMargin() throws {
+        let pool = try Pool(margin: nil)
+        #expect(pool.margin == nil)
+    }
+
+    @Test("throws when margin is negative")
+    func rejectsNegativeMargin() {
         #expect(throws: SwiftCardanoMultitoolError.self) {
-            _ = try Pool(margin: nil)
+            _ = try Pool(margin: -0.1)
         }
     }
 

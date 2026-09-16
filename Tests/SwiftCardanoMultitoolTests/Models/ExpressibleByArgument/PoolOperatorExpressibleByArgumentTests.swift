@@ -29,6 +29,18 @@ struct PoolOperatorExpressibleByArgumentTests {
         #expect(PoolOperator(argument: "abcd") == nil)
     }
 
+    @Test("accepts the cold verification key as pool_vk bech32 or 64-character hex")
+    func acceptsColdVerificationKeyText() throws {
+        let pair = try StakePoolKeyPair.generate()
+        let expected = try pair.verificationKey.poolKeyHash()
+        let payload = pair.verificationKey.payload
+
+        #expect(PoolOperator(argument: payload.toHex)?.poolKeyHash == expected)
+        let bech32 = try #require(Bech32().encode(hrp: "pool_vk", witprog: payload))
+        #expect(PoolOperator(argument: bech32)?.poolKeyHash == expected)
+        #expect(PoolOperator(argument: try PoolOperator(poolKeyHash: expected).toBech32())?.poolKeyHash == expected)
+    }
+
     @Test("derives the pool hash from .node.vkey and .node.skey files")
     func acceptsColdKeyFiles() throws {
         let dir = FileManager.default.temporaryDirectory

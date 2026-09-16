@@ -86,6 +86,34 @@ scm certificate pool-registration --pool-name myPool
 
 Create the `pool.json` file first with `scm generate pool-json` — it captures pledge, margin, cost, owners, relays, metadata URL, and key file locations.
 
+#### Updating a registered pool without a pool.json
+
+Pass `--pool-operator` (or choose **Registered Pool** in the wizard) to start from the pool's on-chain parameters. Interactively, you pick which parameters to change — pledge, cost, margin, relays, owners, reward account, VRF key, metadata — and are walked through only those; everything else keeps its registered value. The changes are shown against the registered values before the certificate is written, and you can save the result to a `pool.json`.
+
+The same edits can be made non-interactively with flags. `--relay` and `--owner` are repeatable and replace the registered lists:
+
+```bash
+scm certificate pool-registration \
+  --pool-operator pool1... \
+  --pledge 50K --cost 340 --margin 1.5% \
+  --relay dns:relay1.example.com:3001 --relay ipv4:203.0.113.7:3001 \
+  --metadata-url https://example.com/pool.json --metadata-file pool.json \
+  --generate-transaction --fee-payment-address myWallet
+```
+
+| Option | Description |
+|--------|-------------|
+| `--pool-operator` | Registered pool: pool ID (`pool1...` or hex), cold verification key (`pool_vk1...` or hex), `.pool.id` file, or cold `.vkey` file. |
+| `--pledge`, `--cost` | ADA amounts (`50K`, `1.5M`) or lovelace (`340000000 lovelace`). |
+| `--margin` | Decimal (`0.015`), percentage (`1.5%`), or fraction (`3/200`). |
+| `--relay` | `ipv4:1.2.3.4:3001`, `ipv6:[2001:db8::1]:3001`, `dns:relay.example.com:3001`, or `srv:_cardano._tcp.example.com`. |
+| `--owner`, `--reward-account` | Stake address, stake key hash, or stake `.vkey` file. |
+| `--vrf-vkey` | New VRF verification key file. |
+| `--metadata-url` | New metadata URL, with `--metadata-hash`, `--metadata-file` (hashes a local copy), or neither (downloads the URL). |
+| `--cold-signing-key`, `--owner-signing-key` | Signing keys for the transaction. Keys in the current directory that match the registered hashes are found automatically. |
+
+On-chain parameters only contain hashes, so no key files are needed to build the certificate. With `--use-cardano-cli`, the certificate is built by `cardano-cli` only when all verification key files are found locally; otherwise it is built natively (the certificate is identical). Every owner must still sign the transaction.
+
 ### pool-deregistration
 
 Schedule a stake pool for retirement at a specified epoch. The `pool-dereg` alias is also accepted.

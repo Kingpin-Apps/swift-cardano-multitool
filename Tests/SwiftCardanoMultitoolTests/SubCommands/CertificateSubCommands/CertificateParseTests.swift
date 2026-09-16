@@ -92,6 +92,51 @@ struct AuthCommitteeHotParseTests {
     }
 }
 
+@Suite("CertificateMainCommand.StakePoolRegistrationCertificate on-chain edits")
+struct StakePoolRegistrationOnChainParseTests {
+
+    @Test("edit flags parse with --pool-operator")
+    func editFlagsParse() throws {
+        let cmd = try CertificateMainCommand.StakePoolRegistrationCertificate.parse([
+            "--pool-operator", String(repeating: "77", count: 28),
+            "--pledge", "2K",
+            "--cost", "340",
+            "--margin", "1.5%",
+            "--relay", "dns:relay.example.com:3001",
+            "--relay", "srv:_cardano._tcp.example.com",
+            "--owner", String(repeating: "4f", count: 28),
+            "--reward-account", String(repeating: "4f", count: 28),
+            "--metadata-url", "https://example.com/pool.json",
+            "--metadata-hash", String(repeating: "ab", count: 32),
+        ])
+        #expect(cmd.poolOperator != nil)
+        #expect(cmd.relays.count == 2)
+        #expect(cmd.owners.count == 1)
+        #expect(cmd.rewardAccount != nil)
+    }
+
+    @Test("edit flags require --pool-operator")
+    func editFlagsRequirePoolOperator() {
+        #expect(throws: (any Error).self) {
+            _ = try CertificateMainCommand.StakePoolRegistrationCertificate.parse([
+                "--pool-name", "mypool",
+                "--pledge", "2K",
+            ])
+        }
+    }
+
+    @Test("invalid margin and half-set metadata are rejected")
+    func rejectsInvalidValues() {
+        let pool = String(repeating: "77", count: 28)
+        #expect(throws: (any Error).self) {
+            _ = try CertificateMainCommand.StakePoolRegistrationCertificate.parse(["--pool-operator", pool, "--margin", "150%"])
+        }
+        #expect(throws: (any Error).self) {
+            _ = try CertificateMainCommand.StakePoolRegistrationCertificate.parse(["--pool-operator", pool, "--metadata-hash", String(repeating: "ab", count: 32)])
+        }
+    }
+}
+
 @Suite("CertificateMainCommand.StakePoolDeregistrationCertificate")
 struct StakePoolDeregistrationParseTests {
 

@@ -33,7 +33,7 @@ extension CertificateMainCommand {
         @Option(name: [.short, .long], help: "Stake address file name. Example: owner → owner.stake.addr")
         var stakeAddress: StakeAddressInfo?
 
-        @Option(name: [.short, .long], help: "The pool operator (PoolOperator) to delegate stake to. Supports: bech32 (pool1...), hex hash, .node.vkey file.")
+        @Option(name: [.short, .long], help: "The pool operator (PoolOperator) to delegate stake to. Supports: pool ID (pool1... or hex), cold verification key (pool_vk1... or hex), .pool.id file, or cold .vkey file.")
         var poolOperator: PoolOperator?
 
         @Option(name: [.short, .long], help: "The DRep to delegate votes to. Supports: bech32 (drep1...), hex hash, .drep.vkey file, 'always-abstain', 'always-no-confidence'.")

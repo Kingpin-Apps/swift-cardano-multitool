@@ -32,7 +32,7 @@ extension CertificateMainCommand {
         @Option(name: [.short, .long], help: "Stake address file name. Example: owner → owner.stake.addr")
         var stakeAddress: StakeAddressInfo?
 
-        @Option(name: [.short, .long], help: "The pool operator (PoolOperator) to delegate to. Supports: bech32 (pool1...), hex hash, .node.vkey file.")
+        @Option(name: [.short, .long], help: "The pool operator (PoolOperator) to delegate to. Supports: pool ID (pool1... or hex), cold verification key (pool_vk1... or hex), .pool.id file, or cold .vkey file.")
         var poolOperator: PoolOperator?
 
         // MARK: - CertificateCommandable Arguments

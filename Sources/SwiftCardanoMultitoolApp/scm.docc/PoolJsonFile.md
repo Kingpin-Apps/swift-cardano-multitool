@@ -36,6 +36,10 @@ scm generate pool-json --pool-name mypool
 
 The wizard walks through pool parameters, metadata, relays, and key files, and writes `mypool.pool.json` to the current directory. When key files follow the standard naming scheme (below) and live in the current directory, the wizard finds and offers them automatically. If a cold verification key is available, the pool ID is derived and saved to `<poolName>.pool.id` (hex) and `<poolName>.pool.id-bech` (bech32) alongside the JSON file.
 
+For a pool that is already registered, pass `--pool-operator` (or keep `<poolName>.pool.id-bech` in the directory) and the parameters are fetched from the chain instead of prompted for. Key files that match the registered hashes are linked; missing ones are left empty rather than failing.
+
+`scm certificate pool-registration --pool-operator ...` can also update a registered pool without a pool.json, and offers to save the result to one.
+
 The `pool-registration` and `pool-deregistration` certificate commands also offer to create a template pool.json if none is found for the given pool name.
 
 ## Standard file naming
@@ -61,8 +65,8 @@ Keys use snake_case. File-path fields may point anywhere; relative paths are res
 | Field | Description |
 |-------|-------------|
 | `name` | Pool name used for file naming (max 50 chars). |
-| `owners` | Array of pool owners. Each has `name`, `witness` (`local` or `external`), `stake_vkey`, `stake_skey`. |
-| `rewards_owner` | Rewards destination: `name`, `stake_vkey`, `stake_skey`. May be the same as an owner. |
+| `owners` | Array of pool owners. Each has `name`, `witness` (`local` or `external`), `stake_vkey`, `stake_skey`, and `stake_key_hash` (used when `stake_vkey` is missing). |
+| `rewards_owner` | Rewards destination: `name`, `stake_vkey`, `stake_skey`, and `reward_account` (reward address bytes in hex, used when `stake_vkey` is missing). May be the same as an owner. |
 | `pledge` | Pledge in lovelace. |
 | `cost` | Fixed cost per epoch in lovelace (minimum 170 ADA). |
 | `margin` | Margin as a decimal (`0.10` = 10%, must be ≤ `1.00`). |
@@ -78,6 +82,7 @@ Keys use snake_case. File-path fields may point anywhere; relative paths are res
 | `id_hex_file` / `id_bech_file` | Paths to the pool ID files. |
 | `cold_vkey` / `cold_skey` / `node_counter` | Cold key pair and opcert issue counter paths. |
 | `vrf_vkey` / `vrf_skey` | VRF key pair paths. |
+| `vrf_key_hash` | VRF key hash (hex), used when `vrf_vkey` is missing. |
 | `kes_vkey` / `kes_skey` | Current KES key pair paths. |
 | `kes_counter` / `kes_counter_next` / `kes_expire_json` | KES rotation bookkeeping paths. |
 | `op_cert` | Current operational certificate path. |

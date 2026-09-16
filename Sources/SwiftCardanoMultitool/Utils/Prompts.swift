@@ -59,8 +59,8 @@ func enterPoolOperatorBy(title: TerminalText? = nil) async throws -> EnterPoolOp
         question: "Enter Pool Operator by:",
         description: """
             Accepted formats:
-            \n  • Bech32: pool1... (56 chars) 
-            \n  • Hex: 56-character hex string (with or without 0x prefix)
+            \n  • Pool ID: pool1... or 56-character hex (with or without 0x prefix)
+            \n  • Cold verification key: pool_vk1... or 64-character hex
             \n  • File: path to .pool.id file
             \n  • File: path to .pool.id-bech file
             \n  • File: path to .node.vkey file
@@ -508,24 +508,21 @@ func getPoolOperator(title: TerminalText? = nil) async throws -> PoolOperator {
             )
             
             return try PoolOperator.load(from: cwd.appending(poolOperatorFileName).string)
-        case .hex:
+        case .id:
             let poolId = noora.textPrompt(
                 title: "Pool ID",
-                prompt: "Enter the Pool ID in hexadecimal format:",
+                prompt: "Enter the pool ID or cold verification key:",
+                description: "Accepts pool1…, 56-character hex, pool_vk1…, or 64-character hex.",
                 collapseOnAnswer: true,
-                validationRules: [NonEmptyValidationRule(error: "Pool ID cannot be empty.")]
-            ).trimmingCharacters(in: .whitespacesAndNewlines)
-            return try PoolOperator(from: poolId.hexStringToData)
-        case .bech32:
-            let poolId = noora.textPrompt(
-                title: "Pool ID",
-                prompt: "Enter the Pool ID in Bech32 format:",
-                collapseOnAnswer: true,
-                validationRules: [NonEmptyValidationRule(error: "Pool ID cannot be empty.")]
-            ).trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            
-            return try PoolOperator(from: poolId)
+                validationRules: [
+                    NonEmptyValidationRule(error: "Pool ID cannot be empty."),
+                    PoolOperatorValidationRule(error: "Not a valid pool ID or cold verification key.")
+                ]
+            )
+            guard let poolOperator = PoolOperator(argument: poolId) else {
+                throw ExitCode.validationFailure
+            }
+            return poolOperator
         case .vkey:
             let poolOperatorFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
                 .filter { $0.hasSuffix(".node.vkey") }

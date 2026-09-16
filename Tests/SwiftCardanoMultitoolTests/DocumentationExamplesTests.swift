@@ -530,6 +530,15 @@ struct GenerateDocumentationExamplesTests {
         #expect(cmd.overwrite == true)
     }
 
+    @Test("pool-json --pool-name --pool-operator example")
+    func poolJsonPoolOperatorExample() throws {
+        let cmd = try GenerateMainCommand.PoolJSON.parse([
+            "--pool-name", "myPool",
+            "--pool-operator", String(repeating: "77", count: 28),
+        ])
+        #expect(cmd.poolOperator != nil)
+    }
+
     @Test("pool-json registers the 'pool' alias")
     func poolJsonAlias() {
         #expect(GenerateMainCommand.PoolJSON.configuration.aliases.contains("pool"))

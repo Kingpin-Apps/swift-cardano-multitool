@@ -193,7 +193,9 @@ Create one with the interactive wizard:
 scm generate pool-json --pool-name mypool
 ```
 
-This writes `mypool.pool.json` to the current directory, auto-discovering key files that follow the standard naming scheme (`mypool.cold.vkey`, `mypool.vrf.skey`, `mypool.kes-001.skey`, etc.).
+This writes `mypool.pool.json` to the current directory, auto-discovering key files that follow the standard naming scheme (`mypool.cold.vkey`, `mypool.vrf.skey`, `mypool.kes-001.skey`, etc.). For a pool that is already registered, add `--pool-operator pool1...` and the parameters are fetched from the chain instead of prompted for.
+
+To change a registered pool's parameters without a pool.json, run `scm certificate pool-registration --pool-operator pool1...` and pick the fields to edit (or pass `--pledge`, `--cost`, `--margin`, `--relay`, `--owner`, `--reward-account`, `--vrf-vkey`, `--metadata-url`).
 
 Commands that require (or fall back to) a pool.json file:
 
