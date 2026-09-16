@@ -1,3 +1,9 @@
+## 0.9.1 (2026-09-16)
+
+### Fix
+
+- allow pool retirement without a pool.json via --pool-operator and --cold-signing-key
+
 ## 0.9.0 (2026-09-14)
 
 ### Feat
