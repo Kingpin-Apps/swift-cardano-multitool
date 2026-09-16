@@ -1,3 +1,14 @@
+## 0.10.0 (2026-09-16)
+
+### Feat
+
+- fetch registered pool params for pool-json and pool-registration
+
+### Fix
+
+- require swift-cardano-chain 0.7.4 (Koios pool metadata mismatch, relay ports)
+- pass absolute paths to cardano-cli
+
 ## 0.9.1 (2026-09-16)
 
 ### Fix
