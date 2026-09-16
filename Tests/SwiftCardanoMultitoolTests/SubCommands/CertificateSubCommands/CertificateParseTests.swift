@@ -112,4 +112,19 @@ struct StakePoolDeregistrationParseTests {
         #expect(cmd.poolName == "mypool")
         #expect(cmd.epoch != nil)
     }
+
+    @Test("--pool-operator and --cold-signing-key parse without a pool.json")
+    func poolOperatorAndColdSigningKey() throws {
+        let cmd = try CertificateMainCommand.StakePoolDeregistrationCertificate.parse([
+            "--pool-operator", String(repeating: "ab", count: 28),
+            "--cold-signing-key", "mypool.node.skey",
+            "--generate-transaction",
+            "--fee-payment-address", "addr_test1vr2p8st5t5cxqglyjky7vk98k7jtfhdpvhl4e97cezuhn0cqcexl7",
+        ])
+        #expect(cmd.poolOperator != nil)
+        #expect(cmd.poolName == nil)
+        #expect(cmd.poolJSON == nil)
+        #expect(cmd.coldSigningKey?.string == "mypool.node.skey")
+        #expect(cmd.certificateOptions.generateTransaction)
+    }
 }

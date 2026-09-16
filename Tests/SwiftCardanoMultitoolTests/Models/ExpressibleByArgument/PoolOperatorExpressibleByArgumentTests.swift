@@ -24,6 +24,29 @@ struct PoolOperatorExpressibleByArgumentTests {
         #expect(PoolOperator(argument: hex) != nil)
     }
 
+    @Test("returns nil for hex that is not a 28-byte pool hash")
+    func rejectsShortHex() {
+        #expect(PoolOperator(argument: "abcd") == nil)
+    }
+
+    @Test("derives the pool hash from .node.vkey and .node.skey files")
+    func acceptsColdKeyFiles() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let pair = try StakePoolKeyPair.generate()
+        let expected = try pair.verificationKey.poolKeyHash()
+        let vkeyPath = dir.appendingPathComponent("test.node.vkey").path
+        let skeyPath = dir.appendingPathComponent("test.node.skey").path
+        try pair.verificationKey.save(to: vkeyPath)
+        try pair.signingKey.save(to: skeyPath)
+
+        #expect(PoolOperator(argument: vkeyPath)?.poolKeyHash == expected)
+        #expect(PoolOperator(argument: skeyPath)?.poolKeyHash == expected)
+    }
+
     @Test("returns nil for an empty string")
     func rejectsEmpty() {
         #expect(PoolOperator(argument: "") == nil)

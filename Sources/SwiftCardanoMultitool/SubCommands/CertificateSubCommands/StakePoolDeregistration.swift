@@ -15,13 +15,16 @@ extension CertificateMainCommand {
             abstract: "Generates a stake pool deregistration certificate.",
             usage: """
             scm certificate pool-deregistration --pool-name test
+            scm certificate pool-deregistration --pool-operator pool1... --cold-signing-key test.node.skey --generate-transaction --fee-payment-address wallet
             """,
             discussion: """
-            This command generates a stake pool deregistration certificate based 
-            on the information provided in a pool JSON file. You can specify the 
-            pool using either the pool name (which will look for a file named 
-            <poolName>.pool.json in the current working directory) or by 
-            providing the path to the pool JSON file directly. The command will 
+            This command generates a stake pool deregistration certificate. You 
+            can specify the pool using the pool name (which will look for a file 
+            named <poolName>.pool.json in the current working directory), the 
+            path to the pool JSON file, or without a pool JSON file by giving the 
+            pool operator (pool ID in bech32 or hex, a .pool.id file, or a 
+            .node.vkey file) together with the pool cold signing key when a 
+            transaction is generated. The command will 
             validate the pool information, generate the deregistration 
             certificate, and optionally build a transaction for submitting the 
             deregistration to the blockchain. If the transaction generation 
@@ -37,6 +40,12 @@ extension CertificateMainCommand {
 
         @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")
         var poolJSON: FilePath? = nil
+
+        @Option(name: .long, help: "The pool operator to retire, without a pool.json. Supports: bech32 (pool1...), hex hash, .pool.id file, .node.vkey file.")
+        var poolOperator: PoolOperator? = nil
+
+        @Option(name: .long, help: "Path to the pool cold signing key (.node.skey). Required to sign the transaction when not using a pool.json.")
+        var coldSigningKey: FilePath? = nil
 
         @Option(name: [.customShort("e"), .long], help: "The epoch to deregister the stake pool in.")
         var epoch: EpochNumber? = nil
@@ -54,11 +63,13 @@ extension CertificateMainCommand {
         enum SelectOption: String, CaseIterable, AlignedChoiceDescribable {
             case poolName
             case poolJSON
+            case poolOperator
 
             var name: String {
                 switch self {
                     case .poolName: return "Pool Name"
                     case .poolJSON: return "Pool JSON"
+                    case .poolOperator: return "Pool Operator"
                 }
             }
 
@@ -66,6 +77,7 @@ extension CertificateMainCommand {
                 switch self {
                     case .poolName: return "Use the pool name to find pool.json in the current directory."
                     case .poolJSON: return "Use a pool.json file path."
+                    case .poolOperator: return "Use the pool ID (bech32 or hex), a .pool.id file, or a .node.vkey file. No pool.json needed."
                 }
             }
         }
@@ -87,6 +99,7 @@ extension CertificateMainCommand {
                 Please select one of the following options:
                 1. Pool Name: Provide the name of the pool to search for the pool.json file.
                 2. Pool JSON: Provide the path to the pool.json file.
+                3. Pool Operator: Provide the pool ID or cold verification key, without a pool.json file.
                 """
             )
             
@@ -109,35 +122,76 @@ extension CertificateMainCommand {
                         of: ".pool",
                         with: ""
                     )
+
+                case .poolOperator:
+                    poolOperator = try await getPoolOperator(title: "Pool Operator to Retire")
             }
-            
-            epoch = EpochNumber(noora.textPrompt(
-                title: "Deregistration Epoch",
-                prompt: "Enter the epoch number to deregister the stake pool in (optional, defaults to current epoch):",
-                description: "The epoch number when the deregistration should take effect. If left blank, it will default to the current epoch.",
-                collapseOnAnswer: true,
-                validationRules: [IntegerValidationRule(error: "Please enter a valid epoch number or leave blank for current epoch.")]
-            ))
-            
+
+            // The retirement epoch is prompted in run(), once the valid range is known.
+
+            try await self.wizardForCertificate()
+            if certificateOptions.generateTransaction {
+                if poolOperator != nil && coldSigningKey == nil {
+                    coldSigningKey = try promptColdSigningKey()
+                }
+                try await self.wizardForTransaction()
+            }
+
             try self.validate()
+        }
+
+        /// Prompt for the pool cold signing key, offering the .node.skey files in the current directory.
+        private func promptColdSigningKey() throws -> FilePath {
+            let cwd = FilePath(FileManager.default.currentDirectoryPath)
+            let skeyFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
+                .filter { $0.hasSuffix(".node.skey") }
+                .sorted()
+
+            if skeyFiles.isEmpty {
+                return FilePath(noora.textPrompt(
+                    title: "Pool Cold Signing Key",
+                    prompt: "Enter the path to the pool cold signing key (.node.skey):",
+                    description: "No .node.skey files were found in the current directory. The cold key must witness the retirement transaction.",
+                    collapseOnAnswer: true,
+                    validationRules: [NonEmptyValidationRule(error: "Cold signing key path cannot be empty.")]
+                ).trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+
+            return cwd.appending(noora.singleChoicePrompt(
+                title: "Pool Cold Signing Key",
+                question: "Select the pool cold signing key:",
+                options: skeyFiles,
+                description: "The cold key must witness the retirement transaction."
+            ))
         }
         
         // MARK: - Run
         
         mutating func run() async throws {
             // Run wizard if no input method was provided
-            if poolName == nil && poolJSON == nil , isInteractiveSession() {
+            if poolName == nil && poolJSON == nil && poolOperator == nil , isInteractiveSession() {
                 try await wizard()
             }
 
-            guard let poolJSON = poolJSON else {
-                noora.error("Pool JSON file path is required.")
-                throw ExitCode.validationFailure
-            }
+            let cwd = FilePath(FileManager.default.currentDirectoryPath)
+            let timestamp = DateUtils.getCurrentTimestamp()
 
-            guard let poolName = poolName else {
-                noora.error("Pool name is required.")
-                throw ExitCode.validationFailure
+            // A pool operator identifies the pool without a pool.json. Otherwise
+            // resolve the pool.json from --pool-json or <poolName>.pool.json.
+            if poolOperator == nil {
+                if poolJSON == nil, let poolName {
+                    poolJSON = cwd.appending("\(poolName).pool.json")
+                }
+                if poolName == nil, let poolJSON {
+                    poolName = poolJSON.stem?.replacingOccurrences(of: ".pool", with: "")
+                }
+                guard poolJSON != nil, poolName != nil else {
+                    noora.error(.alert(
+                        "A pool is required.",
+                        takeaways: ["Provide --pool-name, --pool-json, or --pool-operator."]
+                    ))
+                    throw ExitCode.validationFailure
+                }
             }
 
             let config = try await MultitoolConfig.load()
@@ -146,31 +200,34 @@ extension CertificateMainCommand {
             let context = try await getContext(config: config)
             try await printContextInfo(config: config, context: context)
 
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let timestamp = DateUtils.getCurrentTimestamp()
+            var pool: Pool? = nil
+            if poolOperator == nil, let poolJSON, let poolName {
+                do {
+                    try FileUtils.checkFileExists(poolJSON)
+                } catch {
+                    noora.warning(.alert(
+                        "Pool JSON file not found at path: \(poolJSON)",
+                        takeaway: "You can retire the pool without a pool.json by passing --pool-operator (and --cold-signing-key to sign)."
+                    ))
 
-            do {
-                try FileUtils.checkFileExists(poolJSON)
-            } catch {
-                noora.warning("Pool JSON file not found at path: \(poolJSON)")
+                    let generateNew = isInteractiveSession() && noora.yesOrNoChoicePrompt(
+                        title: "Create New Pool JSON",
+                        question: "Would you like to create a new pool JSON file named \(poolName).pool.json in the current directory?",
+                        defaultAnswer: true,
+                        description: "Proceeding with the certificate generation requires a pool JSON file. You can generate a new one now, or use the command \(.command("scm generate pool-json")) to create one and then come back to this command to generate the certificate.",
+                    )
 
-                let generateNew = noora.yesOrNoChoicePrompt(
-                    title: "Create New Pool JSON",
-                    question: "Would you like to create a new pool JSON file named \(poolName).pool.json in the current directory?",
-                    defaultAnswer: true,
-                    description: "Proceeding with the certificate generation requires a pool JSON file. You can generate a new one now, or use the command \(.command("scm generate pool-json")) to create one and then come back to this command to generate the certificate.",
-                )
+                    if generateNew {
+                        await GenerateMainCommand.PoolJSON.main([
+                            "--pool-name", poolName
+                        ])
+                    }
 
-                if generateNew {
-                    await GenerateMainCommand.PoolJSON.main([
-                        "--pool-name", poolName
-                    ])
+                    throw ExitCode.validationFailure
                 }
 
-                throw ExitCode.validationFailure
+                pool = try Pool.load(from: poolJSON)
             }
-
-            var pool = try Pool.load(from: poolJSON)
 
             let protocolParamsFile = cwd.appending(
                 "protocol-parameters.json"
@@ -225,41 +282,48 @@ extension CertificateMainCommand {
                 throw ExitCode.validationFailure
             }
 
-            // Validate cold verification key
-            guard let coldVkeyPath = pool.coldVkey else {
-                noora.error(.alert(
-                    "Cold verification key file not found in pool JSON.",
-                    takeaways: ["Ensure \(poolName).node.vkey exists and is referenced in the pool JSON."]
-                ))
-                throw ExitCode.validationFailure
-            }
+            // Resolve the pool key hash, from the pool operator or the pool JSON's cold vkey
+            let poolKeyHash: PoolKeyHash
+            var coldVkeyPath: FilePath? = nil
+            if let poolOperator {
+                poolKeyHash = poolOperator.poolKeyHash
+            } else {
+                guard let pool, let vkeyPath = pool.coldVkey else {
+                    noora.error(.alert(
+                        "Cold verification key file not found in pool JSON.",
+                        takeaways: ["Ensure \(poolName ?? "<poolName>").node.vkey exists and is referenced in the pool JSON."]
+                    ))
+                    throw ExitCode.validationFailure
+                }
 
-            do {
-                try FileUtils.checkFileExists(coldVkeyPath)
-            } catch {
-                noora.error(.alert(
-                    "Cold verification key file not found: \(coldVkeyPath.string)",
-                    takeaways: ["Ensure the file exists or run 'scm generate node-cold-keys' first."]
-                ))
-                throw ExitCode.validationFailure
-            }
+                do {
+                    try FileUtils.checkFileExists(vkeyPath)
+                } catch {
+                    noora.error(.alert(
+                        "Cold verification key file not found: \(vkeyPath.string)",
+                        takeaways: ["Ensure the file exists or run 'scm generate node-cold-keys' first."]
+                    ))
+                    throw ExitCode.validationFailure
+                }
 
-            // Generate Pool ID from cold vkey
-            let stakePoolVKey = try StakePoolVerificationKey.load(from: coldVkeyPath.string)
-            let poolKeyHash = try stakePoolVKey.poolKeyHash()
-            let poolOperator = PoolOperator(poolKeyHash: poolKeyHash)
-            let poolIdBech = try poolOperator.toBech32()
+                // Generate Pool ID from cold vkey
+                let stakePoolVKey = try StakePoolVerificationKey.load(from: vkeyPath.string)
+                poolKeyHash = try stakePoolVKey.poolKeyHash()
+                coldVkeyPath = vkeyPath
+            }
+            let poolIdBech = try PoolOperator(poolKeyHash: poolKeyHash).toBech32()
+            let poolLabel = poolName ?? poolIdBech
 
             spacedPrint("""
             \n\(.primary("━━━ Pool Deregistration Summary ━━━"))
-              Pool Name:       \(.primary(poolName))
+              Pool Name:       \(.primary(poolName ?? "-"))
               Pool ID:         \(.primary(poolIdBech))
               Retire Epoch:    \(.primary("\(retireEpoch)"))
             """)
 
             // Determine output certificate file path
             if certificateOptions.outFile == nil {
-                certificateOptions.outFile = cwd.appending("\(poolName)-\(timestamp).pool-dereg.cert")
+                certificateOptions.outFile = cwd.appending("\(poolLabel)-\(timestamp).pool-dereg.cert")
             }
 
             guard let outFile = certificateOptions.outFile else {
@@ -275,7 +339,9 @@ extension CertificateMainCommand {
 
             // Generate the deregistration certificate
             do {
-                if transactionOptions.useCardanoCLI {
+                // cardano-cli needs the cold vkey file; with only a pool ID the
+                // certificate is built natively (the CBOR is identical).
+                if transactionOptions.useCardanoCLI, let coldVkeyPath {
                     let logger = getLogger(config: config)
                     let cli = try await CardanoCLI(
                         configuration: config.toSwiftCardanoUtilsConfig(),
@@ -302,12 +368,14 @@ extension CertificateMainCommand {
             }
 
             // Update pool.json with deregistration info
-            pool.deregistration = PoolDeregistration(
-                certCreated: Date(),
-                certificate: outFile,
-                epoch: retireEpoch
-            )
-            try pool.save(to: poolJSON, overwrite: true)
+            if var pool, let poolJSON {
+                pool.deregistration = PoolDeregistration(
+                    certCreated: Date(),
+                    certificate: outFile,
+                    epoch: retireEpoch
+                )
+                try pool.save(to: poolJSON, overwrite: true)
+            }
 
             noora.success(.alert(
                 "Pool deregistration certificate created successfully.",
@@ -332,6 +400,12 @@ extension CertificateMainCommand {
                 let witnessCount = 2
                 txBuilder.witnessOverride = witnessCount
 
+                if transactionOptions.feePaymentAddress == nil && isInteractiveSession() {
+                    transactionOptions.feePaymentAddress = try await getFeePaymentAddress(
+                        title: "Fee Payment Address"
+                    )
+                }
+
                 guard let feePaymentAddress = transactionOptions.feePaymentAddress else {
                     noora.error(.alert(
                         "Fee payment address is required to generate the transaction.",
@@ -344,8 +418,11 @@ extension CertificateMainCommand {
                     try feePaymentAddress.info.getSigningMethod().path.string
                 ]
 
-                // Pool cold signing key
-                if let coldSkeyPath = pool.coldSkey {
+                // Pool cold signing key: --cold-signing-key, else the pool JSON's cold_skey
+                if coldSigningKey == nil && pool == nil && isInteractiveSession() {
+                    coldSigningKey = try promptColdSigningKey()
+                }
+                if let coldSkeyPath = coldSigningKey ?? pool?.coldSkey {
                     do {
                         try FileUtils.checkFileExists(coldSkeyPath)
                         signingKeys += [coldSkeyPath.string]
@@ -356,10 +433,27 @@ extension CertificateMainCommand {
                         ))
                         throw ExitCode.validationFailure
                     }
+
+                    // Catch a key for a different pool before paying fees. Encrypted
+                    // keys can't be loaded here; the Sign step will decrypt them.
+                    if let coldSKey = try? StakePoolSigningKey.load(from: coldSkeyPath.string) {
+                        let coldVKey: StakePoolVerificationKey = try coldSKey.toVerificationKey()
+                        guard try coldVKey.poolKeyHash() == poolKeyHash else {
+                            noora.error(.alert(
+                                "Cold signing key does not belong to pool \(poolIdBech).",
+                                takeaways: ["Check that \(coldSkeyPath.string) is the cold key for the pool being retired."]
+                            ))
+                            throw ExitCode.validationFailure
+                        }
+                    }
                 } else {
                     noora.error(.alert(
-                        "Cold signing key path is not set in the pool JSON.",
-                        takeaways: ["Ensure the pool JSON contains a valid cold_skey path."]
+                        pool == nil
+                            ? "A pool cold signing key is required to sign the retirement transaction."
+                            : "Cold signing key path is not set in the pool JSON.",
+                        takeaways: [pool == nil
+                            ? "Provide --cold-signing-key <name>.node.skey."
+                            : "Ensure the pool JSON contains a valid cold_skey path, or pass --cold-signing-key."]
                     ))
                     throw ExitCode.validationFailure
                 }

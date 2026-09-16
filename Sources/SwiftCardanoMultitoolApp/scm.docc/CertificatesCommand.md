@@ -99,7 +99,19 @@ scm certificate pool-deregistration \
 | Option | Description |
 |--------|-------------|
 | `--pool-name`, `-p` / `--pool-json`, `-j` | Pool identified by name or `pool.json` path. |
+| `--pool-operator` | Pool identified without a `pool.json`: bech32 pool ID (`pool1...`), hex hash, `.pool.id` file, or `.node.vkey` file. |
+| `--cold-signing-key` | Pool cold signing key (`.node.skey`) used to witness the transaction when no `pool.json` is used. |
 | `--epoch`, `-e` | The epoch in which the pool retires. |
+
+No `pool.json`? Identify the pool by its operator and pick the cold key and fee payment wallet directly (the interactive wizard offers the same choices under **Pool Operator**):
+
+```bash
+scm certificate pool-deregistration \
+  --pool-operator pool1... \
+  --cold-signing-key myPool.node.skey \
+  --generate-transaction \
+  --fee-payment-address myWallet
+```
 
 ## Combined stake/delegation certificates (Conway era)
 

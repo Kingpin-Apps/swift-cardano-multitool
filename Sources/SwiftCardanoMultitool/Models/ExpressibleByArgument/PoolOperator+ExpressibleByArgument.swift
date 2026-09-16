@@ -6,89 +6,90 @@ import SystemPackage
 
 extension PoolOperator: @retroactive _SendableMetatype {}
 extension PoolOperator: @retroactive ExpressibleByArgument {
+    /// Byte length of a pool key hash (blake2b-224).
+    static let poolKeyHashSize = 28
+
     public init?(argument: String) {
         let trimmed = argument.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+        guard let resolved = Self.resolve(trimmed),
+              resolved.poolKeyHash.payload.count == Self.poolKeyHashSize else {
+            return nil
+        }
+        self = resolved
+    }
+
+    private static func resolve(_ trimmed: String) -> PoolOperator? {
         // Try Bech32 first
         if trimmed.hasPrefix("pool1") {
-            try? self.init(from: trimmed)
-            return
+            return try? PoolOperator(from: trimmed)
         }
-        
+
         // Try hex string format (supports optional 0x prefix)
-        do {
-            let hexCandidate: String
-            if trimmed.hasPrefix("0x") || trimmed.hasPrefix("0X") {
-                hexCandidate = String(trimmed.dropFirst(2))
-            } else {
-                hexCandidate = trimmed
-            }
-            
-            let hexSet = CharacterSet(charactersIn: "0123456789abcdefABCDEF")
-            let isValidHex = !hexCandidate.isEmpty
+        let hexCandidate: String
+        if trimmed.hasPrefix("0x") || trimmed.hasPrefix("0X") {
+            hexCandidate = String(trimmed.dropFirst(2))
+        } else {
+            hexCandidate = trimmed
+        }
+
+        let hexSet = CharacterSet(charactersIn: "0123456789abcdefABCDEF")
+        let isValidHex = !hexCandidate.isEmpty
             && hexCandidate.count % 2 == 0
             && hexCandidate.unicodeScalars.allSatisfy { hexSet.contains($0) }
-            
-            if isValidHex {
-                let data = hexCandidate.hexStringToData
-                if !data.isEmpty {
-                    try? self.init(from: data)
-                    return
-                }
+
+        if isValidHex {
+            let data = hexCandidate.hexStringToData
+            if !data.isEmpty {
+                return try? PoolOperator(from: data)
             }
         }
-        
-        // Otherwise treat as file name
-        let poolOperatorFileName = trimmed
+
+        // Otherwise treat as a file path or a base name in the current directory
         let fileManager = FileManager.default
         let currentDir = fileManager.currentDirectoryPath
-        let filePath = (currentDir as NSString).appendingPathComponent(poolOperatorFileName)
-        
-        if fileManager.fileExists(atPath: filePath) {
-            if let loaded = try? PoolOperator.load(from: filePath) {
-                self = loaded
-                return
+        func path(_ name: String) -> String {
+            name.hasPrefix("/") ? name : (currentDir as NSString).appendingPathComponent(name)
+        }
+
+        if fileManager.fileExists(atPath: path(trimmed)) {
+            return fromFile(path(trimmed))
+        }
+
+        let variations = [
+            "\(trimmed).node.vkey",
+            "\(trimmed).pool.id",
+            "\(trimmed).pool.id-bech",
+        ]
+        for fileName in variations where fileManager.fileExists(atPath: path(fileName)) {
+            if let loaded = fromFile(path(fileName)) {
+                return loaded
             }
         }
-        
-        // Try vkey
-        let nodeVKey = "\(poolOperatorFileName).node.vkey"
-        let nodeVKeyFilePath = (currentDir as NSString).appendingPathComponent(nodeVKey)
-        if fileManager.fileExists(atPath: nodeVKey) {
-            if let stakePoolVerificationKey = try? StakePoolVerificationKey.load(from: nodeVKeyFilePath) {
-                guard let poolKeyHash = try? stakePoolVerificationKey.poolKeyHash() else {
+
+        return nil
+    }
+
+    /// Load a pool operator from a cold verification/signing key file or a pool ID file.
+    ///
+    /// Key files must be dispatched on their envelope type: key loading doesn't check
+    /// the type, so reading a key file as a pool ID (or a signing key as a verification
+    /// key) silently yields the wrong pool hash.
+    private static func fromFile(_ filePath: String) -> PoolOperator? {
+        if let vkey = try? StakePoolVerificationKey.load(from: filePath) {
+            if vkey._type.contains("SigningKey") {
+                guard let skey = try? StakePoolSigningKey.load(from: filePath),
+                      let derived: StakePoolVerificationKey = try? skey.toVerificationKey(),
+                      let poolKeyHash = try? derived.poolKeyHash() else {
                     return nil
                 }
-                
-                self = PoolOperator(
-                    poolKeyHash: poolKeyHash
-                )
-                return
+                return PoolOperator(poolKeyHash: poolKeyHash)
+            }
+            if vkey._type.contains("VerificationKey") {
+                guard let poolKeyHash = try? vkey.poolKeyHash() else { return nil }
+                return PoolOperator(poolKeyHash: poolKeyHash)
             }
         }
-        
-        let variations = [
-            "\(poolOperatorFileName).pool.id",
-            "\(poolOperatorFileName).pool.id-bech",
-        ]
-        
-        var foundFiles: [String] = []
-        for fileName in variations {
-            let filePath = (currentDir as NSString).appendingPathComponent(fileName)
-            if fileManager.fileExists(atPath: filePath) {
-                foundFiles.append(fileName)
-            }
-        }
-        
-        // Handle results
-        if !foundFiles.isEmpty, foundFiles.count == 1, let firstFile = foundFiles.first {
-            let filePath = (currentDir as NSString).appendingPathComponent(firstFile)
-            if let loaded = try? PoolOperator.load(from: filePath) {
-                self = loaded
-                return
-            }
-        }
-        
-        return nil
+
+        return try? PoolOperator.load(from: filePath)
     }
 }
