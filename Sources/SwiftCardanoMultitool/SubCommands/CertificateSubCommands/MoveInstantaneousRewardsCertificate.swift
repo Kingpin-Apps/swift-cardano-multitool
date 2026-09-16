@@ -179,7 +179,7 @@ extension CertificateMainCommand {
                     let logger = getLogger(config: config)
                     let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig(), logger: logger)
 
-                    cliArguments.append(contentsOf: ["--out-file", outFile.string])
+                    cliArguments.append(contentsOf: ["--out-file", FileUtils.absolutePath(outFile).string])
 
                     try await FileUtils.unlockIfExists(outFile)
                     _ = try await cli.legacy.governance(arguments: ["create-mir-certificate"] + cliArguments)

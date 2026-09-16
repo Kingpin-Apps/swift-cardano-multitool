@@ -231,11 +231,11 @@ func generateVoteFileViaCardanoCLI(
     //  - CC Hot → --cc-hot-verification-key-file
     switch inputs.voter.role {
         case .drep:
-            args.append(contentsOf: ["--drep-verification-key-file", inputs.voter.vkeyPath.string])
+            args.append(contentsOf: ["--drep-verification-key-file", FileUtils.absolutePath(inputs.voter.vkeyPath).string])
         case .spo:
-            args.append(contentsOf: ["--cold-verification-key-file", inputs.voter.vkeyPath.string])
+            args.append(contentsOf: ["--cold-verification-key-file", FileUtils.absolutePath(inputs.voter.vkeyPath).string])
         case .ccHot:
-            args.append(contentsOf: ["--cc-hot-verification-key-file", inputs.voter.vkeyPath.string])
+            args.append(contentsOf: ["--cc-hot-verification-key-file", FileUtils.absolutePath(inputs.voter.vkeyPath).string])
     }
 
     if let anchor = inputs.anchor {
@@ -245,7 +245,7 @@ func generateVoteFileViaCardanoCLI(
         ])
     }
 
-    args.append(contentsOf: ["--out-file", tmpFile.string])
+    args.append(contentsOf: ["--out-file", FileUtils.absolutePath(tmpFile).string])
 
     _ = try await cli.governance.vote(arguments: args)
     return tmpFile
@@ -334,7 +334,7 @@ extension TransactionSendable {
                 config: config
             )
             generatedVoteFile = voteFile
-            extraBuildArgs.append(contentsOf: ["--vote-file", voteFile.string])
+            extraBuildArgs.append(contentsOf: ["--vote-file", FileUtils.absolutePath(voteFile).string])
         } else {
             // SwiftCardano path: TxBuilder.build() reads votingProcedures into the body.
             txBuilder.addVote(

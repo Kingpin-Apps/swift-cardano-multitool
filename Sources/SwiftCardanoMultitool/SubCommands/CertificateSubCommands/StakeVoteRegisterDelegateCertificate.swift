@@ -137,7 +137,7 @@ extension CertificateMainCommand {
                     let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig(), logger: logger)
 
                     var arguments = [
-                        "--stake-verification-key-file", stakeVkeyFilePath.string,
+                        "--stake-verification-key-file", FileUtils.absolutePath(stakeVkeyFilePath).string,
                         "--stake-pool-id", try poolOperator.id(),
                         "--key-reg-deposit-amt", "\(depositFee)"
                     ]
@@ -151,7 +151,7 @@ extension CertificateMainCommand {
                         case .alwaysNoConfidence:
                             arguments.append("--always-no-confidence")
                     }
-                    arguments.append(contentsOf: ["--out-file", outFile.string])
+                    arguments.append(contentsOf: ["--out-file", FileUtils.absolutePath(outFile).string])
 
                     try await FileUtils.unlockIfExists(outFile)
                     _ = try await cli.stakeAddress.registrationStakeAndVoteDelegationCertificate(arguments: arguments)

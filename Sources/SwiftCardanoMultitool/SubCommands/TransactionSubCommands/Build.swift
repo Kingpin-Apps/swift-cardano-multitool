@@ -358,7 +358,7 @@ extension TransactionMainCommand {
                         ).trimmingCharacters(in: .whitespacesAndNewlines)
 
                         if !scriptPath.isEmpty {
-                            extraArgs += ["--mint-script-file", scriptPath]
+                            extraArgs += ["--mint-script-file", FileUtils.absolutePath(FilePath(scriptPath)).string]
                         }
                     }
 
@@ -849,7 +849,7 @@ extension TransactionMainCommand {
             }
 
             for cert in certificateFile {
-                args += ["--certificate-file", cert.string]
+                args += ["--certificate-file", FileUtils.absolutePath(cert).string]
             }
             for w in withdrawal {
                 args += ["--withdrawal", w]
@@ -859,20 +859,20 @@ extension TransactionMainCommand {
                 args.append("--json-metadata-detailed-schema")
             }
             for aux in auxiliaryScriptFile {
-                args += ["--auxiliary-script-file", aux.string]
+                args += ["--auxiliary-script-file", FileUtils.absolutePath(aux).string]
             }
             for jsonMeta in metadataJsonFile {
-                args += ["--metadata-json-file", jsonMeta.string]
+                args += ["--metadata-json-file", FileUtils.absolutePath(jsonMeta).string]
             }
             for cborMeta in metadataCborFile {
-                args += ["--metadata-cbor-file", cborMeta.string]
+                args += ["--metadata-cbor-file", FileUtils.absolutePath(cborMeta).string]
             }
 
             for vote in voteFile {
-                args += ["--vote-file", vote.string]
+                args += ["--vote-file", FileUtils.absolutePath(vote).string]
             }
             for proposal in proposalFile {
-                args += ["--proposal-file", proposal.string]
+                args += ["--proposal-file", FileUtils.absolutePath(proposal).string]
             }
             if let donation = treasuryDonation {
                 args += ["--treasury-donation", "\(donation)"]
@@ -883,7 +883,7 @@ extension TransactionMainCommand {
             }
 
             args += extraArgs
-            args += ["--out-file", outFile.string]
+            args += ["--out-file", FileUtils.absolutePath(outFile).string]
 
             spacedPrint("Using \(.primary("cardano-cli")) to build transaction...")
 

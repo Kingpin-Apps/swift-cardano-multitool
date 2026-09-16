@@ -264,8 +264,8 @@ extension GenerateMainCommand {
 
                         _ = try await cli.address.keyGen(
                             arguments: [
-                                "--verification-key-file", policyVKey.string,
-                                "--signing-key-file", policySKey.string
+                                "--verification-key-file", FileUtils.absolutePath(policyVKey).string,
+                                "--signing-key-file", FileUtils.absolutePath(policySKey).string
                             ]
                         )
 
@@ -292,7 +292,7 @@ extension GenerateMainCommand {
 
                         let skeyJSON = try await cli.address.keyGen(
                             arguments: [
-                                "--verification-key-file", policyVKey.string,
+                                "--verification-key-file", FileUtils.absolutePath(policyVKey).string,
                                 "--signing-key-file", "/dev/stdout"
                             ]
                         )
@@ -431,7 +431,7 @@ extension GenerateMainCommand {
                         let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
                         let vkeyJSON = try await cli.key.nonExtendedKey(
                             arguments: [
-                                "--extended-verification-key-file", tmpVKey.string,
+                                "--extended-verification-key-file", FileUtils.absolutePath(tmpVKey).string,
                                 "--verification-key-file", "/dev/stdout"
                             ]
                         )
@@ -491,7 +491,7 @@ extension GenerateMainCommand {
                     configuration: config.toSwiftCardanoUtilsConfig()
                 )
                 let raw = try await cli.address.keyHash(
-                    arguments: ["--payment-verification-key-file", policyVKey.string]
+                    arguments: ["--payment-verification-key-file", FileUtils.absolutePath(policyVKey).string]
                 )
                 keyHashHex = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             }
@@ -566,7 +566,7 @@ extension GenerateMainCommand {
                     configuration: config.toSwiftCardanoUtilsConfig()
                 )
                 let raw = try await cli.transaction.policyId(
-                    arguments: ["--script-file", policyScript.string]
+                    arguments: ["--script-file", FileUtils.absolutePath(policyScript).string]
                 )
                 policyIdHex = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             }

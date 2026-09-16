@@ -163,9 +163,9 @@ extension TransactionMainCommand {
                     var arguments: [String] = []
 
                     if let file = scriptDataCborFile {
-                        arguments += ["--script-data-cbor-file", file.string]
+                        arguments += ["--script-data-cbor-file", FileUtils.absolutePath(file).string]
                     } else if let file = scriptDataFile {
-                        arguments += ["--script-data-file", file.string]
+                        arguments += ["--script-data-file", FileUtils.absolutePath(file).string]
                     } else if let value = scriptDataValue {
                         arguments += ["--script-data-value", value]
                     } else if let hex = scriptDataCborHex {

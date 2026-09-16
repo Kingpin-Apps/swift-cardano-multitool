@@ -241,15 +241,15 @@ extension GenerateMainCommand {
 
                         _ = try await cli.governance.drepKeyGen(
                             arguments: [
-                                "--verification-key-file", drepVKey.string,
-                                "--signing-key-file", drepSKey.string
+                                "--verification-key-file", FileUtils.absolutePath(drepVKey).string,
+                                "--signing-key-file", FileUtils.absolutePath(drepSKey).string
                             ]
                         )
 
                         _ = try await cli.governance.drepId(
                             arguments: [
-                                "--drep-verification-key-file", drepVKey.string,
-                                "--out-file", drepId.string
+                                "--drep-verification-key-file", FileUtils.absolutePath(drepVKey).string,
+                                "--out-file", FileUtils.absolutePath(drepId).string
                             ]
                         )
 
@@ -360,7 +360,7 @@ extension GenerateMainCommand {
                         let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
                         let vkeyJSON = try await cli.key.nonExtendedKey(
                             arguments: [
-                                "--extended-verification-key-file", tmpVKey.string,
+                                "--extended-verification-key-file", FileUtils.absolutePath(tmpVKey).string,
                                 "--verification-key-file", "/dev/stdout"
                             ]
                         )
@@ -391,8 +391,8 @@ extension GenerateMainCommand {
 
                         _ = try await cli.governance.drepId(
                             arguments: [
-                                "--drep-verification-key-file", drepVKey.string,
-                                "--out-file", drepId.string
+                                "--drep-verification-key-file", FileUtils.absolutePath(drepVKey).string,
+                                "--out-file", FileUtils.absolutePath(drepId).string
                             ]
                         )
                 }
@@ -415,7 +415,7 @@ extension GenerateMainCommand {
 
                         let skeyJSON = try await cli.governance.drepKeyGen(
                             arguments: [
-                                "--verification-key-file", drepVKey.string,
+                                "--verification-key-file", FileUtils.absolutePath(drepVKey).string,
                                 "--signing-key-file", "/dev/stdout"
                             ]
                         )
@@ -445,8 +445,8 @@ extension GenerateMainCommand {
                 )
                 _ = try await cli.governance.drepId(
                     arguments: [
-                        "--drep-verification-key-file", drepVKey.string,
-                        "--out-file", drepId.string
+                        "--drep-verification-key-file", FileUtils.absolutePath(drepVKey).string,
+                        "--out-file", FileUtils.absolutePath(drepId).string
                     ]
                 )
 
@@ -502,8 +502,8 @@ extension GenerateMainCommand {
                 )
                 _ = try await cli.governance.drepId(
                     arguments: [
-                        "--drep-verification-key-file", drepVKey.string,
-                        "--out-file", drepId.string
+                        "--drep-verification-key-file", FileUtils.absolutePath(drepVKey).string,
+                        "--out-file", FileUtils.absolutePath(drepId).string
                     ]
                 )
 

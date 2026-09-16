@@ -201,7 +201,7 @@ extension TransactionMainCommand {
                     )
 
                     var arguments: [String] = [
-                        "--protocol-params-file", protocolParamsFile.string,
+                        "--protocol-params-file", FileUtils.absolutePath(protocolParamsFile).string,
                         "--tx-out", "\(addressString) \(valueString)"
                     ]
 
@@ -209,16 +209,16 @@ extension TransactionMainCommand {
                         arguments += ["--tx-out-datum-hash", hash]
                     }
                     if let file = txOutDatumHashFile {
-                        arguments += ["--tx-out-datum-hash-file", file.string]
+                        arguments += ["--tx-out-datum-hash-file", FileUtils.absolutePath(file).string]
                     }
                     if let file = txOutInlineDatumFile {
-                        arguments += ["--tx-out-inline-datum-file", file.string]
+                        arguments += ["--tx-out-inline-datum-file", FileUtils.absolutePath(file).string]
                     }
                     if let value = txOutInlineDatumValue {
                         arguments += ["--tx-out-inline-datum-value", value]
                     }
                     if let file = txOutReferenceScriptFile {
-                        arguments += ["--tx-out-reference-script-file", file.string]
+                        arguments += ["--tx-out-reference-script-file", FileUtils.absolutePath(file).string]
                     }
 
                     minUtxo = UInt64(try await cli.transaction.calculateMinRequiredUtxo(arguments: arguments))

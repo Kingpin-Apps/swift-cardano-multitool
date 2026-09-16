@@ -207,7 +207,7 @@ extension CertificateMainCommand {
                         "--genesis-verification-key-file", genesisVKeyFilePath,
                         "--genesis-delegate-verification-key-file", delegateVKeyFilePath,
                         "--vrf-verification-key-file", vrfVKeyFilePath,
-                        "--out-file", outFile.string
+                        "--out-file", FileUtils.absolutePath(outFile).string
                     ]
 
                     try await FileUtils.unlockIfExists(outFile)

@@ -129,7 +129,7 @@ extension CertificateMainCommand {
                         case .scriptHash(let hash):
                             arguments.append(contentsOf: ["--hot-script-hash", hash.payload.toHex])
                     }
-                    arguments.append(contentsOf: ["--out-file", outFile.string])
+                    arguments.append(contentsOf: ["--out-file", FileUtils.absolutePath(outFile).string])
 
                     try await FileUtils.unlockIfExists(outFile)
                     _ = try await cli.governance.committeeAuthorization(arguments: arguments)

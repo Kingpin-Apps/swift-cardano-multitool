@@ -197,7 +197,7 @@ extension CertificateMainCommand {
                         _ = try await cli.stakeAddress
                             .deregistrationCertificate(arguments: [
                                 "--stake-address", stakeAddress.info.address!.toBech32(),
-                                "--out-file", outFile.string
+                                "--out-file", FileUtils.absolutePath(outFile).string
                             ])
                     } else {
                         spacedPrint(
@@ -207,7 +207,7 @@ extension CertificateMainCommand {
                             .deregistrationCertificate(arguments: [
                                 "--stake-address", stakeAddress.info.address!.toBech32(),
                                 "--key-reg-deposit-amt", "\(depositFee)",
-                                "--out-file", outFile.string
+                                "--out-file", FileUtils.absolutePath(outFile).string
                             ])
                     }
                 }

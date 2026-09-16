@@ -348,9 +348,9 @@ extension CertificateMainCommand {
                         logger: logger
                     )
                     _ = try await cli.stakePool.deregistrationCertificate(arguments: [
-                        "--cold-verification-key-file", coldVkeyPath.string,
+                        "--cold-verification-key-file", FileUtils.absolutePath(coldVkeyPath).string,
                         "--epoch", "\(retireEpoch)",
-                        "--out-file", outFile.string
+                        "--out-file", FileUtils.absolutePath(outFile).string
                     ])
                 } else {
                     let deregCert = SwiftCardanoCore.PoolRetirement(

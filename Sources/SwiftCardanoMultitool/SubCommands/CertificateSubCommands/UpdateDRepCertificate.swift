@@ -125,7 +125,7 @@ extension CertificateMainCommand {
                             "--drep-metadata-hash", anchor.anchorDataHash.payload.toHex
                         ])
                     }
-                    arguments.append(contentsOf: ["--out-file", outFile.string])
+                    arguments.append(contentsOf: ["--out-file", FileUtils.absolutePath(outFile).string])
 
                     try await FileUtils.unlockIfExists(outFile)
                     _ = try await cli.governance.drepUpdate(arguments: arguments)

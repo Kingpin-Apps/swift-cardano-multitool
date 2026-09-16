@@ -847,13 +847,13 @@ extension TransactionSendable {
         // Build the raw transaction
         _ = try await cli.transaction.buildRaw(arguments: buildArgs + [
             "--fee", "200000",
-            "--out-file", txRawFile.string
+            "--out-file", FileUtils.absolutePath(txRawFile).string
         ])
         
         let fee = try await cli.transaction.calculateMinFee(arguments: [
             "--output-text",
-            "--tx-body-file", txRawFile.string,
-            "--protocol-params-file", protocolParamsFile.string,
+            "--tx-body-file", FileUtils.absolutePath(txRawFile).string,
+            "--protocol-params-file", FileUtils.absolutePath(protocolParamsFile).string,
             "--witness-count", "\(witnessCount)",
             "--reference-script-size", "0"
         ])
@@ -924,7 +924,7 @@ extension TransactionSendable {
         
         _ = try await cli.transaction.buildRaw(arguments: buildArgs + [
             "--fee", "\(fee)",
-            "--out-file", txFile.string
+            "--out-file", FileUtils.absolutePath(txFile).string
         ])
     }
     

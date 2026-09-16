@@ -165,9 +165,9 @@ extension CertificateMainCommand {
                     
                     // Build cardano-cli arguments
                     let arguments = [
-                        "--stake-verification-key-file", stakeVkeyFilePath.string,
+                        "--stake-verification-key-file", FileUtils.absolutePath(stakeVkeyFilePath).string,
                         "--stake-pool-id", try poolOperator.id(),
-                        "--out-file", outFile.string
+                        "--out-file", FileUtils.absolutePath(outFile).string
                     ]
                     
                     // Generate certificate

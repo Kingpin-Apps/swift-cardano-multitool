@@ -230,8 +230,8 @@ extension GenerateMainCommand {
                         
                         _ = try await cli.address.keyGen(
                             arguments: [
-                                "--verification-key-file", paymentVKey.string,
-                                "--signing-key-file", paymentSKey.string
+                                "--verification-key-file", FileUtils.absolutePath(paymentVKey).string,
+                                "--signing-key-file", FileUtils.absolutePath(paymentSKey).string
                             ]
                         )
                         
@@ -306,7 +306,7 @@ extension GenerateMainCommand {
                         
                         let skeyJSON = try await cli.address.keyGen(
                             arguments: [
-                                "--verification-key-file", paymentVKey.string,
+                                "--verification-key-file", FileUtils.absolutePath(paymentVKey).string,
                                 "--signing-key-file", "/dev/stdout"
                             ]
                         )

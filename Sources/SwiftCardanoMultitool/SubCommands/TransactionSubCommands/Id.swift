@@ -84,7 +84,7 @@ extension TransactionMainCommand {
                     
                     id = try await cli.transaction.txId(
                         arguments: [
-                            "--tx-body-file", effectiveTxFile.string,
+                            "--tx-body-file", FileUtils.absolutePath(effectiveTxFile).string,
                             "--output-json"
                         ]
                     )

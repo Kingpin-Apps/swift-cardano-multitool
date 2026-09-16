@@ -139,8 +139,8 @@ extension TransactionMainCommand {
 
                     let result = try await cli.transaction.calculateMinFee(arguments: [
                         "--output-text",
-                        "--tx-body-file", (try await effectiveTxFile).string,
-                        "--protocol-params-file", protocolParamsFile.string,
+                        "--tx-body-file", FileUtils.absolutePath(try await effectiveTxFile).string,
+                        "--protocol-params-file", FileUtils.absolutePath(protocolParamsFile).string,
                         "--witness-count", "\(witnessCount)",
                         "--reference-script-size", "\(referenceScriptSize)"
                     ])

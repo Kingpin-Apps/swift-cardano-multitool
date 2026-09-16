@@ -540,7 +540,7 @@ extension CertificateMainCommand {
                     cliArgs += [
                         "--metadata-url", metaUrl.absoluteString,
                         "--metadata-hash", metadataHash,
-                        "--out-file", outFile.string
+                        "--out-file", FileUtils.absolutePath(outFile).string
                     ]
 
                     _ = try await cli.stakePool.registrationCertificate(arguments: cliArgs)

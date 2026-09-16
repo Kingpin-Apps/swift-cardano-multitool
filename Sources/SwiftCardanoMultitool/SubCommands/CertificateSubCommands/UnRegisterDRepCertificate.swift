@@ -119,7 +119,7 @@ extension CertificateMainCommand {
                     }
                     arguments.append(contentsOf: [
                         "--deposit-amt", "\(drepDeposit)",
-                        "--out-file", outFile.string
+                        "--out-file", FileUtils.absolutePath(outFile).string
                     ])
 
                     try await FileUtils.unlockIfExists(outFile)

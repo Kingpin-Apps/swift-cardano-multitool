@@ -201,7 +201,7 @@ func generateActionFileViaCardanoCLI(
         "--deposit-return-stake-address", depositReturnStakeAddressBech32,
         "--anchor-url", anchor.anchorUrl.absoluteString,
         "--anchor-data-hash", anchor.anchorDataHash.payload.toHex,
-        "--out-file", outFile.string,
+        "--out-file", FileUtils.absolutePath(outFile).string,
     ]
 
     var args: [String]
@@ -519,7 +519,7 @@ extension TransactionSendable {
 
         var extraBuildArgs: [String] = []
         if transactionOptions.useCardanoCLI {
-            extraBuildArgs.append(contentsOf: ["--proposal-file", actionFile.string])
+            extraBuildArgs.append(contentsOf: ["--proposal-file", FileUtils.absolutePath(actionFile).string])
         } else {
             let govAction = try buildGovAction(payload: inputs.payload)
             txBuilder.addProposal(
@@ -658,7 +658,7 @@ extension TransactionSendable {
         var extraBuildArgs: [String] = []
         if transactionOptions.useCardanoCLI {
             for file in actionFiles {
-                extraBuildArgs.append(contentsOf: ["--proposal-file", file.string])
+                extraBuildArgs.append(contentsOf: ["--proposal-file", FileUtils.absolutePath(file).string])
             }
         } else {
             // SwiftCardano path: re-add the parsed procedures to the builder. Since

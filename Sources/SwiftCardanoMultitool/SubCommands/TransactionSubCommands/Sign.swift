@@ -235,12 +235,12 @@ extension TransactionMainCommand {
                     logger: logger
                 )
 
-                let witnessArgs = witnessFiles.flatMap { ["--witness-file", $0.string] }
+                let witnessArgs = witnessFiles.flatMap { ["--witness-file", FileUtils.absolutePath($0).string] }
 
                 _ = try await cli.transaction.assemble(
                     arguments: [
-                        "--tx-body-file", effectiveTxFile.string,
-                        "--out-file", outFile.string
+                        "--tx-body-file", FileUtils.absolutePath(effectiveTxFile).string,
+                        "--out-file", FileUtils.absolutePath(outFile).string
                     ] + witnessArgs
                 )
                 

@@ -179,7 +179,7 @@ extension CertificateMainCommand {
                     
                     // Build cardano-cli arguments
                     var arguments = [
-                        "--stake-verification-key-file", stakeVkeyFilePath.string
+                        "--stake-verification-key-file", FileUtils.absolutePath(stakeVkeyFilePath).string
                     ]
                     
                     // Add DRep-specific arguments
@@ -198,7 +198,7 @@ extension CertificateMainCommand {
                     }
                     
                     // Add output file
-                    arguments.append(contentsOf: ["--out-file", outFile.string])
+                    arguments.append(contentsOf: ["--out-file", FileUtils.absolutePath(outFile).string])
                     
                     // Generate certificate
                     do {

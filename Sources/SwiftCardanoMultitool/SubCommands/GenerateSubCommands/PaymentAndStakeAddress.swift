@@ -268,8 +268,8 @@ extension GenerateMainCommand {
                         
                         _ = try await cli.address.keyGen(
                             arguments: [
-                                "--verification-key-file", paymentVKey.string,
-                                "--signing-key-file", paymentSKey.string
+                                "--verification-key-file", FileUtils.absolutePath(paymentVKey).string,
+                                "--signing-key-file", FileUtils.absolutePath(paymentSKey).string
                             ]
                         )
 
@@ -395,7 +395,7 @@ extension GenerateMainCommand {
                         let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
                         let vkeyJSON = try await cli.key.nonExtendedKey(
                             arguments: [
-                                "--extended-verification-key-file", tmpVKey.string,
+                                "--extended-verification-key-file", FileUtils.absolutePath(tmpVKey).string,
                                 "--verification-key-file", "/dev/stdout"
                             ]
                         )
@@ -477,7 +477,7 @@ extension GenerateMainCommand {
                         
                         let skeyJSON = try await cli.address.keyGen(
                             arguments: [
-                                "--verification-key-file", paymentVKey.string,
+                                "--verification-key-file", FileUtils.absolutePath(paymentVKey).string,
                                 "--signing-key-file", "/dev/stdout"
                             ]
                         )
@@ -573,8 +573,8 @@ extension GenerateMainCommand {
                         
                         _ = try await cli.stakeAddress.keyGen(
                             arguments: [
-                                "--verification-key-file", stakeVKey.string,
-                                "--signing-key-file", stakeSKey.string
+                                "--verification-key-file", FileUtils.absolutePath(stakeVKey).string,
+                                "--signing-key-file", FileUtils.absolutePath(stakeSKey).string
                             ]
                         )
                     
@@ -630,7 +630,7 @@ extension GenerateMainCommand {
                         let cli = try await CardanoCLI(configuration: config.toSwiftCardanoUtilsConfig())
                         let vkeyJSON = try await cli.key.nonExtendedKey(
                             arguments: [
-                                "--extended-verification-key-file", tmpVKey.string,
+                                "--extended-verification-key-file", FileUtils.absolutePath(tmpVKey).string,
                                 "--verification-key-file", "/dev/stdout"
                             ]
                         )
@@ -701,7 +701,7 @@ extension GenerateMainCommand {
                         
                         let skeyJSON = try await cli.stakeAddress.keyGen(
                             arguments: [
-                                "--verification-key-file", stakeVKey.string,
+                                "--verification-key-file", FileUtils.absolutePath(stakeVKey).string,
                                 "--signing-key-file", "/dev/stdout"
                             ]
                         )
@@ -794,16 +794,16 @@ extension GenerateMainCommand {
                     
                     let _ = try await cli.address.build(
                         arguments: [
-                            "--payment-verification-key-file", paymentVKey.string,
-                            "--stake-verification-key-file", stakeVKey.string,
-                            "--out-file", paymentAddress.string,
+                            "--payment-verification-key-file", FileUtils.absolutePath(paymentVKey).string,
+                            "--stake-verification-key-file", FileUtils.absolutePath(stakeVKey).string,
+                            "--out-file", FileUtils.absolutePath(paymentAddress).string,
                         ]
                     )
                     
                     let _ = try await cli.stakeAddress.build(
                         arguments: [
-                            "--stake-verification-key-file", stakeVKey.string,
-                            "--out-file", stakeAddress.string,
+                            "--stake-verification-key-file", FileUtils.absolutePath(stakeVKey).string,
+                            "--out-file", FileUtils.absolutePath(stakeAddress).string,
                         ]
                     )
                 
