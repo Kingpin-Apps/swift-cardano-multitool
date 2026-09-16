@@ -10,10 +10,9 @@ A comprehensive command-line tool for managing the Cardano blockchain ecosystem 
 
 | Requirement | Version |
 |-------------|---------|
-| macOS | 15+ |
-| Swift | 6.2+ |
-
-> Linux builds are supported but require Swift 6.2+ on a compatible distribution (Ubuntu 22.04 / 24.04 recommended).
+| macOS | 15+ (Apple Silicon or Intel) |
+| Linux | Ubuntu 22.04+ / Debian 12+ (x86_64 or arm64) |
+| Swift (building from source) | 6.2+ |
 
 ---
 
@@ -29,7 +28,23 @@ brew install Kingpin-Apps/tap/scm
 
 Upgrade later with `brew upgrade scm`.
 
-### Option 2 — Build from source
+### Option 2 — APT (Debian / Ubuntu)
+
+Add the Kingpin Apps APT repository and install the `swift-cardano-multitool` package (it provides the `scm` command):
+
+```bash
+sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://kingpin-apps.github.io/apt/kingpin-apps.gpg | sudo tee /etc/apt/keyrings/kingpin-apps.gpg > /dev/null
+echo "deb [signed-by=/etc/apt/keyrings/kingpin-apps.gpg] https://kingpin-apps.github.io/apt stable main" | sudo tee /etc/apt/sources.list.d/kingpin-apps.list
+sudo apt update
+sudo apt install swift-cardano-multitool
+```
+
+Upgrade later with `sudo apt update && sudo apt upgrade`. The package conflicts with Debian's unrelated `scm` (Scheme) package, which also installs `/usr/bin/scm`.
+
+Prebuilt Linux tarballs (`scm-<version>-linux-x86_64.tar.gz`, `scm-<version>-linux-aarch64.tar.gz`) and `.deb` files are also attached to every [GitHub release](https://github.com/Kingpin-Apps/swift-cardano-multitool/releases). They need `libcurl4` installed.
+
+### Option 3 — Build from source
 
 Clone the repository and build with Swift Package Manager:
 
@@ -45,7 +60,7 @@ The compiled binary is at `.build/release/scm`. Copy it somewhere on your `PATH`
 cp .build/release/scm ~/.local/bin/scm
 ```
 
-### Option 3 — Build & install with `just`
+### Option 4 — Build & install with `just`
 
 If you have [just](https://github.com/casey/just) installed, the `Justfile` automates building a universal binary (arm64 + x86_64), codesigning, and installing:
 
@@ -71,8 +86,11 @@ Other useful `just` targets:
 | `just uninstall` | Remove from `$INSTALL_DIR` |
 | `just bump` | Bump the version from the changelog and regenerate `Version.swift` |
 | `just tap-bump <version>` | Point the Homebrew tap formula at a release (run by CI on tag) |
+| `just release-linux` | Build a stripped Linux binary in the `swift:6.2-jammy` container (`CONTAINER_CLI=container` for Apple's container tool) |
+| `just package-linux <version> <amd64\|arm64>` | Package the Linux binary as a tarball + `.deb` in `dist/` |
+| `just apt-publish [repo_dir]` | Add `dist/*.deb` to an APT repo checkout and sign its indexes (run by CI on tag) |
 
-Tagged releases are built, codesigned, notarized, published to GitHub Releases, and pushed to the Homebrew tap automatically by the `Release` GitHub Actions workflow.
+Tagged releases are built and published automatically by the `Release` GitHub Actions workflow: the macOS universal binary is codesigned, notarized and verified on an Intel runner; Linux x86_64 and arm64 binaries are packaged as `.deb`s and install-tested on Debian 12 and Ubuntu 22.04/24.04. Everything is attached to the GitHub release, and the Homebrew tap and APT repository are updated.
 
 ### Verify the installation
 

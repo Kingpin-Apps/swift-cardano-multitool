@@ -28,7 +28,8 @@ jobs:
       - name: Test
         run: swift test -v --parallel
 
-  release:
+  macos:
+    name: macOS universal binary
     needs: test
     runs-on: macos-15
     # The universal build alone takes ~35m and grows with the dependency graph.
@@ -100,22 +101,129 @@ jobs:
           rm -f "$ZIPFILE"
           rm -rf "$STAGING"
 
-      - name: Tarball + extract release notes
+      - name: Tarball
+        run: |
+          set -euo pipefail
+          BIN_PATH=".build/universal/release"
+          "$BIN_PATH/scm" --version
+          mkdir -p dist
+          tar -czf "dist/scm-${GITHUB_REF_NAME}-macos-universal.tar.gz" -C "$BIN_PATH" scm
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-macos
+          path: dist/
+          if-no-files-found: error
+
+  # The universal binary is built on Apple Silicon, so actually run the x86_64
+  # slice on an Intel runner before publishing it.
+  macos-intel:
+    name: Verify on Intel Mac
+    needs: macos
+    runs-on: macos-15-intel
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-macos
+          path: dist
+      - name: Run x86_64 slice
+        run: |
+          set -euo pipefail
+          tar -xzf dist/scm-*-macos-universal.tar.gz
+          uname -m
+          arch -x86_64 ./scm --version
+
+  linux:
+    name: Linux ${{ matrix.arch }}
+    needs: test
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: extractions/setup-just@v2
+
+      - name: Build (swift:6.2-jammy container)
+        run: just release-linux
+
+      - name: Package tarball + .deb
+        run: just package-linux "$GITHUB_REF_NAME" "${{ matrix.arch }}"
+
+      # Install the .deb on clean images so a missing Depends or glibc mismatch
+      # fails here instead of on a user's machine.
+      - name: Install test (Debian 12, Ubuntu 22.04, Ubuntu 24.04)
+        run: |
+          set -euo pipefail
+          for image in debian:12 ubuntu:22.04 ubuntu:24.04; do
+            echo "::group::$image"
+            docker run --rm -v "$PWD/dist:/dist" "$image" bash -c '
+              set -e
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -qq
+              apt-get install -y -qq /dist/*.deb
+              scm --version'
+            echo "::endgroup::"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux-${{ matrix.arch }}
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish
+    needs: [macos-intel, linux]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: extractions/setup-just@v2
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums + release notes
         id: package
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME}"
-          BIN_PATH=".build/universal/release"
-          TARBALL="$BIN_PATH/scm-${VERSION}-macos-universal.tar.gz"
-          (cd "$BIN_PATH" && tar -czf "scm-${VERSION}-macos-universal.tar.gz" scm)
-          shasum -a 256 "$TARBALL"
+          (cd dist && sha256sum * > SHA256SUMS && cat SHA256SUMS)
           awk -v v="^## ${VERSION//./\\.}" '$0 ~ v {flag=1; print; next} /^## /{flag=0} flag' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
           if [ ! -s "$RUNNER_TEMP/notes.md" ]; then
             echo "No CHANGELOG entry for $VERSION" >&2
             exit 1
           fi
-          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
           echo "notes=$RUNNER_TEMP/notes.md" >> "$GITHUB_OUTPUT"
+
+      - name: Check publishing secrets
+        env:
+          APT_REPO_TOKEN: ${{ secrets.APT_REPO_TOKEN }}
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        # Fail before anything is published rather than halfway through.
+        run: |
+          if [ -z "${APT_REPO_TOKEN:-}" ] || [ -z "${APT_GPG_PRIVATE_KEY:-}" ]; then
+            echo "::error::APT_REPO_TOKEN and APT_GPG_PRIVATE_KEY secrets are required to update Kingpin-Apps/apt." >&2
+            exit 1
+          fi
+          if [ -z "${HOMEBREW_TAP_TOKEN:-}" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN secret is not set; cannot update Kingpin-Apps/homebrew-tap." >&2
+            exit 1
+          fi
 
       - name: Create GitHub release
         env:
@@ -124,7 +232,32 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             --title "$GITHUB_REF_NAME" \
             --notes-file "${{ steps.package.outputs.notes }}" \
-            "${{ steps.package.outputs.tarball }}"
+            dist/*
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Kingpin-Apps/apt
+          token: ${{ secrets.APT_REPO_TOKEN }}
+          path: apt-repo
+
+      - name: Update APT repository
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+          APT_GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y -qq apt-utils
+          echo "$APT_GPG_PRIVATE_KEY" | gpg --batch --import
+          just apt-publish apt-repo
+          # Published as a single orphan commit: the pool holds ~100MB of .debs
+          # per release, which would bloat the repo if kept in history.
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan publish
+          git add -A
+          git commit -q -m "swift-cardano-multitool ${GITHUB_REF_NAME}"
+          git push --force origin publish:main
 
       - name: Bump Homebrew tap formula
         env:
@@ -136,4 +269,4 @@ jobs:
             echo "Create a fine-grained PAT with Contents: read/write on the tap repo and add it as the HOMEBREW_TAP_TOKEN secret." >&2
             exit 1
           fi
-          just tap-bump "$GITHUB_REF_NAME" "${{ steps.package.outputs.tarball }}"
+          just tap-bump "$GITHUB_REF_NAME" "dist/scm-${GITHUB_REF_NAME}-macos-universal.tar.gz"
