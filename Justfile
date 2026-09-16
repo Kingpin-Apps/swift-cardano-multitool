@@ -109,9 +109,12 @@ uninstall:
 # ── Linux distribution ───────────────────────────────────────────────────────
 
 # Build a stripped Linux release binary for the host arch → .build/linux/scm
+# The container runs as root, but restored CI caches (and host checkouts) are owned by
+# another user, which git refuses to update ("dubious ownership") without safe.directory.
 release-linux:
     {{ CONTAINER_CLI }} run --rm -v "{{ justfile_directory() }}":/src -w /src {{ SWIFT_LINUX_IMAGE }} \
-        bash -c 'set -e; swift build -c release --static-swift-stdlib --scratch-path .build/linux \
+        bash -c 'set -e; git config --global --add safe.directory "*"; \
+            swift build -c release --static-swift-stdlib --scratch-path .build/linux \
             && cp .build/linux/release/scm .build/linux/scm && strip .build/linux/scm'
     @echo "✓ Linux binary ready at .build/linux/scm"
 
