@@ -258,8 +258,9 @@ struct LoadPolicyForAssetMetaTests {
         )
         try script.saveJSON(to: scriptFile.string)
 
-        // Write placeholder policy id and skey (just need files to exist for the loader).
-        try Data(keyHashHex.utf8).write(to: URL(fileURLWithPath: policyIdFile.string))
+        // Write the matching policy id and a placeholder skey.
+        let policyIdHex = try script.scriptHash().payload.toHex
+        try Data(policyIdHex.utf8).write(to: URL(fileURLWithPath: policyIdFile.string))
         try Data("placeholder".utf8).write(to: URL(fileURLWithPath: skeyFile.string))
     }
 
@@ -270,7 +271,7 @@ struct LoadPolicyForAssetMetaTests {
         try writeSigOnlyPolicy(name: "mypolicy", in: dir)
 
         let loaded = try loadPolicyForAssetMeta(name: "mypolicy", in: FilePath(dir.path))
-        #expect(loaded.policyId == String(repeating: "a", count: 56))
+        #expect(loaded.policyId == "a185cb99a818068805d34633e276287a79cbd985b8cc540d36ad3761")
         #expect(loaded.validBeforeSlot == nil)
         #expect(loaded.skeyPath.string.hasSuffix("mypolicy.policy.skey"))
     }

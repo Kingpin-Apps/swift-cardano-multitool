@@ -130,7 +130,7 @@ struct MintBurnUtilsTests {
         let policy = LoadedMintBurnPolicy(
             name: "p",
             policyId: String(repeating: "a", count: 56),
-            nativeScript: .invalidBefore(BeforeScript(slot: 0)), // ignored — only validBeforeSlot drives logic
+            nativeScript: .invalidHereAfter(AfterScript(slot: 0)), // ignored — only validBeforeSlot drives logic
             signingKeyPath: FilePath("/tmp/p.policy.skey"),
             vkeyPath: FilePath("/tmp/p.policy.vkey"),
             isHardwareWallet: false,
@@ -150,7 +150,7 @@ struct MintBurnUtilsTests {
         let policy = LoadedMintBurnPolicy(
             name: "p",
             policyId: String(repeating: "a", count: 56),
-            nativeScript: .invalidBefore(BeforeScript(slot: 0)),
+            nativeScript: .invalidHereAfter(AfterScript(slot: 0)),
             signingKeyPath: FilePath("/tmp/p.policy.skey"),
             vkeyPath: FilePath("/tmp/p.policy.vkey"),
             isHardwareWallet: false,
@@ -171,7 +171,7 @@ struct MintBurnUtilsTests {
         let policy = LoadedMintBurnPolicy(
             name: "p",
             policyId: String(repeating: "a", count: 56),
-            nativeScript: .invalidBefore(BeforeScript(slot: 0)),
+            nativeScript: .invalidHereAfter(AfterScript(slot: 0)),
             signingKeyPath: FilePath("/tmp/p.policy.skey"),
             vkeyPath: FilePath("/tmp/p.policy.vkey"),
             isHardwareWallet: false,
@@ -191,7 +191,7 @@ struct MintBurnUtilsTests {
         let policy = LoadedMintBurnPolicy(
             name: "p",
             policyId: String(repeating: "a", count: 56),
-            nativeScript: .invalidBefore(BeforeScript(slot: 0)),
+            nativeScript: .invalidHereAfter(AfterScript(slot: 0)),
             signingKeyPath: FilePath("/tmp/p.policy.skey"),
             vkeyPath: FilePath("/tmp/p.policy.vkey"),
             isHardwareWallet: false,
@@ -220,7 +220,7 @@ struct MintBurnUtilsTests {
         let policy = LoadedMintBurnPolicy(
             name: "testmint",
             policyId: String(repeating: "a", count: 56),
-            nativeScript: .invalidBefore(BeforeScript(slot: 0)),
+            nativeScript: .invalidHereAfter(AfterScript(slot: 0)),
             signingKeyPath: FilePath("/tmp/p.policy.skey"),
             vkeyPath: FilePath("/tmp/p.policy.vkey"),
             isHardwareWallet: false,
@@ -294,7 +294,8 @@ struct LoadPolicyForMintBurnTests {
         in dir: URL,
         addSkey: Bool = true,
         addHws: Bool = false,
-        invalidBefore: UInt64? = nil
+        lockSlot: UInt64? = nil,
+        policyIdOverride: String? = nil
     ) throws -> FilePath {
         let dirPath = FilePath(dir.path)
         let policyIdFile = dirPath.appending("\(name).policy.id")
@@ -304,18 +305,19 @@ struct LoadPolicyForMintBurnTests {
         let keyHashHex = String(repeating: "a", count: 56)
         let pubkey = ScriptPubkey(keyHash: VerificationKeyHash(payload: keyHashHex.hexStringToData))
         let script: NativeScript
-        if let slot = invalidBefore {
-            // scriptAll wrapping a sig + invalidBefore.
+        if let slot = lockSlot {
+            // scriptAll wrapping a "before" time lock + sig, as `scm generate policy` writes it.
             let all = ScriptAll(scripts: [
-                .scriptPubkey(pubkey),
-                .invalidBefore(BeforeScript(slot: slot))
+                .invalidHereAfter(AfterScript(slot: slot)),
+                .scriptPubkey(pubkey)
             ])
             script = .scriptAll(all)
         } else {
             script = .scriptPubkey(pubkey)
         }
         try script.saveJSON(to: scriptFile.string)
-        try Data(keyHashHex.utf8).write(to: URL(fileURLWithPath: policyIdFile.string))
+        let policyIdHex = try policyIdOverride ?? script.scriptHash().payload.toHex
+        try Data(policyIdHex.utf8).write(to: URL(fileURLWithPath: policyIdFile.string))
         try Data("vkey-placeholder".utf8).write(to: URL(fileURLWithPath: vkeyFile.string))
 
         if addSkey {
@@ -386,14 +388,48 @@ struct LoadPolicyForMintBurnTests {
         }
     }
 
-    @Test("extracts validBeforeSlot from a scriptAll policy with an invalidBefore clause")
+    @Test("extracts validBeforeSlot from a scriptAll policy with a before time lock")
     func extractsValidBeforeFromScriptAll() throws {
         let dir = try makeTempDir()
         defer { try? FileManager.default.removeItem(at: dir) }
-        let dirPath = try writeStandardPolicy(name: "timed", in: dir, invalidBefore: 100_000)
+        let dirPath = try writeStandardPolicy(name: "timed", in: dir, lockSlot: 100_000)
+
+        let scriptJSON = try String(contentsOfFile: dirPath.appending("timed.policy.script").string, encoding: .utf8)
+        #expect(scriptJSON.contains("\"before\""))
 
         let loaded = try loadPolicyForMintBurn(name: "timed", in: dirPath)
         #expect(loaded.validBeforeSlot == 100_000)
+        // cardano-cli 11.0 hash of {"type":"all","scripts":[{"slot":100000,"type":"before"},{"keyHash":"aa…","type":"sig"}]}
+        #expect(loaded.policyId == "929c5e5b2e44efe088dbaab521945cd5994ef1f00091bc2fcf4a0dfd")
+    }
+
+    @Test("throws when .policy.id does not match the script hash")
+    func throwsOnPolicyIdMismatch() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dirPath = try writeStandardPolicy(
+            name: "wrong", in: dir, policyIdOverride: String(repeating: "b", count: 56)
+        )
+        #expect(throws: (any Error).self) {
+            _ = try loadPolicyForMintBurn(name: "wrong", in: dirPath)
+        }
+    }
+
+    @Test("flags a legacy policy ID computed with the time lock reversed")
+    func flagsLegacySwappedPolicyId() throws {
+        let keyHash = VerificationKeyHash(payload: "3749f2dd85a8f7fe837d40aa8b9c22737d1a4354cd2d42b0e3a8ffde".hexStringToData)
+        let script = NativeScript.scriptAll(ScriptAll(scripts: [
+            .invalidHereAfter(AfterScript(slot: 123_456_789)),
+            .scriptPubkey(ScriptPubkey(keyHash: keyHash))
+        ]))
+        // cardano-cli 11.0 hashes of the "before" and "after" variants of this script.
+        #expect(try script.scriptHash().payload.toHex == "b52c5dcecf6161be20b2a120cf654853dede85d3bf6a3e12d46ece9f")
+        #expect(try swappingTimeLocks(script).scriptHash().payload.toHex == "77edc8169329399aefc70e12ddd55704adee527e8decf232b16fcc7c")
+
+        #expect(try policyIdProblem(policyId: "b52c5dcecf6161be20b2a120cf654853dede85d3bf6a3e12d46ece9f\n", script: script, name: "p") == nil)
+        let legacy = try #require(try policyIdProblem(policyId: "77edc8169329399aefc70e12ddd55704adee527e8decf232b16fcc7c", script: script, name: "p"))
+        #expect("\(legacy)".contains("older scm version"))
+        #expect(policyLockSlot(script) == 123_456_789)
     }
 }
 

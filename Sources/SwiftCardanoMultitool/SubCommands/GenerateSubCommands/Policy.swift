@@ -554,7 +554,7 @@ extension GenerateMainCommand {
                 let native: NativeScript
                 if let validBefore {
                     native = .scriptAll(ScriptAll(scripts: [
-                        .invalidBefore(BeforeScript(slot: validBefore)),
+                        .invalidHereAfter(AfterScript(slot: validBefore)),
                         sig
                     ]))
                 } else {

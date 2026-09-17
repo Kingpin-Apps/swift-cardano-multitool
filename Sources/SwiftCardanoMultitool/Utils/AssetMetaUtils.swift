@@ -241,7 +241,7 @@ struct LoadedAssetPolicy {
     let policyId: String
     let nativeScript: NativeScript
     let skeyPath: FilePath
-    /// `nil` for sig-only policies; set when the script contains an `invalidBefore` clause.
+    /// `nil` for sig-only policies; set when the script contains a `"type": "before"` time lock.
     let validBeforeSlot: UInt64?
 }
 
@@ -291,17 +291,12 @@ func loadPolicyForAssetMeta(name: String, in dir: FilePath) throws -> LoadedAsse
     let policyId = try FileUtils.loadFile(idFile)
     let nativeScript = try NativeScript.loadJSON(from: scriptFile.string)
 
-    var validBeforeSlot: UInt64? = nil
-    if case .scriptAll(let all) = nativeScript {
-        for child in all.scripts {
-            if case .invalidBefore(let before) = child {
-                validBeforeSlot = before.slot
-                break
-            }
-        }
-    } else if case .invalidBefore(let before) = nativeScript {
-        validBeforeSlot = before.slot
+    if let problem = try policyIdProblem(policyId: policyId, script: nativeScript, name: name) {
+        noora.error(problem)
+        throw ExitCode.failure
     }
+
+    let validBeforeSlot = policyLockSlot(nativeScript)
 
     return LoadedAssetPolicy(
         policyId: policyId,

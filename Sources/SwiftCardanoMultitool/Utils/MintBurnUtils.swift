@@ -42,8 +42,8 @@ struct LoadedMintBurnPolicy {
     let signingKeyPath: FilePath
     let vkeyPath: FilePath
     let isHardwareWallet: Bool
-    /// `nil` for sig-only policies; set when the script contains an `invalidBefore`
-    /// clause (top-level or nested inside a `scriptAll`).
+    /// `nil` for sig-only policies; set when the script contains a `"type": "before"`
+    /// time lock (`invalidHereAfter`, top-level or nested inside a `scriptAll`).
     let validBeforeSlot: UInt64?
 }
 
@@ -95,17 +95,13 @@ func loadPolicyForMintBurn(name: String, in dir: FilePath) throws -> LoadedMintB
     let policyId = try FileUtils.loadFile(idFile).trimmingCharacters(in: .whitespacesAndNewlines)
     let nativeScript = try NativeScript.loadJSON(from: scriptFile.string)
 
-    var validBeforeSlot: UInt64? = nil
-    if case .scriptAll(let all) = nativeScript {
-        for child in all.scripts {
-            if case .invalidBefore(let before) = child {
-                validBeforeSlot = before.slot
-                break
-            }
-        }
-    } else if case .invalidBefore(let before) = nativeScript {
-        validBeforeSlot = before.slot
+    // A mismatched policy ID would fail on-chain (the witness script would not hash to it).
+    if let problem = try policyIdProblem(policyId: policyId, script: nativeScript, name: name) {
+        noora.error(problem)
+        throw ExitCode.failure
     }
+
+    let validBeforeSlot = policyLockSlot(nativeScript)
 
     return LoadedMintBurnPolicy(
         name: name,
@@ -115,6 +111,63 @@ func loadPolicyForMintBurn(name: String, in dir: FilePath) throws -> LoadedMintB
         vkeyPath: vkeyFile,
         isHardwareWallet: isHardware,
         validBeforeSlot: validBeforeSlot
+    )
+}
+
+// MARK: - Policy script checks
+
+/// Slot of the policy's `"type": "before"` time lock (`invalidHereAfter`), top-level
+/// or nested inside a `scriptAll`. `nil` when the policy has no lock.
+func policyLockSlot(_ script: NativeScript) -> UInt64? {
+    switch script {
+        case .invalidHereAfter(let lock):
+            return lock.slot
+        case .scriptAll(let all):
+            for child in all.scripts {
+                if case .invalidHereAfter(let lock) = child { return lock.slot }
+            }
+            return nil
+        default:
+            return nil
+    }
+}
+
+/// `script` with every `invalidBefore`/`invalidHereAfter` swapped. Older scm versions
+/// (swift-cardano-core < 0.5.2) hashed time-locked policies with the two swapped.
+func swappingTimeLocks(_ script: NativeScript) -> NativeScript {
+    switch script {
+        case .invalidBefore(let s): return .invalidHereAfter(AfterScript(slot: s.slot))
+        case .invalidHereAfter(let s): return .invalidBefore(BeforeScript(slot: s.slot))
+        case .scriptAll(let all): return .scriptAll(ScriptAll(scripts: all.scripts.map(swappingTimeLocks)))
+        case .scriptAny(let any): return .scriptAny(ScriptAny(scripts: any.scripts.map(swappingTimeLocks)))
+        case .scriptNofK(let n): return .scriptNofK(ScriptNofK(required: n.required, scripts: n.scripts.map(swappingTimeLocks)))
+        case .scriptPubkey: return script
+    }
+}
+
+/// Compare `<name>.policy.id` with the hash of `<name>.policy.script`. Returns `nil`
+/// when they match, otherwise an alert describing the mismatch.
+func policyIdProblem(policyId: String, script: NativeScript, name: String) throws -> ErrorAlert? {
+    let expected = policyId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let computed = try script.scriptHash().payload.toHex
+    guard computed != expected else { return nil }
+
+    if try swappingTimeLocks(script).scriptHash().payload.toHex == expected {
+        return .alert(
+            "Policy '\(.primary(name))' has an incorrect policy ID.",
+            takeaways: [
+                "\(name).policy.id was computed by an older scm version with the time lock reversed.",
+                "It does not match \(name).policy.script (script hash: \(computed)), so tokens cannot be minted or burned with it.",
+                "Generate a new policy with 'scm generate policy'."
+            ]
+        )
+    }
+    return .alert(
+        "Policy '\(.primary(name))' ID does not match its script.",
+        takeaways: [
+            "\(name).policy.id: \(expected)",
+            "\(name).policy.script hash: \(computed)"
+        ]
     )
 }
 
