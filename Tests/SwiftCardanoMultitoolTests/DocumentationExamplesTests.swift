@@ -815,3 +815,92 @@ struct TransactionDocumentationExamplesTests {
         #expect(TransactionMainCommand.configuration.aliases.contains("tx"))
     }
 }
+
+/// Parser-level checks for the `hash` and `text-view` examples in `README.md`,
+/// `HashCommand.md` and `TextViewCommand.md`.
+@Suite("Documentation examples — hash / text-view parse")
+struct HashTextViewDocumentationExamplesTests {
+
+    @Test("hash payment-key examples")
+    func paymentKeyExamples() throws {
+        #expect(try HashMainCommand.PaymentKey.parse(["--payment-verification-key-file", "alice.payment.vkey"]).verificationKeyFile?.string == "alice.payment.vkey")
+        #expect(try HashMainCommand.PaymentKey.parse(["--payment-verification-key", "addr_vk1..."]).verificationKey == "addr_vk1...")
+        #expect(try HashMainCommand.PaymentKey.parse(["--address-name", "alice"]).addressName == "alice")
+        #expect(try HashMainCommand.PaymentKey.parse(["--address", "addr1v9dj7z3r5k96dqk8kjre7kzhlzete4crejyl3hm754a3dlss0ue7p"]).address == "addr1v9dj7z3r5k96dqk8kjre7kzhlzete4crejyl3hm754a3dlss0ue7p")
+        #expect(HashMainCommand.PaymentKey.configuration.aliases.contains("address-key"))
+    }
+
+    @Test("hash stake-key examples")
+    func stakeKeyExamples() throws {
+        #expect(try HashMainCommand.StakeKey.parse(["--stake-verification-key-file", "alice.stake.vkey"]).verificationKeyFile?.string == "alice.stake.vkey")
+        #expect(try HashMainCommand.StakeKey.parse(["--stake-verification-key", "stake_vk1..."]).verificationKey == "stake_vk1...")
+        #expect(try HashMainCommand.StakeKey.parse(["--address-name", "alice"]).addressName == "alice")
+        #expect(try HashMainCommand.StakeKey.parse(["--stake-address", "stake1..."]).stakeAddress == "stake1...")
+        #expect(try HashMainCommand.StakeKey.parse(["--stake-address", "addr1q..."]).stakeAddress == "addr1q...")
+    }
+
+    @Test("hash anchor-data examples")
+    func anchorDataExamples() throws {
+        #expect(try HashMainCommand.AnchorData.parse(["--file-text", "drep.jsonld"]).fileText?.string == "drep.jsonld")
+        let url = try HashMainCommand.AnchorData.parse([
+            "--url", "https://example.com/drep.jsonld",
+            "--expected-hash", "1a2b000000000000000000000000000000000000000000000000000000000000",
+        ])
+        #expect(url.url == "https://example.com/drep.jsonld")
+        #expect(try HashMainCommand.AnchorData.parse(["--url", "ipfs://bafkrei..."]).url == "ipfs://bafkrei...")
+        #expect(try HashMainCommand.AnchorData.parse(["--text", "Hello"]).text == "Hello")
+    }
+
+    @Test("hash script and genesis-file examples")
+    func scriptAndGenesisExamples() throws {
+        #expect(try HashMainCommand.Script.parse(["--script-file", "myPolicy.policy.script"]).scriptFile?.string == "myPolicy.policy.script")
+        #expect(try HashMainCommand.Script.parse(["--script-file", "validator.plutus"]).scriptFile?.string == "validator.plutus")
+        #expect(try HashMainCommand.GenesisFile.parse(["--genesis", "shelley-genesis.json"]).genesis?.string == "shelley-genesis.json")
+    }
+
+    @Test("hash drep-key, committee-key, pool-id, vrf-key and genesis-key examples")
+    func otherKeyExamples() throws {
+        #expect(try HashMainCommand.DRepKey.parse(["--drep-verification-key-file", "myDRep.drep.vkey"]).verificationKeyFile?.string == "myDRep.drep.vkey")
+        #expect(try HashMainCommand.DRepKey.parse(["--drep-verification-key", "drep_vk1...", "--output-cip129"]).output == .outputCip129)
+        #expect(try HashMainCommand.DRepKey.parse(["--drep-key-hash", "drep1...", "--output-hex"]).drepKeyHash == "drep1...")
+        #expect(try HashMainCommand.DRepKey.parse(["--drep-verification-key-file", "myDRep.drep.vkey", "--output-cip129"]).output == .outputCip129)
+        #expect(try HashMainCommand.CommitteeKey.parse(["--verification-key-file", "cc.hot.vkey"]).verificationKeyFile?.string == "cc.hot.vkey")
+        #expect(try HashMainCommand.CommitteeKey.parse(["--verification-key", "cc_cold_vk1..."]).verificationKey == "cc_cold_vk1...")
+        #expect(try HashMainCommand.PoolId.parse(["--cold-verification-key-file", "mypool.node.vkey"]).verificationKeyFile?.string == "mypool.node.vkey")
+        #expect(try HashMainCommand.PoolId.parse(["--stake-pool-verification-key", "pool_vk1...", "--output-hex"]).output == .outputHex)
+        #expect(try HashMainCommand.PoolId.parse(["--pool-name", "mypool"]).poolName == "mypool")
+        #expect(try HashMainCommand.VRFKey.parse(["--verification-key-file", "mypool.vrf.vkey"]).verificationKeyFile?.string == "mypool.vrf.vkey")
+        #expect(try HashMainCommand.VRFKey.parse(["--verification-key", "vrf_vk1..."]).verificationKey == "vrf_vk1...")
+        #expect(try HashMainCommand.GenesisKey.parse(["--verification-key-file", "genesis1.vkey"]).verificationKeyFile?.string == "genesis1.vkey")
+    }
+
+    @Test("hash drep-metadata and pool-metadata examples")
+    func metadataExamples() throws {
+        #expect(try HashMainCommand.DRepMetadata.parse(["--drep-metadata-file", "myDRep.jsonld"]).metadataFile?.string == "myDRep.jsonld")
+        let drepUrl = try HashMainCommand.DRepMetadata.parse([
+            "--drep-metadata-url", "https://example.com/drep.jsonld",
+            "--expected-hash", "1a2b000000000000000000000000000000000000000000000000000000000000",
+        ])
+        #expect(drepUrl.metadataUrl == "https://example.com/drep.jsonld")
+        #expect(try HashMainCommand.DRepMetadata.parse(["--drep-metadata-url", "https://example.com/drep.jsonld"]).metadataUrl != nil)
+        #expect(try HashMainCommand.PoolMetadata.parse(["--pool-metadata-file", "mypool.metadata.json"]).metadataFile?.string == "mypool.metadata.json")
+        let poolUrl = try HashMainCommand.PoolMetadata.parse([
+            "--pool-metadata-url", "https://example.com/pool.json",
+            "--expected-hash", "1a2b000000000000000000000000000000000000000000000000000000000000",
+        ])
+        #expect(poolUrl.metadataUrl == "https://example.com/pool.json")
+    }
+
+    @Test("text-view examples")
+    func textViewExamples() throws {
+        #expect(try TextViewMainCommand.parse(["pool.cert"]).file?.string == "pool.cert")
+        let opcert = try TextViewMainCommand.parse(["--in-file", "node.opcert", "--output-cbor"])
+        #expect(opcert.inFile?.string == "node.opcert")
+        #expect(opcert.outputCBOR)
+        let tx = try TextViewMainCommand.parse(["tx.signed", "--json", "--out-file", "tx.json"])
+        #expect(tx.json)
+        #expect(tx.outFile?.string == "tx.json")
+        #expect(try TextViewMainCommand.parse(["alice.payment.skey", "--show-secret"]).showSecret)
+        #expect(TextViewMainCommand.configuration.aliases.contains("view"))
+    }
+}

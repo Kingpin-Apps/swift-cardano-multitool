@@ -25,6 +25,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-system.git", from: "1.6.3"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.4.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.5.2"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cbor-codable.git", .upToNextMinor(from: "0.3.2")),
         .package(
             url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
             from: "0.7.4",
@@ -64,6 +65,7 @@ let package = Package(
                 .product(name: "GnuPG", package: "swift-gnupg"),
                 .product(name: "SwiftCardanoChain", package: "swift-cardano-chain"),
                 .product(name: "SwiftCardanoCore", package: "swift-cardano-core"),
+                .product(name: "CBORCodable", package: "swift-cbor-codable"),
                 .product(name: "SwiftCardanoCIPs", package: "swift-cardano-cips"),
                 .product(name: "SwiftCardanoSigner", package: "swift-cardano-signer"),
                 .product(name: "SwiftCardanoTokenRegistry", package: "swift-cardano-token-registry"),

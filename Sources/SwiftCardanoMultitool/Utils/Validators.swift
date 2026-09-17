@@ -98,3 +98,17 @@ public struct IntegerValidationRule: ValidatableRule {
         return false
     }
 }
+
+/// A validation rule that accepts an empty answer or a 32-byte hash as 64 hex characters.
+public struct HashOrEmptyValidationRule: ValidatableRule {
+    public let error: ValidatableError
+
+    public init(error: ValidatableError) {
+        self.error = error
+    }
+
+    public func validate(input: String) -> Bool {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty || HashUtils.normalizedHash32(trimmed) != nil
+    }
+}

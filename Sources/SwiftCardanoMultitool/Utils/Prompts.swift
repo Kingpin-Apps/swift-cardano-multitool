@@ -962,3 +962,43 @@ func getActionTypeFilter(title: TerminalText? = nil) async throws -> VoteActionT
         description: "Pick 'any' to include every type."
     )
 }
+
+/// Prompt for a file path, offering the matching files in the current directory.
+/// - Parameters:
+///   - title: Prompt title.
+///   - question: Question shown above the file list.
+///   - matching: Filter for file names worth listing.
+/// - Returns: The selected or entered path.
+func promptFilePath(
+    title: TerminalText,
+    question: TerminalText,
+    matching: (String) -> Bool
+) throws -> FilePath {
+    let manualEntry = "Enter a path…"
+    let cwd = FileManager.default.currentDirectoryPath
+    let files = ((try? FileManager.default.contentsOfDirectory(atPath: cwd)) ?? [])
+        .filter(matching)
+        .sorted()
+
+    if !files.isEmpty {
+        let selected = noora.singleChoicePrompt(
+            title: title,
+            question: question,
+            options: files + [manualEntry],
+            description: "Matching files in the current directory",
+            collapseOnSelection: true,
+            filterMode: .enabled
+        )
+        if selected != manualEntry {
+            return FilePath(selected)
+        }
+    }
+
+    let path = noora.textPrompt(
+        title: title,
+        prompt: question,
+        collapseOnAnswer: true,
+        validationRules: [NonEmptyValidationRule(error: "The path cannot be empty.")]
+    ).trimmingCharacters(in: .whitespacesAndNewlines)
+    return FilePath((path as NSString).expandingTildeInPath)
+}

@@ -12,12 +12,14 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
     case download
     case generate
     case governance
+    case hash
     case install
     case protect
     case query
     case run
     case send
     case sign
+    case textView = "text-view"
     case transaction
     case verify
     case version
@@ -38,12 +40,14 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
             case .download: return "Download"
             case .generate: return "Generate"
             case .governance: return "Governance"
+            case .hash: return "Hash"
             case .install: return "Install"
             case .protect: return "Protect"
             case .query: return "Query"
             case .run: return "Run"
             case .send: return "Send"
             case .sign: return "Sign"
+            case .textView: return "Text View"
             case .transaction: return "Transaction"
             case .verify: return "Verify"
             case .version: return "Version"
@@ -61,12 +65,14 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
             case .download: return "Download necessary files or data."
             case .generate: return "Create keys, addresses, or other data."
             case .governance: return "Cast votes and (later) submit governance-action proposals."
+            case .hash: return "Hash keys, scripts, metadata, anchor data and genesis files."
             case .install: return "Install cli tools or dependencies."
             case .protect: return "Secure sensitive data with a password."
             case .query: return "Get various data from the blockchain."
             case .run: return "Start various Cardano services."
             case .send: return "Transfer ADA or assets."
             case .sign: return "Sign messages, governance metadata, and registrations."
+            case .textView: return "Decode text envelope files into a readable view."
             case .transaction: return "Operate on Cardano transactions."
             case .verify: return "Verify signatures and signed metadata."
             case .version: return "Show version information."
@@ -84,12 +90,14 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
             case .download: return DownloadMainCommand.self
             case .generate: return GenerateMainCommand.self
             case .governance: return GovernanceMainCommand.self
+            case .hash: return HashMainCommand.self
             case .install: return InstallMainCommand.self
             case .protect: return ProtectMainCommand.self
             case .query: return QueryMainCommand.self
             case .run: return RunMainCommand.self
             case .send: return SendMainCommand.self
             case .sign: return SignMainCommand.self
+            case .textView: return TextViewMainCommand.self
             case .transaction: return TransactionMainCommand.self
             case .verify: return VerifyMainCommand.self
             case .version: return VersionMainCommand.self

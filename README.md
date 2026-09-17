@@ -226,12 +226,14 @@ The file is plain JSON and safe to edit by hand, but fields like `registration`,
 | [`download`](#download) | — | Download network config files and blockchain snapshots |
 | [`generate`](#generate) | `gen` | Generate keys, addresses, and cryptographic material |
 | [`governance`](#governance) | — | Cast votes and submit Conway-era governance proposals |
+| [`hash`](#hash) | — | Hashes and IDs of keys, scripts, metadata, anchor data, and genesis files |
 | [`install`](#install) | — | Install Cardano ecosystem tools |
 | [`protect`](#protect) | — | Encrypt and decrypt sensitive files |
 | [`query`](#query) | — | Query live blockchain data |
 | [`run`](#run) | — | Start Cardano node services |
 | [`send`](#send) | — | Send ADA and native assets |
 | [`sign`](#sign) | — | Sign messages, governance metadata, and registrations |
+| [`text-view`](#text-view) | `view` | Decode text envelope files into a readable view |
 | [`transaction`](#transaction) | `tx` | Build, sign, and submit transactions |
 | [`verify`](#verify) | — | Verify signatures and signed metadata |
 | [`work-offline`](#work-offline) | `offline` | Offline transaction workflows for air-gapped machines |
@@ -406,6 +408,31 @@ Any subcommand that accepts an anchor (`--anchor-url` + `--anchor-hash`) will do
 
 ---
 
+### `hash`
+
+Compute the hashes and IDs passed to `--*-hash` arguments, gathering cardano-cli's hashing commands (`address`/`stake-address key-hash`, `governance drep id`, `governance committee key-hash`, `stake-pool id`, `node key-hash-VRF`, `genesis key-hash`, `governance drep`/`stake-pool metadata-hash`, `hash anchor-data | script | genesis-file`, `transaction policyid`) in one place with the same flag names. Each subcommand accepts `--tool cardano-cli` or `--tool swift-cardano`. When the output is piped, only the hash is printed.
+
+```bash
+scm hash payment-key   --payment-verification-key-file alice.payment.vkey
+scm hash stake-key     --stake-verification-key stake_vk1...
+scm hash payment-key   --address addr1v9dj7z3r5k96dqk8kjre7kzhlzete4crejyl3hm754a3dlss0ue7p   # hash from an address
+scm hash stake-key     --stake-address stake1...
+scm hash drep-key      --drep-verification-key-file myDRep.drep.vkey --output-cip129
+scm hash committee-key --verification-key-file cc.hot.vkey
+scm hash pool-id       --pool-name mypool
+scm hash vrf-key       --verification-key-file mypool.vrf.vkey
+scm hash genesis-key   --verification-key-file genesis1.vkey
+scm hash anchor-data   --file-text drep.jsonld --expected-hash 1a2b...
+scm hash drep-metadata --drep-metadata-url https://example.com/drep.jsonld
+scm hash pool-metadata --pool-metadata-file mypool.metadata.json
+scm hash script        --script-file myPolicy.policy.script
+scm hash genesis-file  --genesis shelley-genesis.json
+
+POLICY_ID=$(scm hash script --script-file myPolicy.policy.script)
+```
+
+---
+
 ### `install`
 
 Download and install Cardano ecosystem tools from their official sources. Supports binary downloads from GitHub Releases and Docker/Apple Container images.
@@ -503,6 +530,18 @@ scm sign cip100  --data-file proposal.jsonld --secret-key author.skey --author-n
 ```
 
 All `sign` subcommands share a `--json` / `--json-extended` / `--out-file` output group and accept the payload as either `--data` (UTF-8), `--data-hex`, or `--data-file`.
+
+---
+
+### `text-view`
+
+Decode a text envelope file into a readable view — a friendlier `cardano-cli text-view decode-cbor`. Keys, certificates, operational certificates and issue counters, votes, governance proposals, transactions, witnesses, Plutus scripts, and native script JSON are shown field by field with derived identifiers (key hashes, pool IDs, DRep IDs, addresses). Signing key material stays hidden unless `--show-secret` is given.
+
+```bash
+scm text-view pool.cert
+scm text-view --in-file node.opcert --output-cbor   # include CBOR hex + diagnostic notation
+scm text-view tx.signed --json --out-file tx.json
+```
 
 ---
 

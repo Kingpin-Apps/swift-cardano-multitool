@@ -32,12 +32,14 @@ The tool provides two interaction modes:
 - <doc:DownloadCommand>
 - <doc:GenerateCommand>
 - <doc:GovernanceCommand>
+- <doc:HashCommand>
 - <doc:InstallCommand>
 - <doc:ProtectCommand>
 - <doc:QueryCommand>
 - <doc:RunCommand>
 - <doc:SendCommand>
 - <doc:SignCommand>
+- <doc:TextViewCommand>
 - <doc:TransactionCommand>
 - <doc:VerifyCommand>
 - <doc:VersionCommand>
