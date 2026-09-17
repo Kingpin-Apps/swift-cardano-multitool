@@ -37,7 +37,7 @@ extension HashMainCommand {
                 question: "Select the script file:",
                 matching: { [".script", ".plutus", ".json"].contains(where: $0.hasSuffix) }
             )
-            tool = try await getToolToUse()
+            if tool == nil { tool = try await getToolToUse() }
         }
 
         mutating func run() async throws {
@@ -116,7 +116,7 @@ extension HashMainCommand {
                 question: "Select the genesis file:",
                 matching: { $0.contains("genesis") && $0.hasSuffix(".json") }
             )
-            tool = try await getToolToUse()
+            if tool == nil { tool = try await getToolToUse() }
         }
 
         mutating func run() async throws {

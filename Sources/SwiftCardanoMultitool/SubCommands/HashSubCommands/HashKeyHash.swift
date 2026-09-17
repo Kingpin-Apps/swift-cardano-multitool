@@ -625,7 +625,7 @@ struct KeyHashInput {
                 validationRules: [NonEmptyValidationRule(error: "The key cannot be empty.")]
             ).trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        tool = try await getToolToUse()
+        if tool == nil { tool = try await getToolToUse() }
     }
 
     /// Validate the input and load the key, so both tools report the same errors.

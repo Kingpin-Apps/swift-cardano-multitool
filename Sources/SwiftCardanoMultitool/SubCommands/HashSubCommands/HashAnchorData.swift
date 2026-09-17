@@ -122,7 +122,7 @@ extension HashMainCommand {
             ).trimmingCharacters(in: .whitespacesAndNewlines)
             expectedHash = expected.isEmpty ? nil : expected
 
-            tool = try await getToolToUse()
+            if tool == nil { tool = try await getToolToUse() }
         }
 
         mutating func run() async throws {

@@ -145,7 +145,7 @@ struct MetadataHashInput {
             validationRules: [HashOrEmptyValidationRule(error: "Enter a 64-character hex hash or leave it empty.")]
         ).trimmed
         expectedHash = expected.isEmpty ? nil : expected
-        tool = try await getToolToUse()
+        if tool == nil { tool = try await getToolToUse() }
     }
 
     mutating func run(outFile: FilePath?) async throws {
