@@ -260,103 +260,40 @@ func getFeePaymentAddress(title: TerminalText? = nil) async throws -> PaymentAdd
     return PaymentAddressInfo(info: info)
 }
 
-/// Prompt user to select a transaction file from the current directory.
+/// Prompt for a transaction file, with path completion.
 /// - Parameter title: Optional title for the prompt.
 /// - Returns: FilePath of the selected transaction file.
-/// - Throws: ExitCode.failure if no transaction files are found.
 func getTransactionFilePath(title: TerminalText? = nil) async throws -> FilePath {
-    let cwd = FilePath(FileManager.default.currentDirectoryPath)
-    let transactionFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-        .filter { $0.hasSuffix(".tx") }
-    
-    if transactionFiles.isEmpty {
-        noora.error(.alert(
-            "No transaction files found in current directory.",
-            takeaways: [
-                "Please create a transaction first.",
-                "Make sure you are in the correct directory containing the transaction file."
-                
-            ]
-        ))
-        throw ExitCode.failure
-    }
-    
-    let transactionFileName = noora.singleChoicePrompt(
+    try filePathPrompt(
         title: title ?? "Transaction File",
         question: "Select the transaction file:",
-        options: transactionFiles,
-        description: "Available .tx files in current directory",
-        collapseOnSelection: true,
-        filterMode: .enabled
+        description: "Transaction files (.tx, .raw, .signed) are suggested; any file can be chosen.",
+        fileMatches: { [".tx", ".raw", ".signed"].contains(where: $0.hasSuffix) }
     )
-    
-    return FilePath(transactionFileName)
 }
 
-/// Prompt user to select a signing key file from the current directory.
+/// Prompt for a signing key file, with path completion.
 /// - Parameter title: Optional title for the prompt.
 /// - Returns: FilePath of the selected signing key file.
-/// - Throws: ExitCode.failure if no signing key files are found.
 func getSigningKeyFilePath(title: TerminalText? = nil) async throws -> FilePath {
-    let cwd = FilePath(FileManager.default.currentDirectoryPath)
-    let signingKeyFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-        .filter { $0.hasSuffix(".skey") || $0.hasSuffix(".hwsfile") }
-    
-    if signingKeyFiles.isEmpty {
-        noora.error(.alert(
-            "No signing key files found in current directory.",
-            takeaways: [
-                "Please create a signing key first.",
-                "Make sure you are in the correct directory containing the signing key file."
-                
-            ]
-        ))
-        throw ExitCode.failure
-    }
-    
-    let signingKeyFileName = noora.singleChoicePrompt(
+    try filePathPrompt(
         title: title ?? "Signing Key File",
         question: "Select the signing key file:",
-        options: signingKeyFiles,
-        description: "Available `.skey` and `.hwsfile` files in current directory",
-        collapseOnSelection: true,
-        filterMode: .enabled
+        description: "Signing keys (.skey, .hwsfile) are suggested; any file can be chosen.",
+        fileMatches: { $0.hasSuffix(".skey") || $0.hasSuffix(".hwsfile") }
     )
-    
-    return FilePath(signingKeyFileName)
 }
 
-/// Prompt user to select a witness file from the current directory.
+/// Prompt for a witness file, with path completion.
 /// - Parameter title: Optional title for the prompt.
 /// - Returns: FilePath of the selected witness file.
-/// - Throws: ExitCode.failure if no witness files are found.
 func getWitnessFilePath(title: TerminalText? = nil) async throws -> FilePath {
-    let cwd = FilePath(FileManager.default.currentDirectoryPath)
-    let witnessFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-        .filter { $0.hasSuffix(".witness") }
-    
-    if witnessFiles.isEmpty {
-        noora.error(.alert(
-            "No witness files found in current directory.",
-            takeaways: [
-                "Please create a witness first.",
-                "Make sure you are in the correct directory containing the witness file."
-                
-            ]
-        ))
-        throw ExitCode.failure
-    }
-    
-    let witnessFileName = noora.singleChoicePrompt(
+    try filePathPrompt(
         title: title ?? "Witness File",
         question: "Select the witness file:",
-        options: witnessFiles,
-        description: "Available `.witness` files in current directory",
-        collapseOnSelection: true,
-        filterMode: .enabled
+        description: "Witness files (.witness) are suggested; any file can be chosen.",
+        fileMatches: { $0.hasSuffix(".witness") }
     )
-    
-    return FilePath(witnessFileName)
 }
 
 /// Prompt user to enter DRep by various methods and return the DRep instance.
@@ -574,21 +511,14 @@ func getPoolOperator(title: TerminalText? = nil) async throws -> PoolOperator {
     }
 }
 
-/// Prompt user to select a pool.json file from the current directory.
+/// Prompt for a pool.json file, with path completion.
 /// - Returns: FilePath of the selected pool.json file.
-/// - Throws: ExitCode.failure if no pool.json files are found.
 func getPoolJSON() async throws -> FilePath {
-    let cwd = FilePath(FileManager.default.currentDirectoryPath)
-    let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-        .filter { $0.hasSuffix(".json") }
-    
-    return FilePath(
-        noora.singleChoicePrompt(
-            title: "Pool JSON Files",
-            question: "Select the pool.json file:",
-            options: files,
-            filterMode: .enabled
-        )
+    try filePathPrompt(
+        title: "Pool JSON File",
+        question: "Select the pool.json file:",
+        description: "JSON files are suggested; any file can be chosen.",
+        fileMatches: { $0.hasSuffix(".json") }
     )
 }
 
@@ -963,42 +893,16 @@ func getActionTypeFilter(title: TerminalText? = nil) async throws -> VoteActionT
     )
 }
 
-/// Prompt for a file path, offering the matching files in the current directory.
+/// Prompt for a file path with completion, suggesting the files that match.
 /// - Parameters:
 ///   - title: Prompt title.
-///   - question: Question shown above the file list.
-///   - matching: Filter for file names worth listing.
+///   - question: Question shown above the input.
+///   - matching: Which file names to suggest; any file can still be chosen.
 /// - Returns: The selected or entered path.
 func promptFilePath(
     title: TerminalText,
     question: TerminalText,
-    matching: (String) -> Bool
+    matching: @escaping @Sendable (String) -> Bool
 ) throws -> FilePath {
-    let manualEntry = "Enter a path…"
-    let cwd = FileManager.default.currentDirectoryPath
-    let files = ((try? FileManager.default.contentsOfDirectory(atPath: cwd)) ?? [])
-        .filter(matching)
-        .sorted()
-
-    if !files.isEmpty {
-        let selected = noora.singleChoicePrompt(
-            title: title,
-            question: question,
-            options: files + [manualEntry],
-            description: "Matching files in the current directory",
-            collapseOnSelection: true,
-            filterMode: .enabled
-        )
-        if selected != manualEntry {
-            return FilePath(selected)
-        }
-    }
-
-    let path = noora.textPrompt(
-        title: title,
-        prompt: question,
-        collapseOnAnswer: true,
-        validationRules: [NonEmptyValidationRule(error: "The path cannot be empty.")]
-    ).trimmingCharacters(in: .whitespacesAndNewlines)
-    return FilePath((path as NSString).expandingTildeInPath)
+    try filePathPrompt(title: title, question: question, fileMatches: matching)
 }
