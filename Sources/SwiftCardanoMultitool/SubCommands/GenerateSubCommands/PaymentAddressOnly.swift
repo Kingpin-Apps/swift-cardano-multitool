@@ -149,7 +149,7 @@ extension GenerateMainCommand {
                     break
             }
             
-            tool = try await getToolToUse()
+            if tool == nil { tool = try await getToolToUse() }
             
             try self.validate()
         }

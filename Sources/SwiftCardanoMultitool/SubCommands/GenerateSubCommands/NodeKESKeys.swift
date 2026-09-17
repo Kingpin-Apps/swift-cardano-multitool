@@ -52,7 +52,7 @@ extension GenerateMainCommand {
                 description: "Choose the method to generate the node KES keys. Options are:\n- cli: Use cardano-cli or SwiftCardano to generate the keys.\n- enc: Generate unencrypted keys and encrypt the signing key with a password."
             )
             
-            tool = try await getToolToUse()
+            if tool == nil { tool = try await getToolToUse() }
             
             try self.validate()
         }

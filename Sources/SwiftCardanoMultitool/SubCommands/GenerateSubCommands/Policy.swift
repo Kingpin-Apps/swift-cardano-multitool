@@ -135,7 +135,7 @@ extension GenerateMainCommand {
                     break
             }
 
-            tool = try await getToolToUse()
+            if tool == nil { tool = try await getToolToUse() }
 
             let shouldTimeLock = noora.yesOrNoChoicePrompt(
                 title: "Time-locked Policy",

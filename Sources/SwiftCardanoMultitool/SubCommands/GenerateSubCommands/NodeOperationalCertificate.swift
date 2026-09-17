@@ -51,7 +51,7 @@ extension GenerateMainCommand {
                 ))
             }
             
-            tool = try await getToolToUse()
+            if tool == nil { tool = try await getToolToUse() }
             
             try self.validate()
         }

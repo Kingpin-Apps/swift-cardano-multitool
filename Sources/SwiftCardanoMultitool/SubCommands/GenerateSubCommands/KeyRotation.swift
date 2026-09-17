@@ -67,7 +67,7 @@ extension GenerateMainCommand {
                 description: "Choose from:\n- cli: Use cardano-cli or SwiftCardano.\n- enc: Generate then encrypt the signing key with a password."
             )
 
-            tool = try await getToolToUse()
+            if tool == nil { tool = try await getToolToUse() }
 
             try self.validate()
         }
