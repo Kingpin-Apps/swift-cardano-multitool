@@ -1,3 +1,10 @@
+## 0.10.3 (2026-09-16)
+
+### Fix
+
+- require swift-cardano-utils 0.5.6 (cardano-cli query stake-pools JSON)
+- detect pool registration status per pool and never guess the deposit
+
 ## 0.10.2 (2026-09-16)
 
 ### Fix
