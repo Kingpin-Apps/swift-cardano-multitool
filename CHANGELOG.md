@@ -1,3 +1,17 @@
+## 0.11.0 (2026-09-16)
+
+### Feat
+
+- use the file path prompt for file and directory selection across commands
+- add file path prompt with completion for file selection
+- add hash and text-view commands
+
+### Fix
+
+- honor --tool in build and generate wizards
+- honor --tool in hash command wizards
+- use invalidHereAfter for policy time locks and reject mismatched policy IDs (core 0.5.2)
+
 ## 0.10.3 (2026-09-16)
 
 ### Fix
