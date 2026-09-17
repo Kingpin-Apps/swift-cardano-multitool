@@ -81,14 +81,13 @@ extension TransactionMainCommand {
                 )
             }
             
-            let outputFile = noora.textPrompt(
+            let outputFile = try optionalFilePathPrompt(
                 title: "Output File",
-                prompt: "Enter the output file path for the signed transaction (leave blank for default):",
-                collapseOnAnswer: true
-            ).trimmingCharacters(in: .whitespacesAndNewlines)
-            outFile = outputFile.isEmpty ? FilePath("\(txFile!.stem!).signed.tx") : FilePath(
-                outputFile
+                question: "Enter the output file path for the signed transaction (leave blank for default):",
+                mustExist: false
             )
+            // Left empty, run() picks the default name (from the tx file, or the tx ID for CBOR hex).
+            outFile = outputFile
             
             useCardanoCLI = noora.yesOrNoChoicePrompt(
                 title: "Build Method",

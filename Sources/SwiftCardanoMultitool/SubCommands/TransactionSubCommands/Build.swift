@@ -351,14 +351,12 @@ extension TransactionMainCommand {
                     if !mintValue.isEmpty {
                         mint.append(mintValue)
 
-                        let scriptPath = noora.textPrompt(
+                        if let scriptPath = try optionalFilePathPrompt(
                             title: "Mint Script File",
-                            prompt: "Enter minting script file path (leave empty to provide via --extra-args):",
-                            collapseOnAnswer: true
-                        ).trimmingCharacters(in: .whitespacesAndNewlines)
-
-                        if !scriptPath.isEmpty {
-                            extraArgs += ["--mint-script-file", FileUtils.absolutePath(FilePath(scriptPath)).string]
+                            question: "Enter minting script file path (leave empty to provide via --extra-args):",
+                            fileMatches: { [".script", ".plutus", ".json"].contains(where: $0.hasSuffix) }
+                        ) {
+                            extraArgs += ["--mint-script-file", FileUtils.absolutePath(scriptPath).string]
                         }
                     }
 
@@ -397,15 +395,12 @@ extension TransactionMainCommand {
                 spacedPrint("\n\(.primary("━━━ Certificates ━━━"))\n")
                 addMore = true
                 while addMore {
-                    let certPath = noora.textPrompt(
+                    let certPath = try filePathPrompt(
                         title: "Certificate File \(certificateFile.count + 1)",
-                        prompt: "Enter certificate file path:",
-                        collapseOnAnswer: true
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
-
-                    if !certPath.isEmpty {
-                        certificateFile.append(FilePath(certPath))
-                    }
+                        question: "Enter certificate file path:",
+                        fileMatches: { $0.hasSuffix(".cert") }
+                    )
+                    certificateFile.append(certPath)
 
                     addMore = noora.yesOrNoChoicePrompt(
                         title: "Add Another Certificate",
@@ -488,12 +483,12 @@ extension TransactionMainCommand {
                     )
 
                     if choice == "Key file path" {
-                        let path = noora.textPrompt(
+                        let path = try filePathPrompt(
                             title: "Signer Key File",
-                            prompt: "Enter signing key file path:",
-                            collapseOnAnswer: true
-                        ).trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !path.isEmpty { requiredSigner.append(FilePath(path)) }
+                            question: "Enter signing key file path:",
+                            fileMatches: { $0.hasSuffix(".skey") || $0.hasSuffix(".vkey") }
+                        )
+                        requiredSigner.append(path)
                     } else {
                         let hash = noora.textPrompt(
                             title: "Signer Key Hash",
@@ -544,12 +539,12 @@ extension TransactionMainCommand {
                 if addJsonMeta {
                     addMore = true
                     while addMore {
-                        let path = noora.textPrompt(
+                        let path = try filePathPrompt(
                             title: "Metadata JSON File \(metadataJsonFile.count + 1)",
-                            prompt: "Enter JSON metadata file path:",
-                            collapseOnAnswer: true
-                        ).trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !path.isEmpty { metadataJsonFile.append(FilePath(path)) }
+                            question: "Enter JSON metadata file path:",
+                            fileMatches: { $0.hasSuffix(".json") }
+                        )
+                        metadataJsonFile.append(path)
                         addMore = noora.yesOrNoChoicePrompt(
                             title: "Add Another",
                             question: "Add another JSON metadata file?",
@@ -566,12 +561,12 @@ extension TransactionMainCommand {
                 if addCborMeta {
                     addMore = true
                     while addMore {
-                        let path = noora.textPrompt(
+                        let path = try filePathPrompt(
                             title: "Metadata CBOR File \(metadataCborFile.count + 1)",
-                            prompt: "Enter CBOR metadata file path:",
-                            collapseOnAnswer: true
-                        ).trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !path.isEmpty { metadataCborFile.append(FilePath(path)) }
+                            question: "Enter CBOR metadata file path:",
+                            fileMatches: { $0.hasSuffix(".cbor") }
+                        )
+                        metadataCborFile.append(path)
                         addMore = noora.yesOrNoChoicePrompt(
                             title: "Add Another",
                             question: "Add another CBOR metadata file?",
@@ -588,12 +583,12 @@ extension TransactionMainCommand {
                 if addAux {
                     addMore = true
                     while addMore {
-                        let path = noora.textPrompt(
+                        let path = try filePathPrompt(
                             title: "Auxiliary Script File \(auxiliaryScriptFile.count + 1)",
-                            prompt: "Enter auxiliary script file path:",
-                            collapseOnAnswer: true
-                        ).trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !path.isEmpty { auxiliaryScriptFile.append(FilePath(path)) }
+                            question: "Enter auxiliary script file path:",
+                            fileMatches: { [".script", ".plutus", ".json"].contains(where: $0.hasSuffix) }
+                        )
+                        auxiliaryScriptFile.append(path)
                         addMore = noora.yesOrNoChoicePrompt(
                             title: "Add Another",
                             question: "Add another auxiliary script file?",
@@ -622,12 +617,12 @@ extension TransactionMainCommand {
                 if addVotes {
                     addMore = true
                     while addMore {
-                        let path = noora.textPrompt(
+                        let path = try filePathPrompt(
                             title: "Vote File \(voteFile.count + 1)",
-                            prompt: "Enter vote file path:",
-                            collapseOnAnswer: true
-                        ).trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !path.isEmpty { voteFile.append(FilePath(path)) }
+                            question: "Enter vote file path:",
+                            fileMatches: { $0.hasSuffix(".vote") }
+                        )
+                        voteFile.append(path)
                         addMore = noora.yesOrNoChoicePrompt(
                             title: "Add Another",
                             question: "Add another vote file?",
@@ -644,12 +639,12 @@ extension TransactionMainCommand {
                 if addProposals {
                     addMore = true
                     while addMore {
-                        let path = noora.textPrompt(
+                        let path = try filePathPrompt(
                             title: "Proposal File \(proposalFile.count + 1)",
-                            prompt: "Enter proposal file path:",
-                            collapseOnAnswer: true
-                        ).trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !path.isEmpty { proposalFile.append(FilePath(path)) }
+                            question: "Enter proposal file path:",
+                            fileMatches: { $0.hasSuffix(".action") || $0.hasSuffix(".proposal") }
+                        )
+                        proposalFile.append(path)
                         addMore = noora.yesOrNoChoicePrompt(
                             title: "Add Another",
                             question: "Add another proposal file?",
@@ -698,14 +693,12 @@ extension TransactionMainCommand {
 
             // === Output File ===
             spacedPrint("\n\(.primary("━━━ Output ━━━"))\n")
-            let outPath = noora.textPrompt(
+            outFile = try filePathPrompt(
                 title: "Output File",
-                prompt: "Enter output file path for the transaction body:",
+                question: "Enter output file path for the transaction body:",
                 description: "The built and balanced transaction will be saved here.",
-                collapseOnAnswer: true,
-                validationRules: [NonEmptyValidationRule(error: "Output file path is required.")]
-            ).trimmingCharacters(in: .whitespacesAndNewlines)
-            outFile = FilePath(outPath)
+                mustExist: false
+            )
 
             useCardanoCLI = noora.yesOrNoChoicePrompt(
                 title: "Build Method",

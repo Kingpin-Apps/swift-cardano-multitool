@@ -43,16 +43,11 @@ extension QueryMainCommand {
                         address: try SwiftCardanoCore.Address(from: .string(addressString))
                     )
                 case .path:
-                    let cwd = FilePath(FileManager.default.currentDirectoryPath)
-                    let addressFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                        .filter { $0.hasSuffix(".addr") }
-                    
-                    let addressFile = FilePath(noora.singleChoicePrompt(
+                    let addressFile = try filePathPrompt(
                         title: "Address File",
                         question: "Select the address file to use:",
-                        options: addressFiles,
-                        description: "Available .addr files in current directory"
-                    ))
+                        fileMatches: { $0.hasSuffix(".addr") }
+                    )
                     
                     address = try AddressInfo(
                         addressFile: addressFile,

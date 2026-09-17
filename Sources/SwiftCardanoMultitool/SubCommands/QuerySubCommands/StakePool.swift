@@ -92,16 +92,10 @@ extension QueryMainCommand {
                     poolOperator = pool.toPoolOperator()
                     
                 case .poolJSON:
-                    let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                        .filter { $0.hasSuffix(".json") }
-                    
-                    poolJSON = FilePath(
-                        noora.singleChoicePrompt(
-                            title: "Pool JSON Files",
-                            question: "Select the pool.json file:",
-                            options: files,
-                            filterMode: .enabled
-                        )
+                    poolJSON = try filePathPrompt(
+                        title: "Pool JSON Files",
+                        question: "Select the pool.json file:",
+                        fileMatches: { $0.hasSuffix(".json") }
                     )
                     
                     let pool = try Pool.load(from: poolJSON!)

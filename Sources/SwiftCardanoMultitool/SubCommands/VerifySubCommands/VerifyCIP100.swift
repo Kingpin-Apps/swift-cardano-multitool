@@ -25,12 +25,11 @@ extension VerifyMainCommand {
         @OptionGroup var output: SignerOutputOptions
 
         mutating func wizard() async throws {
-            let path = noora.textPrompt(
+            dataFile = try filePathPrompt(
                 title: "JSON-LD Document",
-                prompt: "Enter the path to the signed JSON-LD document:",
-                validationRules: [NonEmptyValidationRule(error: "Path cannot be empty.")]
-            ).trimmingCharacters(in: .whitespacesAndNewlines)
-            dataFile = FilePath(path)
+                question: "Enter the path to the signed JSON-LD document:",
+                fileMatches: { [".json", ".jsonld"].contains(where: $0.hasSuffix) }
+            )
         }
 
         mutating func run() async throws {

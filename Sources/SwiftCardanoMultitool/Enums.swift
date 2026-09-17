@@ -23,7 +23,7 @@ enum GetAddressBy: String, CaseIterable, AlignedChoiceDescribable {
     var details: String {
         switch self {
             case .name: return "The name of the stem of the file."
-            case .path: return "The path to the address.addr file."
+            case .path: return "Choose the files by path."
         }
     }
 }

@@ -46,20 +46,24 @@ extension GenerateMainCommand {
         // MARK: - File Prompt Helpers
         
         /// Attempts to find a file at the default path. If found, confirms with user.
-        /// If not found, offers to select from matching files in cwd, enter a path, or skip.
+        /// If not found, prompts for a path (with completion), optionally allowing a skip.
         private func resolveFilePath(
             defaultPath: FilePath,
             title: String,
             fileExtension: String,
             allowSkip: Bool = true
-        ) -> FilePath? {
+        ) throws -> FilePath? {
             let fm = FileManager.default
             
-            let fileName = "\(poolName).\(fileExtension)"
-            let filePath = defaultPath.appending(fileName)
+            // The default is either the file itself or a directory holding `<poolName><fileExtension>`.
+            var isDirectory: ObjCBool = false
+            let defaultExists = fm.fileExists(atPath: defaultPath.string, isDirectory: &isDirectory)
+            let filePath = defaultExists && isDirectory.boolValue
+                ? defaultPath.appending("\(poolName)\(fileExtension)")
+                : defaultPath
             
             // Check default path
-            if fm.fileExists(atPath: filePath.string) {
+            if fm.fileExists(atPath: filePath.string, isDirectory: &isDirectory), !isDirectory.boolValue {
                 noora.success(.alert("Found \(title): \(filePath.lastComponent?.string ?? filePath.string)"))
                 let useDefault = noora.yesOrNoChoicePrompt(
                     title: "\(title)",
@@ -69,48 +73,21 @@ extension GenerateMainCommand {
                 if useDefault { return filePath }
             }
             
-            // Search cwd for matching files
-            let cwd = FilePath(fm.currentDirectoryPath)
-            let matchingFiles = (try? fm.contentsOfDirectory(atPath: cwd.string))
-                .map { $0.filter { $0.hasSuffix(fileExtension) } } ?? []
-            
-            var options: [String] = []
-            if !matchingFiles.isEmpty {
-                options.append("Select from current directory")
-            }
-            options.append("Enter file path manually")
+            let description: TerminalText = "File not found at default location: \(filePath.lastComponent?.string ?? filePath.string)"
             if allowSkip {
-                options.append("Skip (leave empty)")
+                return try optionalFilePathPrompt(
+                    title: "\(title)",
+                    question: "Enter the \(title.lowercased()) file path (leave empty to skip):",
+                    description: description,
+                    fileMatches: { $0.hasSuffix(fileExtension) }
+                )
             }
-            
-            let choice = noora.singleChoicePrompt(
+            return try filePathPrompt(
                 title: "\(title)",
-                question: "How would you like to provide the \(title.lowercased()) file?",
-                options: options,
-                description: "File not found at default location: \(filePath.lastComponent?.string ?? filePath.string)"
+                question: "Enter the \(title.lowercased()) file path:",
+                description: description,
+                fileMatches: { $0.hasSuffix(fileExtension) }
             )
-            
-            if choice == "Select from current directory" {
-                let selected = noora.singleChoicePrompt(
-                    title: "\(title)",
-                    question: "Select the \(title.lowercased()) file:",
-                    options: matchingFiles,
-                    description: "Available \(fileExtension) files in current directory",
-                    collapseOnSelection: true,
-                    filterMode: .enabled
-                )
-                return cwd.appending(selected)
-            } else if choice == "Enter file path manually" {
-                let path = noora.textPrompt(
-                    title: "\(title)",
-                    prompt: "Enter the file path:",
-                    collapseOnAnswer: true,
-                    validationRules: [NonEmptyValidationRule(error: "File path cannot be empty.")]
-                )
-                return FilePath(path)
-            }
-            
-            return nil
         }
         
         /// Resolve a file with two possible default paths (e.g., .skey or .hwsfile)
@@ -120,18 +97,18 @@ extension GenerateMainCommand {
             title: String,
             fileExtension: String,
             allowSkip: Bool = true
-        ) -> FilePath? {
+        ) throws -> FilePath? {
             let fm = FileManager.default
             
             if fm.fileExists(atPath: primaryPath.string) {
-                return resolveFilePath(
+                return try resolveFilePath(
                     defaultPath: primaryPath,
                     title: title,
                     fileExtension: fileExtension,
                     allowSkip: allowSkip
                 )
             } else if fm.fileExists(atPath: fallbackPath.string) {
-                return resolveFilePath(
+                return try resolveFilePath(
                     defaultPath: fallbackPath,
                     title: title,
                     fileExtension: fileExtension.replacingOccurrences(of: ".skey", with: ".hwsfile"),
@@ -139,7 +116,7 @@ extension GenerateMainCommand {
                 )
             }
             
-            return resolveFilePath(
+            return try resolveFilePath(
                 defaultPath: primaryPath,
                 title: title,
                 fileExtension: fileExtension,
@@ -304,7 +281,7 @@ extension GenerateMainCommand {
         }
         
         /// Prompt for pool cold keys, VRF keys, and attempt pool ID generation
-        private func promptPoolKeys(poolName: String, cwd: FilePath) -> (
+        private func promptPoolKeys(poolName: String, cwd: FilePath) throws -> (
             coldVkey: FilePath?, coldSkey: FilePath?, nodeCounter: FilePath?,
             vrfVkey: FilePath?, vrfSkey: FilePath?,
             idHex: String?, idBech: String?
@@ -312,14 +289,14 @@ extension GenerateMainCommand {
             print(noora.format("\n\(.primary("── Pool Keys ──"))\n"))
             
             // Cold Keys
-            let coldVkey = resolveFilePath(
+            let coldVkey = try resolveFilePath(
                 defaultPath: cwd.appending("\(poolName).cold.vkey"),
                 title: "Cold Verification Key",
                 fileExtension: ".cold.vkey",
                 allowSkip: true
             )
             
-            let coldSkey = resolveFilePathWithFallback(
+            let coldSkey = try resolveFilePathWithFallback(
                 primaryPath: cwd.appending("\(poolName).cold.skey"),
                 fallbackPath: cwd.appending("\(poolName).cold.hwsfile"),
                 title: "Cold Signing Key",
@@ -327,7 +304,7 @@ extension GenerateMainCommand {
                 allowSkip: true
             )
             
-            let nodeCounter = resolveFilePath(
+            let nodeCounter = try resolveFilePath(
                 defaultPath: cwd.appending("\(poolName).cold.counter"),
                 title: "Node Counter",
                 fileExtension: ".cold.counter",
@@ -337,14 +314,14 @@ extension GenerateMainCommand {
             // VRF Keys
             print(noora.format("\n\(.primary("── VRF Keys ──"))\n"))
             
-            let vrfVkey = resolveFilePath(
+            let vrfVkey = try resolveFilePath(
                 defaultPath: cwd.appending("\(poolName).vrf.vkey"),
                 title: "VRF Verification Key",
                 fileExtension: ".vrf.vkey",
                 allowSkip: true
             )
             
-            let vrfSkey = resolveFilePath(
+            let vrfSkey = try resolveFilePath(
                 defaultPath: cwd.appending("\(poolName).vrf.skey"),
                 title: "VRF Signing Key",
                 fileExtension: ".vrf.skey",
@@ -458,109 +435,79 @@ extension GenerateMainCommand {
         }
 
         /// Prompt for payment key files
-        private func promptPaymentKeys(cwd: FilePath) -> (
+        private func promptPaymentKeys(cwd: FilePath) throws -> (
             paymentVkey: FilePath?, paymentSkey: FilePath?, paymentAddr: String?
         ) {
             print(noora.format("\n\(.primary("── Payment Keys ──"))\n"))
             
-            let paymentVkey = resolveFilePath(
+            let paymentVkey = try resolveFilePath(
                 defaultPath: cwd,
                 title: "Payment Verification Key",
                 fileExtension: ".payment.vkey",
                 allowSkip: true
             )
             
-            let paymentSkey = resolveFilePath(
+            let paymentSkey = try resolveFilePath(
                 defaultPath: cwd,
                 title: "Payment Signing Key",
                 fileExtension: ".payment.skey",
                 allowSkip: true
             )
             
-            // Try to find and load payment address
+            // Optionally load a payment address
             var paymentAddr: String? = nil
-            let fm = FileManager.default
-            let addrFiles = (try? fm.contentsOfDirectory(atPath: cwd.string))
-                .map { $0.filter { $0.hasSuffix(".payment.addr") } } ?? []
-            
-            if !addrFiles.isEmpty {
-                let useAddr = noora.yesOrNoChoicePrompt(
-                    title: "Payment Address",
-                    question: "Payment address files found. Load a payment address?",
-                    defaultAnswer: true
-                )
-                if useAddr {
-                    let selected = noora.singleChoicePrompt(
-                        title: "Payment Address",
-                        question: "Select the payment address file:",
-                        options: addrFiles,
-                        description: "Available .payment.addr files in current directory",
-                        collapseOnSelection: true,
-                        filterMode: .enabled
-                    )
-                    paymentAddr = try? String(
-                        contentsOfFile: cwd.appending(selected).string,
-                        encoding: .utf8
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
-                }
+            if let addrFile = try optionalFilePathPrompt(
+                title: "Payment Address",
+                question: "Select the payment address file (leave empty to skip):",
+                fileMatches: { $0.hasSuffix(".payment.addr") }
+            ) {
+                paymentAddr = try? String(
+                    contentsOfFile: addrFile.string,
+                    encoding: .utf8
+                ).trimmingCharacters(in: .whitespacesAndNewlines)
             }
             
             return (paymentVkey, paymentSkey, paymentAddr)
         }
         
         /// Prompt for stake key files
-        private func promptStakeKeys(cwd: FilePath) -> (
+        private func promptStakeKeys(cwd: FilePath) throws -> (
             stakeVkey: FilePath?, stakeSkey: FilePath?, stakeAddr: String?
         ) {
             print(noora.format("\n\(.primary("── Stake Keys ──"))\n"))
             
-            let stakeVkey = resolveFilePath(
+            let stakeVkey = try resolveFilePath(
                 defaultPath: cwd,
                 title: "Stake Verification Key",
                 fileExtension: ".stake.vkey",
                 allowSkip: true
             )
             
-            let stakeSkey = resolveFilePath(
+            let stakeSkey = try resolveFilePath(
                 defaultPath: cwd,
                 title: "Stake Signing Key",
                 fileExtension: ".stake.skey",
                 allowSkip: true
             )
             
-            // Try to find and load stake address
+            // Optionally load a stake address
             var stakeAddr: String? = nil
-            let fm = FileManager.default
-            let addrFiles = (try? fm.contentsOfDirectory(atPath: cwd.string))
-                .map { $0.filter { $0.hasSuffix(".stake.addr") } } ?? []
-            
-            if !addrFiles.isEmpty {
-                let useAddr = noora.yesOrNoChoicePrompt(
-                    title: "Stake Address",
-                    question: "Stake address files found. Load a stake address?",
-                    defaultAnswer: true
-                )
-                if useAddr {
-                    let selected = noora.singleChoicePrompt(
-                        title: "Stake Address",
-                        question: "Select the stake address file:",
-                        options: addrFiles,
-                        description: "Available .stake.addr files in current directory",
-                        collapseOnSelection: true,
-                        filterMode: .enabled
-                    )
-                    stakeAddr = try? String(
-                        contentsOfFile: cwd.appending(selected).string,
-                        encoding: .utf8
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
-                }
+            if let addrFile = try optionalFilePathPrompt(
+                title: "Stake Address",
+                question: "Select the stake address file (leave empty to skip):",
+                fileMatches: { $0.hasSuffix(".stake.addr") }
+            ) {
+                stakeAddr = try? String(
+                    contentsOfFile: addrFile.string,
+                    encoding: .utf8
+                ).trimmingCharacters(in: .whitespacesAndNewlines)
             }
             
             return (stakeVkey, stakeSkey, stakeAddr)
         }
         
         /// Prompt for pool owners (at least one required)
-        private func promptOwners(cwd: FilePath) -> [PoolOwner] {
+        private func promptOwners(cwd: FilePath) throws -> [PoolOwner] {
             print(noora.format("\n\(.primary("── Pool Owners ──"))\n"))
             
             var owners: [PoolOwner] = []
@@ -592,7 +539,7 @@ extension GenerateMainCommand {
                     stakeVkey = defaultStakeVkey
                     noora.success(.alert("Found owner stake vkey: \(defaultStakeVkey.lastComponent?.string ?? "")"))
                 } else {
-                    stakeVkey = resolveFilePath(
+                    stakeVkey = try resolveFilePath(
                         defaultPath: defaultStakeVkey,
                         title: "Owner \(ownerName) Stake VKey",
                         fileExtension: ".stake.vkey",
@@ -604,7 +551,7 @@ extension GenerateMainCommand {
                     stakeSkey = defaultStakeSkey
                     noora.success(.alert("Found owner stake skey: \(defaultStakeSkey.lastComponent?.string ?? "")"))
                 } else if witness == .local {
-                    stakeSkey = resolveFilePath(
+                    stakeSkey = try resolveFilePath(
                         defaultPath: defaultStakeSkey,
                         title: "Owner \(ownerName) Stake SKey",
                         fileExtension: ".stake.skey",
@@ -630,7 +577,7 @@ extension GenerateMainCommand {
         }
         
         /// Prompt for rewards owner
-        private func promptRewardsOwner(cwd: FilePath) -> RewardsOwner {
+        private func promptRewardsOwner(cwd: FilePath) throws -> RewardsOwner {
             print(noora.format("\n\(.primary("── Rewards Owner ──"))\n"))
             
             let rewardsName = noora.textPrompt(
@@ -652,7 +599,7 @@ extension GenerateMainCommand {
                 stakeVkey = defaultStakeVkey
                 noora.success(.alert("Found rewards stake vkey: \(defaultStakeVkey.lastComponent?.string ?? "")"))
             } else {
-                stakeVkey = resolveFilePath(
+                stakeVkey = try resolveFilePath(
                     defaultPath: defaultStakeVkey,
                     title: "Rewards Owner Stake VKey",
                     fileExtension: ".stake.vkey",
@@ -664,7 +611,7 @@ extension GenerateMainCommand {
                 stakeSkey = defaultStakeSkey
                 noora.success(.alert("Found rewards stake skey: \(defaultStakeSkey.lastComponent?.string ?? "")"))
             } else {
-                stakeSkey = resolveFilePath(
+                stakeSkey = try resolveFilePath(
                     defaultPath: defaultStakeSkey,
                     title: "Rewards Owner Stake SKey",
                     fileExtension: ".stake.skey",
@@ -843,19 +790,19 @@ extension GenerateMainCommand {
             let relays = promptRelays()
             
             // 4 & 5. Pool Keys (Cold + VRF) & 6. Pool IDs
-            let keys = promptPoolKeys(poolName: poolName, cwd: cwd)
+            let keys = try promptPoolKeys(poolName: poolName, cwd: cwd)
             
             // 7. Payment Keys
-            let payment = promptPaymentKeys(cwd: cwd)
+            let payment = try promptPaymentKeys(cwd: cwd)
             
             // 8. Stake Keys
-            let stake = promptStakeKeys(cwd: cwd)
+            let stake = try promptStakeKeys(cwd: cwd)
             
             // 9. Owners
-            let owners = promptOwners(cwd: cwd)
+            let owners = try promptOwners(cwd: cwd)
             
             // 10. Rewards Owner
-            let rewardsOwner = promptRewardsOwner(cwd: cwd)
+            let rewardsOwner = try promptRewardsOwner(cwd: cwd)
             
             // Build the Pool
             let pool = try Pool(

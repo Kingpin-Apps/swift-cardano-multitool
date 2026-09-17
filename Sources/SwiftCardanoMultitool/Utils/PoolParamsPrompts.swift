@@ -159,24 +159,13 @@ func editPoolParams(
                 draft.rewardAccount = try key.rewardAccount(network: network)
 
             case .vrfKey:
-                let files = keys.vrfVkeyFiles.map { $0.lastComponent?.string ?? $0.string }
-                let path: FilePath
-                if files.isEmpty {
-                    path = FilePath(noora.textPrompt(
-                        title: "VRF Verification Key",
-                        prompt: "Enter the path to the new VRF verification key (.vrf.vkey):",
-                        collapseOnAnswer: true,
-                        validationRules: [NonEmptyValidationRule(error: "Path cannot be empty.")]
-                    ).trimmingCharacters(in: .whitespacesAndNewlines))
-                } else {
-                    path = FilePath(FileManager.default.currentDirectoryPath).appending(noora.singleChoicePrompt(
-                        title: "VRF Verification Key",
-                        question: "Select the new VRF verification key:",
-                        options: files,
-                        description: "Changing the VRF key requires the node to run with the matching VRF signing key."
-                    ))
-                }
-                draft.vrfKeyHash = try VRFVerificationKey.load(from: path.string).hash()
+                let path = try filePathPrompt(
+                    title: "VRF Verification Key",
+                    question: "Select the new VRF verification key:",
+                    description: "Changing the VRF key requires the node to run with the matching VRF signing key.",
+                    fileMatches: { $0.hasSuffix(".vrf.vkey") }
+                )
+                draft.vrfKeyHash = try VRFVerificationKey.load(from: FileUtils.absolutePath(path).string).hash()
 
             case .metadata:
                 try await editMetadata(&draft)
@@ -262,23 +251,27 @@ private func editOwners(_ draft: inout PoolParamsDraft, keys: PoolKeyFileMatcher
 
 /// Prompt for a stake key: a stake verification key file, a stake address, or a key hash.
 func promptStakeKey(title: String, question: String, keys: PoolKeyFileMatcher) throws -> StakeKeyArgument {
-    let files = keys.stakeVkeyFiles.map { $0.lastComponent?.string ?? $0.string }
+    let fromFile = "Stake verification key file"
     let enterManually = "Enter a stake address or key hash"
-    let choice = files.isEmpty
-        ? enterManually
-        : noora.singleChoicePrompt(
-            title: TerminalText(stringLiteral: title),
-            question: TerminalText(stringLiteral: question),
-            options: files + [enterManually],
-            filterMode: .enabled
-        )
+    let choice = noora.singleChoicePrompt(
+        title: TerminalText(stringLiteral: title),
+        question: TerminalText(stringLiteral: question),
+        options: [fromFile, enterManually]
+    )
 
-    if choice != enterManually {
-        let path = FilePath(FileManager.default.currentDirectoryPath).appending(choice)
-        guard let hash = PoolKeyFileMatcher.stakeKeyHash(ofVkeyFile: path) else {
-            throw SwiftCardanoMultitoolError.valueError("Could not read the stake verification key \(choice).")
+    if choice == fromFile {
+        let path = try filePathPrompt(
+            title: TerminalText(stringLiteral: title),
+            question: "Select the stake verification key file:",
+            description: "Stake verification keys (.stake.vkey) are suggested.",
+            fileMatches: { $0.hasSuffix(".stake.vkey") },
+            validationRules: [StakeVkeyFileValidationRule(error: "Not a stake verification key file.")]
+        )
+        let absolute = FileUtils.absolutePath(path)
+        guard let hash = PoolKeyFileMatcher.stakeKeyHash(ofVkeyFile: absolute) else {
+            throw SwiftCardanoMultitoolError.valueError("Could not read the stake verification key \(path.string).")
         }
-        return StakeKeyArgument(keyHash: hash, vkeyFile: path)
+        return StakeKeyArgument(keyHash: hash, vkeyFile: absolute)
     }
 
     while true {
@@ -410,5 +403,14 @@ private func editMetadata(_ draft: inout PoolParamsDraft) async throws {
             draft.metadataDescription = nil
             draft.metadataHomepage = nil
             draft.metadataContentEdited = false
+    }
+}
+
+/// Accepts a readable stake verification key file.
+private struct StakeVkeyFileValidationRule: ValidatableRule {
+    let error: ValidatableError
+
+    func validate(input: String) -> Bool {
+        PoolKeyFileMatcher.stakeKeyHash(ofVkeyFile: FileUtils.absolutePath(FilePath(input))) != nil
     }
 }

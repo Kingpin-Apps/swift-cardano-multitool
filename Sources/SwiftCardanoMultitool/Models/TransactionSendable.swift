@@ -190,29 +190,18 @@ extension TransactionSendable {
         if includeMetadataJson {
             var addMore = true
             while addMore {
-                let path = FilePath(noora.textPrompt(
+                if let path = try optionalFilePathPrompt(
                     title: "JSON Metadata File \(transactionOptions.metadataJson.count + 1)",
-                    prompt: "Enter path to JSON metadata file:",
+                    question: "Enter path to JSON metadata file:",
                     description: "Relative or absolute path. Leave empty to skip.",
-                    collapseOnAnswer: true
-                ).trimmingCharacters(in: .whitespacesAndNewlines))
-                
-                if !path.isEmpty {
-                    if FileManager.default.fileExists(atPath: path.string) {
-                        transactionOptions.metadataJson.append(path)
-                        addMore = noora.yesOrNoChoicePrompt(
-                            title: "Add Another JSON File",
-                            question: "Add another JSON metadata file?",
-                            defaultAnswer: false
-                        )
-                    } else {
-                        noora.warning(.alert("File not found: \(path). Skipped."))
-                        addMore = noora.yesOrNoChoicePrompt(
-                            title: "Try Again",
-                            question: "Try another file?",
-                            defaultAnswer: true
-                        )
-                    }
+                    fileMatches: { $0.hasSuffix(".json") }
+                ) {
+                    transactionOptions.metadataJson.append(path)
+                    addMore = noora.yesOrNoChoicePrompt(
+                        title: "Add Another JSON File",
+                        question: "Add another JSON metadata file?",
+                        defaultAnswer: false
+                    )
                 } else {
                     addMore = false
                 }
@@ -229,29 +218,18 @@ extension TransactionSendable {
         if includeMetadataCbor {
             var addMore = true
             while addMore {
-                let path = FilePath(noora.textPrompt(
+                if let path = try optionalFilePathPrompt(
                     title: "CBOR Metadata File \(transactionOptions.metadataCbor.count + 1)",
-                    prompt: "Enter path to CBOR metadata file:",
+                    question: "Enter path to CBOR metadata file:",
                     description: "Relative or absolute path. Leave empty to skip.",
-                    collapseOnAnswer: true
-                ).trimmingCharacters(in: .whitespacesAndNewlines))
-                
-                if !path.isEmpty {
-                    if FileManager.default.fileExists(atPath: path.string) {
-                        transactionOptions.metadataCbor.append(path)
-                        addMore = noora.yesOrNoChoicePrompt(
-                            title: "Add Another CBOR File",
-                            question: "Add another CBOR metadata file?",
-                            defaultAnswer: false
-                        )
-                    } else {
-                        noora.warning(.alert("File not found: \(path). Skipped."))
-                        addMore = noora.yesOrNoChoicePrompt(
-                            title: "Try Again",
-                            question: "Try another file?",
-                            defaultAnswer: true
-                        )
-                    }
+                    fileMatches: { $0.hasSuffix(".cbor") }
+                ) {
+                    transactionOptions.metadataCbor.append(path)
+                    addMore = noora.yesOrNoChoicePrompt(
+                        title: "Add Another CBOR File",
+                        question: "Add another CBOR metadata file?",
+                        defaultAnswer: false
+                    )
                 } else {
                     addMore = false
                 }

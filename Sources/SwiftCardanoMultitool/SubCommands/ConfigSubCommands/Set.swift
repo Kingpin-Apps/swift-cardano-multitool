@@ -33,12 +33,11 @@ extension ConfigMainCommand {
                 )
             }
             if path == nil {
-                let entered = noora.textPrompt(
+                path = try filePathPrompt(
                     title: "Path",
-                    prompt: "Enter the path to the file:",
-                    validationRules: [NonEmptyValidationRule(error: "Path cannot be empty.")]
-                ).trimmingCharacters(in: .whitespacesAndNewlines)
-                path = FilePath(entered)
+                    question: "Enter the path to the file:",
+                    mustExist: false
+                )
             }
         }
 

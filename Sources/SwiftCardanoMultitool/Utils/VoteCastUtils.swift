@@ -134,39 +134,20 @@ func loadVoterKey(vkeyPath: FilePath, roleOverride: VoterRole?) throws -> Loaded
 
 // MARK: - Interactive voter picker
 
-/// Scan the current working directory for `*.{drep,node,cc-hot}.vkey` and prompt the
-/// user to pick one. Throws if none are found. Mirrors `selectPolicyNameInteractive`.
+/// Prompt for the voter verification key (`*.{drep,node,cc-hot}.vkey`), with path completion.
+/// The voter role is inferred from the file name by the caller.
 func selectVoterVKeyInteractive() throws -> FilePath {
-    let cwd = FilePath(FileManager.default.currentDirectoryPath)
-    let entries = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-        .filter { name in
+    try filePathPrompt(
+        title: "Voter Key",
+        question: "Select the voter verification key to use:",
+        description: "Voter keys (.drep.vkey, .node.vkey, .cc-hot.vkey) are suggested; the role is inferred from the file name.",
+        fileMatches: { name in
             let lower = name.lowercased()
             return lower.hasSuffix(".drep.vkey")
                 || lower.hasSuffix(".node.vkey")
                 || lower.hasSuffix(".cc-hot.vkey")
         }
-        .sorted()
-
-    if entries.isEmpty {
-        noora.error(.alert(
-            "No voter verification keys (.drep.vkey / .node.vkey / .cc-hot.vkey) found in current directory.",
-            takeaways: [
-                "Generate one with 'scm generate drep-keys' or use existing node/CC-hot keys.",
-                "Or pass --voter-vkey-file with an explicit path."
-            ]
-        ))
-        throw ExitCode.failure
-    }
-
-    let chosen = noora.singleChoicePrompt(
-        title: "Voter Key",
-        question: "Select the voter verification key to use:",
-        options: entries,
-        description: "Role is inferred from the file extension.",
-        collapseOnSelection: true,
-        filterMode: .enabled
     )
-    return cwd.appending(chosen)
 }
 
 // MARK: - Argument-based anchor parser

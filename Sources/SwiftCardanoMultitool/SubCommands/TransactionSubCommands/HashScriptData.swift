@@ -99,20 +99,18 @@ extension TransactionMainCommand {
 
             switch method {
                 case .cborFile:
-                    let path = noora.textPrompt(
+                    scriptDataCborFile = try filePathPrompt(
                         title: "Script Data CBOR File",
-                        prompt: "Enter the path to the script data CBOR file:",
-                        validationRules: [NonEmptyValidationRule(error: "File path cannot be empty.")]
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
-                    scriptDataCborFile = FilePath(path)
+                        question: "Enter the path to the script data CBOR file:",
+                        fileMatches: { $0.hasSuffix(".cbor") }
+                    )
 
                 case .jsonFile:
-                    let path = noora.textPrompt(
+                    scriptDataFile = try filePathPrompt(
                         title: "Script Data JSON File",
-                        prompt: "Enter the path to the script data JSON file:",
-                        validationRules: [NonEmptyValidationRule(error: "File path cannot be empty.")]
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
-                    scriptDataFile = FilePath(path)
+                        question: "Enter the path to the script data JSON file:",
+                        fileMatches: { $0.hasSuffix(".json") }
+                    )
 
                 case .jsonValue:
                     scriptDataValue = noora.textPrompt(

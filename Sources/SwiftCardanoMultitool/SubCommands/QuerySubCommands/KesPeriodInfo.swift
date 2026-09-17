@@ -80,34 +80,20 @@ extension QueryMainCommand {
                     ).trimmingCharacters(in: .whitespacesAndNewlines)
                     
                 case .poolJSON:
-                    let cwd = FilePath(FileManager.default.currentDirectoryPath)
-                    let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                        .filter { $0.hasSuffix(".json") }
-                    
-                    poolJSON = FilePath(
-                        noora.singleChoicePrompt(
-                            title: "Pool JSON Files",
-                            question: "Select the pool.json file:",
-                            options: files,
-                            filterMode: .enabled
-                        )
+                    poolJSON = try filePathPrompt(
+                        title: "Pool JSON Files",
+                        question: "Select the pool.json file:",
+                        fileMatches: { $0.hasSuffix(".json") }
                     )
                     
                 case .poolOperator:
                     poolOperator = try await getPoolOperator()
                     
                 case .opCert:
-                    let cwd = FilePath(FileManager.default.currentDirectoryPath)
-                    let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                    
-                    opCert = FilePath(
-                        noora.singleChoicePrompt(
-                            title: "OpCert Files",
-                            question: "Select the OpCert file:",
-                            options: files,
-                            description: "Select the OpCert file from the files in the current working directory.",
-                            filterMode: .enabled
-                        )
+                    opCert = try filePathPrompt(
+                        title: "OpCert Files",
+                        question: "Select the OpCert file:",
+                        fileMatches: { $0.hasSuffix(".opcert") }
                     )
                     
             }

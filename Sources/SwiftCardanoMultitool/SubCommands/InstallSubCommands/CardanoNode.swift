@@ -49,10 +49,12 @@ extension InstallMainCommand {
                     description: "Choose 'no' to specify a custom directory."
                 )
                 if !useDefault {
-                    installDir = noora.textPrompt(
+                    installDir = try filePathPrompt(
                         title: "Install Directory",
-                        prompt: "Enter the full path to the install directory:"
-                    )
+                        question: "Enter the full path to the install directory:",
+                        selection: .directories,
+                        mustExist: false
+                    ).string
                 }
             }
 

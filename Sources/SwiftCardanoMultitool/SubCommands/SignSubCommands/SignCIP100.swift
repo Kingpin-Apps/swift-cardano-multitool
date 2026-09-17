@@ -31,12 +31,11 @@ extension SignMainCommand {
         @OptionGroup var output: SignerOutputOptions
 
         mutating func wizard() async throws {
-            let path = noora.textPrompt(
+            dataFile = try filePathPrompt(
                 title: "JSON-LD Document",
-                prompt: "Enter the path to the JSON-LD document:",
-                validationRules: [NonEmptyValidationRule(error: "Path cannot be empty.")]
-            ).trimmingCharacters(in: .whitespacesAndNewlines)
-            dataFile = FilePath(path)
+                question: "Enter the path to the JSON-LD document:",
+                fileMatches: { [".json", ".jsonld"].contains(where: $0.hasSuffix) }
+            )
             secretKey = SignerUtils.promptSecretKeyPath(
                 title: "Author Signing Key",
                 prompt: "Enter the path to the author .skey file:"

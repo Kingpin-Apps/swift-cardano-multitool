@@ -140,29 +140,14 @@ extension CertificateMainCommand {
             try self.validate()
         }
 
-        /// Prompt for the pool cold signing key, offering the .node.skey files in the current directory.
+        /// Prompt for the pool cold signing key, suggesting .node.skey files.
         private func promptColdSigningKey() throws -> FilePath {
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let skeyFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".node.skey") }
-                .sorted()
-
-            if skeyFiles.isEmpty {
-                return FilePath(noora.textPrompt(
-                    title: "Pool Cold Signing Key",
-                    prompt: "Enter the path to the pool cold signing key (.node.skey):",
-                    description: "No .node.skey files were found in the current directory. The cold key must witness the retirement transaction.",
-                    collapseOnAnswer: true,
-                    validationRules: [NonEmptyValidationRule(error: "Cold signing key path cannot be empty.")]
-                ).trimmingCharacters(in: .whitespacesAndNewlines))
-            }
-
-            return cwd.appending(noora.singleChoicePrompt(
+            try filePathPrompt(
                 title: "Pool Cold Signing Key",
                 question: "Select the pool cold signing key:",
-                options: skeyFiles,
-                description: "The cold key must witness the retirement transaction."
-            ))
+                description: "The cold key must witness the retirement transaction.",
+                fileMatches: { $0.hasSuffix(".node.skey") }
+            )
         }
         
         // MARK: - Run

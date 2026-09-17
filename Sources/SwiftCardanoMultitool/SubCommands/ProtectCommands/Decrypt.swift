@@ -18,24 +18,11 @@ extension ProtectMainCommand {
         mutating func validate() throws {}
         
         mutating func wizard() async throws {
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let skeyFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".skey") }
-                .map { String($0.dropLast(".skey".count)) }
-            
-            if skeyFiles.isEmpty {
-                noora.error(.alert(
-                    "No signing key files found in current directory."
-                ))
-                throw ExitCode.failure
-            }
-            
-            fileName = FilePath(noora.singleChoicePrompt(
+            fileName = try filePathPrompt(
                 title: "Signing Key Files",
-                question: "Select the .skey file to encrypt.",
-                options: skeyFiles,
-                description: "Available .skey files in current directory"
-            ))
+                question: "Select the .skey file to decrypt.",
+                fileMatches: { $0.hasSuffix(".skey") }
+            )
         }
         
         mutating func run() async throws {

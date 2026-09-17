@@ -28,6 +28,8 @@ struct FilePathPromptState {
     let completer: FilePathCompleter
     var defaultValue: String? = nil
     var mustExist = true
+    /// Enter on empty input submits an empty path (for optional paths).
+    var allowsEmpty = false
     /// Extra checks on the expanded path; returns error messages.
     var validate: (String) -> [String] = { _ in [] }
 
@@ -43,12 +45,14 @@ struct FilePathPromptState {
         input: String = "",
         defaultValue: String? = nil,
         mustExist: Bool = true,
+        allowsEmpty: Bool = false,
         validate: @escaping (String) -> [String] = { _ in [] }
     ) {
         self.completer = completer
         self.input = input
         self.defaultValue = defaultValue
         self.mustExist = mustExist
+        self.allowsEmpty = allowsEmpty
         self.validate = validate
         refreshSuggestions()
     }
@@ -140,6 +144,9 @@ struct FilePathPromptState {
             typed = defaultValue
         }
         guard !typed.isEmpty else {
+            if allowsEmpty {
+                return .submit("")
+            }
             errors = ["Enter a path."]
             return .continue
         }

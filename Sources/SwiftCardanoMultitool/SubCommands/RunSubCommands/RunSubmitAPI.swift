@@ -37,15 +37,17 @@ extension RunMainCommand {
                         defaultAnswer: true,
                         description: "Choose 'no' to specify a different path."
                     )
-                    nodeConfig = useExisting ? config.string : noora.textPrompt(
+                    nodeConfig = try useExisting ? config.string : filePathPrompt(
                         title: "Node Config",
-                        prompt: "Path to the cardano-node config JSON file:"
-                    )
+                        question: "Path to the cardano-node config JSON file:",
+                        fileMatches: { $0.hasSuffix(".json") }
+                    ).string
                 } else {
-                    nodeConfig = noora.textPrompt(
+                    nodeConfig = try filePathPrompt(
                         title: "Node Config",
-                        prompt: "Path to the cardano-node config JSON file:"
-                    )
+                        question: "Path to the cardano-node config JSON file:",
+                        fileMatches: { $0.hasSuffix(".json") }
+                    ).string
                 }
             }
 
@@ -53,10 +55,11 @@ extension RunMainCommand {
                 if let socket = cardanoConfig?.socket {
                     socketPath = socket.string
                 } else {
-                    socketPath = noora.textPrompt(
+                    socketPath = try filePathPrompt(
                         title: "Socket Path",
-                        prompt: "Path to the cardano-node socket file:"
-                    )
+                        question: "Path to the cardano-node socket file:",
+                        mustExist: false
+                    ).string
                 }
             }
 

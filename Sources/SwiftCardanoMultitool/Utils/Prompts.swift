@@ -9,7 +9,7 @@ func getAddressBy(title: TerminalText? = nil) async throws -> GetAddressBy {
     return noora.singleChoicePrompt(
         title: title ?? "Payment Address",
         question: "Enter address files by:",
-        description: "Do you want to enter the name of the address files or select them from the current working directory?.",
+        description: "Enter the name of the address files in the current directory, or choose the files from any folder.",
     )
 }
 
@@ -92,30 +92,17 @@ func getStakeAddress(title: TerminalText? = nil) async throws -> StakeAddressInf
     guard isInteractiveSession() else {
         throw ValidationError("A stake address is required when not running interactively. Provide it via the corresponding flag/argument.")
     }
-    let cwd = FilePath(FileManager.default.currentDirectoryPath)
-    let stakingFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-        .filter { $0.hasSuffix(".stake.addr") }
-    
-    if stakingFiles.isEmpty {
-        noora.error(.alert(
-            "No stake address files found in current directory.",
-            takeaways: [
-                "Please create a stake address first using the 'generate payment-and-stake-address' command."
-            ]
-        ))
-        throw ExitCode.failure
-    }
-    
-    let stakeAddressFileName = noora.singleChoicePrompt(
+    let stakeAddressFile = try filePathPrompt(
         title: title ?? "Stake Address",
         question: "Select the stake address file:",
-        options: stakingFiles,
-        description: "Available .stake.addr files in current directory"
+        description: "Stake address files (.stake.addr) are suggested.",
+        fileMatches: { $0.hasSuffix(".stake.addr") }
     )
     
+    let fileName = stakeAddressFile.lastComponent?.string ?? stakeAddressFile.string
     let info = try AddressInfo(
-        fromFile: cwd.appending(stakeAddressFileName),
-        name: stakeAddressFileName.replacingOccurrences(of: ".stake.addr", with: "")
+        fromFile: FileUtils.absolutePath(stakeAddressFile),
+        name: fileName.replacingOccurrences(of: ".stake.addr", with: "")
     )
     return StakeAddressInfo(info: info)
 }
@@ -163,30 +150,10 @@ func getDestinationAddress(title: TerminalText? = nil) async throws -> PaymentAd
             
             info = try AddressInfo(name: name, adaHandle: adaHandle)
         case .path:
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let addressFiles = try PaymentAddressFiles.list(in: cwd)
-            
-            if addressFiles.isEmpty {
-                noora.error(.alert(
-                    "No payment address files found in current directory.",
-                    takeaways: [
-                        "Looked for '<name>.payment.addr' and '<name>.addr' files.",
-                        "Please create an address first using the 'generate payment-and-stake-address' command."
-                    ]
-                ))
-                throw ExitCode.failure
-            }
-            
-            let addressFileName = noora.singleChoicePrompt(
-                title: "Payment Address",
-                question: "Select the address file:",
-                options: addressFiles,
-                description: "Available .payment.addr and .addr files in current directory"
-            )
-            
+            let addressFile = try promptPaymentAddressFile(title: "Payment Address", question: "Select the address file:")
             info = try AddressInfo(
-                fromFile: cwd.appending(addressFileName),
-                name: PaymentAddressFiles.stem(of: addressFileName)
+                fromFile: FileUtils.absolutePath(addressFile),
+                name: PaymentAddressFiles.stem(of: addressFile.lastComponent?.string ?? addressFile.string)
             )
     }
         
@@ -207,30 +174,10 @@ func getFeePaymentAddress(title: TerminalText? = nil) async throws -> PaymentAdd
     
     switch addressBy {
         case .path:
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let addressFiles = try PaymentAddressFiles.list(in: cwd)
-            
-            if addressFiles.isEmpty {
-                noora.error(.alert(
-                    "No payment address files found in current directory.",
-                    takeaways: [
-                        "Looked for '<name>.payment.addr' and '<name>.addr' files.",
-                        "Please create an address first using the 'generate payment-and-stake-address' command."
-                    ]
-                ))
-                throw ExitCode.failure
-            }
-            
-            let addressFileName = noora.singleChoicePrompt(
-                title: "Fee Payment Address",
-                question: "Select the fee payment address file:",
-                options: addressFiles,
-                description: "Available .payment.addr and .addr files in current directory"
-            )
-            
+            let addressFile = try promptPaymentAddressFile(title: "Fee Payment Address", question: "Select the fee payment address file:")
             info = try AddressInfo(
-                fromFile: cwd.appending(addressFileName),
-                name: PaymentAddressFiles.stem(of: addressFileName)
+                fromFile: FileUtils.absolutePath(addressFile),
+                name: PaymentAddressFiles.stem(of: addressFile.lastComponent?.string ?? addressFile.string)
             )
         case .name:
             let addressName = noora.textPrompt(
@@ -258,6 +205,16 @@ func getFeePaymentAddress(title: TerminalText? = nil) async throws -> PaymentAdd
     }
     
     return PaymentAddressInfo(info: info)
+}
+
+/// Prompt for a payment address file (`<name>.payment.addr` or `<name>.addr`), with path completion.
+private func promptPaymentAddressFile(title: TerminalText, question: TerminalText) throws -> FilePath {
+    try filePathPrompt(
+        title: title,
+        question: question,
+        description: "Payment address files (.payment.addr, .addr) are suggested.",
+        fileMatches: { PaymentAddressFiles.isPaymentAddressFile($0) }
+    )
 }
 
 /// Prompt for a transaction file, with path completion.
@@ -309,28 +266,14 @@ func getDRep(title: TerminalText? = nil) async throws -> DRep {
         case .alwaysNoConfidence:
             return DRep(credential: .alwaysNoConfidence)
         case .path:
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let drepFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".drep.id") }
-            
-            if drepFiles.isEmpty {
-                noora.error(.alert(
-                    "No DRep ID files found in current directory.",
-                    takeaways: [
-                        "Please create an address first using the 'certificate drep' command."
-                    ]
-                ))
-                throw ExitCode.failure
-            }
-            
-            let drepFileName = noora.singleChoicePrompt(
+            let drepFileName = try filePathPrompt(
                 title: "DRep ID",
                 question: "Select the DRep ID file:",
-                options: drepFiles,
-                description: "Available .drep.id files in current directory"
+                description: ".drep.id files are suggested.",
+                fileMatches: { $0.hasSuffix(".drep.id") }
             )
             
-            return try DRep.load(from: cwd.appending(drepFileName).string)
+            return try DRep.load(from: FileUtils.absolutePath(drepFileName).string)
         case .hex:
             let drepId = noora.textPrompt(
                 title: "DRep ID",
@@ -360,51 +303,23 @@ func getDRep(title: TerminalText? = nil) async throws -> DRep {
             
             return try DRep(from: normalizedRaw)
         case .vkey:
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let drepFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".drep.vkey") }
-            
-            if drepFiles.isEmpty {
-                noora.error(.alert(
-                    "No DRep Verification Keys files found in current directory.",
-                    takeaways: [
-                        "Please create an address first using the 'generate drep' command."
-                    ]
-                ))
-                throw ExitCode.failure
-            }
-            
-            let drepFileName = noora.singleChoicePrompt(
+            let drepFileName = try filePathPrompt(
                 title: "DRep ID",
                 question: "Select the DRep Verification Key file:",
-                options: drepFiles,
-                description: "Available .drep.vkey files in current directory"
+                description: ".drep.vkey files are suggested.",
+                fileMatches: { $0.hasSuffix(".drep.vkey") }
             )
-            let drepVKey = try DRepVerificationKey.load(from: cwd.appending(drepFileName).string)
+            let drepVKey = try DRepVerificationKey.load(from: FileUtils.absolutePath(drepFileName).string)
             return DRep(credential: .verificationKeyHash(try drepVKey.hash()))
         case .skey:
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let drepFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".drep.skey") }
-            
-            if drepFiles.isEmpty {
-                noora.error(.alert(
-                    "No DRep Verification Keys files found in current directory.",
-                    takeaways: [
-                        "Please create an address first using the 'generate drep' command."
-                    ]
-                ))
-                throw ExitCode.failure
-            }
-            
-            let drepFileName = noora.singleChoicePrompt(
+            let drepFileName = try filePathPrompt(
                 title: "DRep ID",
                 question: "Select the DRep Signing Key file:",
-                options: drepFiles,
-                description: "Available .drep.skey files in current directory"
+                description: ".drep.skey files are suggested.",
+                fileMatches: { $0.hasSuffix(".drep.skey") }
             )
             let drepSKey = try DRepSigningKey.load(
-                from: cwd.appending(drepFileName).string
+                from: FileUtils.absolutePath(drepFileName).string
             )
             let drepVKey: DRepVerificationKey = try drepSKey.toVerificationKey()
             return DRep(credential: .verificationKeyHash(try drepVKey.hash()))
@@ -419,32 +334,17 @@ func getDRep(title: TerminalText? = nil) async throws -> DRep {
 /// - Throws: ExitCode.failure if no valid Pool ID files are found or input is invalid.
 func getPoolOperator(title: TerminalText? = nil) async throws -> PoolOperator {
     let enterPoolOperatorBy = try await enterPoolOperatorBy(title: title)
-    let cwd = FilePath(FileManager.default.currentDirectoryPath)
     
     switch enterPoolOperatorBy {
         case .path:
-            let poolOperatorFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".pool.id") || $0.hasSuffix(".pool.id-bech") }
-            
-            if poolOperatorFiles.isEmpty {
-                noora.error(.alert(
-                    "No Pool ID files found in current directory.",
-                    takeaways: [
-                        "Please create a pool first using the 'certificate stake-pool' command and register it.",
-                        "Or, if you already have a pool ID, you can enter it directly here."
-                    ]
-                ))
-                throw ExitCode.failure
-            }
-            
-            let poolOperatorFileName = noora.singleChoicePrompt(
+            let poolOperatorFileName = try filePathPrompt(
                 title: "Pool ID",
                 question: "Select the Pool ID file:",
-                options: poolOperatorFiles,
-                description: "Available .pool.id and .pool.id-bech files in current directory"
+                description: ".pool.id and .pool.id-bech files are suggested.",
+                fileMatches: { $0.hasSuffix(".pool.id") || $0.hasSuffix(".pool.id-bech") }
             )
             
-            return try PoolOperator.load(from: cwd.appending(poolOperatorFileName).string)
+            return try PoolOperator.load(from: FileUtils.absolutePath(poolOperatorFileName).string)
         case .id:
             let poolId = noora.textPrompt(
                 title: "Pool ID",
@@ -461,50 +361,24 @@ func getPoolOperator(title: TerminalText? = nil) async throws -> PoolOperator {
             }
             return poolOperator
         case .vkey:
-            let poolOperatorFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".node.vkey") }
-            
-            if poolOperatorFiles.isEmpty {
-                noora.error(.alert(
-                    "No Node Verification Keys files found in current directory.",
-                    takeaways: [
-                        "Please create an address first using the 'generate node-keys' command."
-                    ]
-                ))
-                throw ExitCode.failure
-            }
-            
-            let poolOperatorFileName = noora.singleChoicePrompt(
+            let poolOperatorFileName = try filePathPrompt(
                 title: "Pool VKey",
                 question: "Select the Node Verification Key file:",
-                options: poolOperatorFiles,
-                description: "Available .node.vkey files in current directory"
+                description: ".node.vkey files are suggested.",
+                fileMatches: { $0.hasSuffix(".node.vkey") }
             )
-            let poolOperatorVKey = try StakePoolVerificationKey.load(from: cwd.appending(poolOperatorFileName).string
+            let poolOperatorVKey = try StakePoolVerificationKey.load(from: FileUtils.absolutePath(poolOperatorFileName).string
             )
             return PoolOperator(poolKeyHash: try poolOperatorVKey.poolKeyHash())
         case .skey:
-            let poolOperatorFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".node.skey") }
-            
-            if poolOperatorFiles.isEmpty {
-                noora.error(.alert(
-                    "No Node Signing Keys files found in current directory.",
-                    takeaways: [
-                        "Please create an address first using the 'generate  node-keys' command."
-                    ]
-                ))
-                throw ExitCode.failure
-            }
-            
-            let poolOperatorFileName = noora.singleChoicePrompt(
+            let poolOperatorFileName = try filePathPrompt(
                 title: "Pool SKey",
                 question: "Select the Node Signing Key file:",
-                options: poolOperatorFiles,
-                description: "Available .node.skey files in current directory"
+                description: ".node.skey files are suggested.",
+                fileMatches: { $0.hasSuffix(".node.skey") }
             )
-            let poolOperatorSKey = try DRepSigningKey.load(
-                from: cwd.appending(poolOperatorFileName).string
+            let poolOperatorSKey = try StakePoolSigningKey.load(
+                from: FileUtils.absolutePath(poolOperatorFileName).string
             )
             let poolOperatorVKey: StakePoolVerificationKey = try poolOperatorSKey.toVerificationKey()
             return PoolOperator(poolKeyHash: try poolOperatorVKey.poolKeyHash())
@@ -529,7 +403,6 @@ func getCommitteeColdCredential(title: TerminalText? = nil) async throws -> Comm
         question: "Enter Committee Cold Credential by:",
         description: "Accepted formats: Bech32 (cc_cold1...), hex, or key file."
     )
-    let cwd = FilePath(FileManager.default.currentDirectoryPath)
 
     switch method {
         case .bech32:
@@ -549,44 +422,22 @@ func getCommitteeColdCredential(title: TerminalText? = nil) async throws -> Comm
             ).trimmingCharacters(in: .whitespacesAndNewlines)
             return try CommitteeColdCredential(from: raw.hexStringToData, as: .keyHash)
         case .vkey:
-            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".cc-cold.vkey") }
-            if files.isEmpty {
-                noora.error(.alert(
-                    "No Committee Cold verification key files found in current directory.",
-                    takeaways: ["Ensure a .cc-cold.vkey file exists in the current directory."]
-                ))
-                throw ExitCode.failure
-            }
-            let fileName = noora.singleChoicePrompt(
+            let fileName = try filePathPrompt(
                 title: "CC Cold VKey",
                 question: "Select the Committee Cold verification key file:",
-                options: files,
-                description: "Available .cc-cold.vkey files in current directory",
-                collapseOnSelection: true,
-                filterMode: .enabled
+                description: ".cc-cold.vkey files are suggested.",
+                fileMatches: { $0.hasSuffix(".cc-cold.vkey") }
             )
-            let vkey = try CommitteeColdVerificationKey.load(from: cwd.appending(fileName).string)
+            let vkey = try CommitteeColdVerificationKey.load(from: FileUtils.absolutePath(fileName).string)
             return CommitteeColdCredential(credential: .verificationKeyHash(try vkey.hash()))
         case .skey:
-            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".cc-cold.skey") }
-            if files.isEmpty {
-                noora.error(.alert(
-                    "No Committee Cold signing key files found in current directory.",
-                    takeaways: ["Ensure a .cc-cold.skey file exists in the current directory."]
-                ))
-                throw ExitCode.failure
-            }
-            let fileName = noora.singleChoicePrompt(
+            let fileName = try filePathPrompt(
                 title: "CC Cold SKey",
                 question: "Select the Committee Cold signing key file:",
-                options: files,
-                description: "Available .cc-cold.skey files in current directory",
-                collapseOnSelection: true,
-                filterMode: .enabled
+                description: ".cc-cold.skey files are suggested.",
+                fileMatches: { $0.hasSuffix(".cc-cold.skey") }
             )
-            let skey = try CommitteeColdSigningKey.load(from: cwd.appending(fileName).string)
+            let skey = try CommitteeColdSigningKey.load(from: FileUtils.absolutePath(fileName).string)
             let vkey: CommitteeColdVerificationKey = try skey.toVerificationKey()
             return CommitteeColdCredential(credential: .verificationKeyHash(try vkey.hash()))
     }
@@ -599,7 +450,6 @@ func getCommitteeHotCredential(title: TerminalText? = nil) async throws -> Commi
         question: "Enter Committee Hot Credential by:",
         description: "Accepted formats: Bech32 (cc_hot1...), hex, or key file."
     )
-    let cwd = FilePath(FileManager.default.currentDirectoryPath)
 
     switch method {
         case .bech32:
@@ -619,44 +469,22 @@ func getCommitteeHotCredential(title: TerminalText? = nil) async throws -> Commi
             ).trimmingCharacters(in: .whitespacesAndNewlines)
             return try CommitteeHotCredential(from: raw.hexStringToData, as: .keyHash)
         case .vkey:
-            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".cc-hot.vkey") }
-            if files.isEmpty {
-                noora.error(.alert(
-                    "No Committee Hot verification key files found in current directory.",
-                    takeaways: ["Ensure a .cc-hot.vkey file exists in the current directory."]
-                ))
-                throw ExitCode.failure
-            }
-            let fileName = noora.singleChoicePrompt(
+            let fileName = try filePathPrompt(
                 title: "CC Hot VKey",
                 question: "Select the Committee Hot verification key file:",
-                options: files,
-                description: "Available .cc-hot.vkey files in current directory",
-                collapseOnSelection: true,
-                filterMode: .enabled
+                description: ".cc-hot.vkey files are suggested.",
+                fileMatches: { $0.hasSuffix(".cc-hot.vkey") }
             )
-            let vkey = try CommitteeHotVerificationKey.load(from: cwd.appending(fileName).string)
+            let vkey = try CommitteeHotVerificationKey.load(from: FileUtils.absolutePath(fileName).string)
             return CommitteeHotCredential(credential: .verificationKeyHash(try vkey.hash()))
         case .skey:
-            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".cc-hot.skey") }
-            if files.isEmpty {
-                noora.error(.alert(
-                    "No Committee Hot signing key files found in current directory.",
-                    takeaways: ["Ensure a .cc-hot.skey file exists in the current directory."]
-                ))
-                throw ExitCode.failure
-            }
-            let fileName = noora.singleChoicePrompt(
+            let fileName = try filePathPrompt(
                 title: "CC Hot SKey",
                 question: "Select the Committee Hot signing key file:",
-                options: files,
-                description: "Available .cc-hot.skey files in current directory",
-                collapseOnSelection: true,
-                filterMode: .enabled
+                description: ".cc-hot.skey files are suggested.",
+                fileMatches: { $0.hasSuffix(".cc-hot.skey") }
             )
-            let skey = try CommitteeHotSigningKey.load(from: cwd.appending(fileName).string)
+            let skey = try CommitteeHotSigningKey.load(from: FileUtils.absolutePath(fileName).string)
             let vkey: CommitteeHotVerificationKey = try skey.toVerificationKey()
             return CommitteeHotCredential(credential: .verificationKeyHash(try vkey.hash()))
     }
@@ -669,7 +497,6 @@ func getDRepCredential(title: TerminalText? = nil) async throws -> DRepCredentia
         question: "Enter DRep Credential by:",
         description: "Accepted formats: Bech32 (drep1...), hex, or key file."
     )
-    let cwd = FilePath(FileManager.default.currentDirectoryPath)
 
     switch method {
         case .bech32:
@@ -689,44 +516,22 @@ func getDRepCredential(title: TerminalText? = nil) async throws -> DRepCredentia
             ).trimmingCharacters(in: .whitespacesAndNewlines)
             return try DRepCredential(from: raw.hexStringToData, as: .keyHash)
         case .vkey:
-            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".drep.vkey") }
-            if files.isEmpty {
-                noora.error(.alert(
-                    "No DRep verification key files found in current directory.",
-                    takeaways: ["Ensure a .drep.vkey file exists in the current directory."]
-                ))
-                throw ExitCode.failure
-            }
-            let fileName = noora.singleChoicePrompt(
+            let fileName = try filePathPrompt(
                 title: "DRep VKey",
                 question: "Select the DRep verification key file:",
-                options: files,
-                description: "Available .drep.vkey files in current directory",
-                collapseOnSelection: true,
-                filterMode: .enabled
+                description: ".drep.vkey files are suggested.",
+                fileMatches: { $0.hasSuffix(".drep.vkey") }
             )
-            let vkey = try DRepVerificationKey.load(from: cwd.appending(fileName).string)
+            let vkey = try DRepVerificationKey.load(from: FileUtils.absolutePath(fileName).string)
             return DRepCredential(credential: .verificationKeyHash(try vkey.hash()))
         case .skey:
-            let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                .filter { $0.hasSuffix(".drep.skey") }
-            if files.isEmpty {
-                noora.error(.alert(
-                    "No DRep signing key files found in current directory.",
-                    takeaways: ["Ensure a .drep.skey file exists in the current directory."]
-                ))
-                throw ExitCode.failure
-            }
-            let fileName = noora.singleChoicePrompt(
+            let fileName = try filePathPrompt(
                 title: "DRep SKey",
                 question: "Select the DRep signing key file:",
-                options: files,
-                description: "Available .drep.skey files in current directory",
-                collapseOnSelection: true,
-                filterMode: .enabled
+                description: ".drep.skey files are suggested.",
+                fileMatches: { $0.hasSuffix(".drep.skey") }
             )
-            let skey = try DRepSigningKey.load(from: cwd.appending(fileName).string)
+            let skey = try DRepSigningKey.load(from: FileUtils.absolutePath(fileName).string)
             let vkey: DRepVerificationKey = try skey.toVerificationKey()
             return DRepCredential(credential: .verificationKeyHash(try vkey.hash()))
     }

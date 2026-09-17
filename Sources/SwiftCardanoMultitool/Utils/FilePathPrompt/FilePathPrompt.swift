@@ -162,6 +162,8 @@ struct FilePathPrompt {
 
         if state.input.isEmpty, let defaultValue = state.defaultValue {
             lines.append(offset + style("\(.muted(fit("Press Enter to use \(defaultValue)", indent: offset.count)))"))
+        } else if state.input.isEmpty, state.allowsEmpty {
+            lines.append(offset + style("\(.muted(fit("Press Enter to skip", indent: offset.count)))"))
         }
 
         if state.showSuggestions {
@@ -217,8 +219,9 @@ struct FilePathPrompt {
 
     private func renderResult(_ path: String) {
         let label = (title ?? question).plain()
+        let shown = path.isEmpty ? style("\(.muted("(none)"))") : fit(path, indent: label.count + 4, keepEnd: true)
         renderer.render(
-            style("\(.success("✔︎")) \(.primary("\(label):")) \(.raw(fit(path, indent: label.count + 4, keepEnd: true)))"),
+            style("\(.success("✔︎")) \(.primary("\(label):")) ") + shown,
             standardPipeline: pipeline
         )
     }
@@ -245,15 +248,54 @@ func filePathPrompt(
     mustExist: Bool = true,
     validationRules: [ValidatableRule] = []
 ) throws -> FilePath {
+    let path = try runFilePathPrompt(
+        title: title, question: question, description: description, selection: selection,
+        fileMatches: fileMatches, defaultValue: defaultValue, mustExist: mustExist,
+        allowsEmpty: false, validationRules: validationRules
+    )
+    return FilePath(path)
+}
+
+/// Prompt for an optional file or directory path with completion; Enter on empty input
+/// returns nil. See ``filePathPrompt(title:question:description:selection:fileMatches:defaultValue:mustExist:validationRules:)``.
+func optionalFilePathPrompt(
+    title: TerminalText?,
+    question: TerminalText,
+    description: TerminalText? = nil,
+    selection: FilePathCompleter.Selection = .files,
+    fileMatches: (@Sendable (String) -> Bool)? = nil,
+    mustExist: Bool = true,
+    validationRules: [ValidatableRule] = []
+) throws -> FilePath? {
+    let path = try runFilePathPrompt(
+        title: title, question: question, description: description, selection: selection,
+        fileMatches: fileMatches, defaultValue: nil, mustExist: mustExist,
+        allowsEmpty: true, validationRules: validationRules
+    )
+    return path.isEmpty ? nil : FilePath(path)
+}
+
+private func runFilePathPrompt(
+    title: TerminalText?,
+    question: TerminalText,
+    description: TerminalText?,
+    selection: FilePathCompleter.Selection,
+    fileMatches: (@Sendable (String) -> Bool)?,
+    defaultValue: String?,
+    mustExist: Bool,
+    allowsEmpty: Bool,
+    validationRules: [ValidatableRule]
+) throws -> String {
     let completer = FilePathCompleter(selection: selection, fileMatches: fileMatches)
     let state = FilePathPromptState(
         completer: completer,
         defaultValue: defaultValue,
         mustExist: mustExist,
+        allowsEmpty: allowsEmpty,
         validate: { path in
             validationRules.filter { !$0.validate(input: path) }.map { $0.error.message }
         }
     )
     var prompt = FilePathPrompt(title: title, question: question, description: description, state: state)
-    return FilePath(try prompt.run())
+    return try prompt.run()
 }

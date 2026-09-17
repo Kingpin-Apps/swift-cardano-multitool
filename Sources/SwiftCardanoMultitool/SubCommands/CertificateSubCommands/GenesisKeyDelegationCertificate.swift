@@ -55,75 +55,28 @@ extension CertificateMainCommand {
         // MARK: - Wizard
 
         mutating func wizard() async throws {
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-
             if genesisVerificationKeyFile == nil {
-                let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                    .filter { $0.hasSuffix(".genesis.vkey") || $0.hasSuffix(".genesis-vkey") }
-
-                if !files.isEmpty {
-                    genesisVerificationKeyFile = noora.singleChoicePrompt(
-                        title: "Genesis VKey",
-                        question: "Select the genesis verification key file:",
-                        options: files,
-                        description: "Available genesis verification key files in current directory",
-                        collapseOnSelection: true,
-                        filterMode: .enabled
-                    )
-                } else {
-                    genesisVerificationKeyFile = noora.textPrompt(
-                        title: "Genesis VKey",
-                        prompt: "Enter the path to the genesis verification key file:",
-                        collapseOnAnswer: true,
-                        validationRules: [NonEmptyValidationRule(error: "File path cannot be empty.")]
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
-                }
+                genesisVerificationKeyFile = try filePathPrompt(
+                    title: "Genesis VKey",
+                    question: "Select the genesis verification key file:",
+                    fileMatches: { $0.hasSuffix(".genesis.vkey") || $0.hasSuffix(".genesis-vkey") }
+                ).string
             }
 
             if genesisDelegateVerificationKeyFile == nil {
-                let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                    .filter { $0.hasSuffix(".delegate.vkey") || $0.hasSuffix(".genesis-delegate.vkey") }
-
-                if !files.isEmpty {
-                    genesisDelegateVerificationKeyFile = noora.singleChoicePrompt(
-                        title: "Genesis Delegate VKey",
-                        question: "Select the genesis delegate verification key file:",
-                        options: files,
-                        description: "Available genesis delegate verification key files",
-                        collapseOnSelection: true,
-                        filterMode: .enabled
-                    )
-                } else {
-                    genesisDelegateVerificationKeyFile = noora.textPrompt(
-                        title: "Genesis Delegate VKey",
-                        prompt: "Enter the path to the genesis delegate verification key file:",
-                        collapseOnAnswer: true,
-                        validationRules: [NonEmptyValidationRule(error: "File path cannot be empty.")]
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
-                }
+                genesisDelegateVerificationKeyFile = try filePathPrompt(
+                    title: "Genesis Delegate VKey",
+                    question: "Select the genesis delegate verification key file:",
+                    fileMatches: { $0.hasSuffix(".delegate.vkey") || $0.hasSuffix(".genesis-delegate.vkey") }
+                ).string
             }
 
             if vrfVerificationKeyFile == nil {
-                let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                    .filter { $0.hasSuffix(".vrf.vkey") || $0.hasSuffix(".node.vrf.vkey") }
-
-                if !files.isEmpty {
-                    vrfVerificationKeyFile = noora.singleChoicePrompt(
-                        title: "VRF VKey",
-                        question: "Select the VRF verification key file:",
-                        options: files,
-                        description: "Available VRF verification key files",
-                        collapseOnSelection: true,
-                        filterMode: .enabled
-                    )
-                } else {
-                    vrfVerificationKeyFile = noora.textPrompt(
-                        title: "VRF VKey",
-                        prompt: "Enter the path to the VRF verification key file (.vrf.vkey):",
-                        collapseOnAnswer: true,
-                        validationRules: [NonEmptyValidationRule(error: "File path cannot be empty.")]
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
-                }
+                vrfVerificationKeyFile = try filePathPrompt(
+                    title: "VRF VKey",
+                    question: "Select the VRF verification key file (.vrf.vkey):",
+                    fileMatches: { $0.hasSuffix(".vrf.vkey") }
+                ).string
             }
 
             try await self.wizardForCertificate()

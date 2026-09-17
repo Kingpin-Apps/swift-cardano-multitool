@@ -24,13 +24,12 @@ extension QueryMainCommand {
                         validationRules: [NonEmptyValidationRule(error: "Asset subject cannot be empty.")]
                     ).trimmingCharacters(in: .whitespacesAndNewlines)
                 case .path:
-                    asset = noora.textPrompt(
+                    asset = try filePathPrompt(
                         title: "Asset File",
-                        prompt: "Enter the path to a .asset JSON file:",
+                        question: "Enter the path to a .asset JSON file:",
                         description: "JSON file with a top-level `subject` field.",
-                        collapseOnAnswer: true,
-                        validationRules: [NonEmptyValidationRule(error: "Asset file path cannot be empty.")]
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
+                        fileMatches: { $0.hasSuffix(".asset") || $0.hasSuffix(".json") }
+                    ).string
             }
         }
 

@@ -143,12 +143,11 @@ extension GenerateMainCommand {
                 defaultAnswer: false,
                 description: "Path to a PNG file (max 64 KiB)."
             ) {
-                metaLogoPath = noora.textPrompt(
+                metaLogoPath = try filePathPrompt(
                     title: "Logo Path",
-                    prompt: "Enter the path to the PNG file:",
-                    collapseOnAnswer: true,
-                    validationRules: [NonEmptyValidationRule(error: "Logo path cannot be empty.")]
-                ).trimmingCharacters(in: .whitespacesAndNewlines)
+                    question: "Enter the path to the PNG file:",
+                    fileMatches: { $0.lowercased().hasSuffix(".png") }
+                ).string
             }
 
             try self.validate()

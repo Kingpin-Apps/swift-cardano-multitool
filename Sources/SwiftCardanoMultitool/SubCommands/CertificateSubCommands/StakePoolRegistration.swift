@@ -1178,28 +1178,13 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
         return hasParamEditFlags
     }
 
-    /// Prompt for a signing key file, listing files with the given suffixes.
-    private func promptSigningKeyFile(title: String, question: String, suffixes: [String]) -> FilePath {
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        let files = ((try? FileManager.default.contentsOfDirectory(atPath: cwd.string)) ?? [])
-            .filter { name in suffixes.contains { name.hasSuffix($0) } }
-            .sorted()
-        let enterPath = "Enter a file path"
-        let choice = files.isEmpty ? enterPath : noora.singleChoicePrompt(
+    /// Prompt for a signing key file, suggesting files with the given suffixes.
+    private func promptSigningKeyFile(title: String, question: String, suffixes: [String]) throws -> FilePath {
+        try filePathPrompt(
             title: TerminalText(stringLiteral: title),
             question: TerminalText(stringLiteral: question),
-            options: files + [enterPath],
-            filterMode: .enabled
+            fileMatches: { name in suffixes.contains { name.hasSuffix($0) } }
         )
-        if choice != enterPath {
-            return cwd.appending(choice)
-        }
-        return FilePath(noora.textPrompt(
-            title: TerminalText(stringLiteral: title),
-            prompt: "Enter the path to the signing key:",
-            collapseOnAnswer: true,
-            validationRules: [NonEmptyValidationRule(error: "Path cannot be empty.")]
-        ).trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     /// Update a registered pool: fetch its on-chain parameters, apply the requested
@@ -1427,7 +1412,7 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
         // Cold signing key: --cold-signing-key, a matching local key, or ask
         var coldSkey = coldSigningKey ?? keys.coldSkey(for: draft.poolKeyHash)
         if coldSkey == nil && interactive {
-            coldSkey = promptSigningKeyFile(
+            coldSkey = try promptSigningKeyFile(
                 title: "Pool Cold Signing Key",
                 question: "Select the pool cold signing key:",
                 suffixes: [".skey", ".hwsfile"]
@@ -1462,7 +1447,7 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
             var skey = ownerSigningKeys.first { PoolKeyFileMatcher.stakeKeyHash(ofSkeyFile: $0)?.payload == owner.payload }
                 ?? keys.stakeSkey(for: owner)
             if skey == nil && interactive {
-                skey = promptSigningKeyFile(
+                skey = try promptSigningKeyFile(
                     title: "Owner Stake Signing Key",
                     question: "Select the stake signing key for owner \(label):",
                     suffixes: [".skey", ".hwsfile"]

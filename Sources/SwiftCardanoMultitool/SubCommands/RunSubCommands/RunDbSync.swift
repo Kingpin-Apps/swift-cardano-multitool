@@ -36,28 +36,32 @@ extension RunMainCommand {
 
         mutating func wizard(cardanoConfig: CardanoConfig?) async throws {
             if dbSyncConfig == nil {
-                dbSyncConfig = noora.textPrompt(
+                dbSyncConfig = try filePathPrompt(
                     title: "Db-Sync Config",
-                    prompt: "Path to the cardano-db-sync config JSON file:"
-                )
+                    question: "Path to the cardano-db-sync config JSON file:",
+                    fileMatches: { $0.hasSuffix(".json") }
+                ).string
             }
 
             if socketPath == nil {
                 if let socket = cardanoConfig?.socket {
                     socketPath = socket.string
                 } else {
-                    socketPath = noora.textPrompt(
+                    socketPath = try filePathPrompt(
                         title: "Socket Path",
-                        prompt: "Path to the cardano-node socket file:"
-                    )
+                        question: "Path to the cardano-node socket file:",
+                        mustExist: false
+                    ).string
                 }
             }
 
             if stateDir == nil {
-                stateDir = noora.textPrompt(
+                stateDir = try filePathPrompt(
                     title: "State Directory",
-                    prompt: "Directory for cardano-db-sync state (will be created if needed):"
-                )
+                    question: "Directory for cardano-db-sync state (will be created if needed):",
+                    selection: .directories,
+                    mustExist: false
+                ).string
             }
         }
 

@@ -197,6 +197,23 @@ struct FilePathPromptStateTests {
         #expect(without.errors == ["Enter a path."])
     }
 
+    @Test("optional prompts submit empty input")
+    mutating func optionalEmpty() {
+        var s = FilePathPromptState(
+            completer: FilePathCompleter(baseDirectory: "/work", homeDirectory: "/home/me", listing: FilePathCompleterTests.listing),
+            mustExist: false,
+            allowsEmpty: true
+        )
+        #expect(s.handle(.enter) == .submit(""))
+    }
+
+    @Test("new directories are accepted when they don't need to exist")
+    mutating func newDirectory() {
+        var s = state(.directories, mustExist: false)
+        type("~/new-install", into: &s)
+        #expect(s.handle(.enter) == .submit("/home/me/new-install"))
+    }
+
     @Test("new paths are accepted when they don't need to exist")
     mutating func newPath() {
         var s = state(mustExist: false)

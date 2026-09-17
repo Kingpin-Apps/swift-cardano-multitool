@@ -45,10 +45,11 @@ extension RunMainCommand {
                 if let socket = cardanoConfig?.socket {
                     nodeSocket = socket.string
                 } else {
-                    nodeSocket = noora.textPrompt(
+                    nodeSocket = try filePathPrompt(
                         title: "Node Socket",
-                        prompt: "Path to the cardano-node socket file:"
-                    )
+                        question: "Path to the cardano-node socket file:",
+                        mustExist: false
+                    ).string
                 }
             }
 
@@ -57,18 +58,21 @@ extension RunMainCommand {
                 let isMainnet = network == .mainnet
                 mainnet = isMainnet
                 if !mainnet {
-                    testnet = noora.textPrompt(
+                    testnet = try filePathPrompt(
                         title: "Byron Genesis",
-                        prompt: "Path to the Byron genesis JSON file (required for testnet/preview/preprod):"
-                    )
+                        question: "Path to the Byron genesis JSON file (required for testnet/preview/preprod):",
+                        fileMatches: { $0.hasSuffix(".json") }
+                    ).string
                 }
             }
 
             if database == nil {
-                database = noora.textPrompt(
+                database = try filePathPrompt(
                     title: "Database Directory",
-                    prompt: "Directory for cardano-wallet's database (will be created if needed):"
-                )
+                    question: "Directory for cardano-wallet's database (will be created if needed):",
+                    selection: .directories,
+                    mustExist: false
+                ).string
             }
 
             if port == nil {

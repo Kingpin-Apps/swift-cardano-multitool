@@ -55,14 +55,12 @@ extension GovernanceMainCommand {
             _ = try await actionOptions.resolveDepositReturnStakeAddressInteractively()
 
             if paramUpdateJson == nil {
-                let input = noora.textPrompt(
+                paramUpdateJson = try filePathPrompt(
                     title: "Param Update JSON",
-                    prompt: "Path to a JSON file containing the protocol-param update body:",
+                    question: "Path to a JSON file containing the protocol-param update body:",
                     description: "Example: {\"minPoolCost\": 170000000}",
-                    collapseOnAnswer: true,
-                    validationRules: [NonEmptyValidationRule(error: "Path cannot be empty.")]
-                ).trimmingCharacters(in: .whitespacesAndNewlines)
-                paramUpdateJson = FilePath(input)
+                    fileMatches: { $0.hasSuffix(".json") }
+                )
             }
 
             if prevActionId == nil {

@@ -126,28 +126,11 @@ extension QueryMainCommand {
                     poolOperator = try await getPoolOperator()
                     
                 case .vrfSkeyAndPoolId:
-                    let cwd = FilePath(FileManager.default.currentDirectoryPath)
-                    let vrfFiles = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                        .filter { $0.hasSuffix(".vrf.skey") }
-                    
-                    if vrfFiles.isEmpty {
-                        noora.error(.alert(
-                            "No VRF signing key files found in current directory.",
-                            takeaways: [
-                                "Please generate VRF keys first using the 'generate vrf-keys' command.",
-                                "Or provide a pool name or pool.json file instead."
-                            ]
-                        ))
-                        throw ExitCode.failure
-                    }
-                    
-                    let vrfFileName = noora.singleChoicePrompt(
+                    vrfSkey = try filePathPrompt(
                         title: "VRF Signing Key",
                         question: "Select the VRF signing key file:",
-                        options: vrfFiles,
-                        description: "Available .vrf.skey files in current directory"
+                        fileMatches: { $0.hasSuffix(".vrf.skey") }
                     )
-                    vrfSkey = cwd.appending(vrfFileName)
                     
                     poolOperator = try await getPoolOperator()
             }

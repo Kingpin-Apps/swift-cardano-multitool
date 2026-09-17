@@ -53,17 +53,10 @@ extension BuildMainCommand {
                         validationRules: [NonEmptyValidationRule(error: "Address name cannot be empty.")]
                     ).trimmingCharacters(in: .whitespacesAndNewlines)
                 case .path:
-                    let cwd = FilePath(FileManager.default.currentDirectoryPath)
-                    let files = try FileManager.default.contentsOfDirectory(atPath: cwd.string)
-                    
-                    paymentVkey = FilePath(
-                        noora.singleChoicePrompt(
-                            title: "Payment Verification Key",
-                            question: "Select the payment verification key file:",
-                            options: files,
-                            description: "Select the payment verification key file from the files in the current working directory.",
-                            filterMode: .enabled
-                        )
+                    paymentVkey = try filePathPrompt(
+                        title: "Payment Verification Key",
+                        question: "Select the payment verification key file:",
+                        fileMatches: { $0.hasSuffix(".vkey") }
                     )
                     
                     let isStakeNeeded = noora.yesOrNoChoicePrompt(
@@ -74,19 +67,15 @@ extension BuildMainCommand {
                     )
                     
                     if isStakeNeeded {
-                        stakeVkey = FilePath(
-                            noora.singleChoicePrompt(
-                                title: "Stake Verification Key",
-                                question: "Select the stake verification key file:",
-                                options: files,
-                                description: "Select the stake verification key file from the files in the current working directory.",
-                                filterMode: .enabled
-                            )
+                        stakeVkey = try filePathPrompt(
+                            title: "Stake Verification Key",
+                            question: "Select the stake verification key file:",
+                            fileMatches: { $0.hasSuffix(".vkey") }
                         )
                     }
             }
             
-            tool = try await getToolToUse()
+            if tool == nil { tool = try await getToolToUse() }
         }
         
         /// Main execution function

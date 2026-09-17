@@ -440,15 +440,6 @@ struct PoolKeyFileMatcher {
         }
         return nil
     }
-
-    /// Stake verification key files in the directory, for selection prompts.
-    var stakeVkeyFiles: [FilePath] {
-        files.filter { $0.type.hasPrefix("Stake") && $0.type.contains("VerificationKey") }.map(\.path)
-    }
-
-    var vrfVkeyFiles: [FilePath] {
-        files.filter { $0.type.hasPrefix("VrfVerificationKey") }.map(\.path)
-    }
 }
 
 // MARK: - Stake credential arguments

@@ -114,17 +114,17 @@ extension TransactionMainCommand {
                             validationRules: [NonEmptyValidationRule(error: "Datum hash cannot be empty.")]
                         ).trimmingCharacters(in: .whitespacesAndNewlines)
                     case .hashFile:
-                        txOutDatumHashFile = FilePath(noora.textPrompt(
+                        txOutDatumHashFile = try filePathPrompt(
                             title: "Datum Hash File",
-                            prompt: "Enter the path to the JSON datum file:",
-                            validationRules: [NonEmptyValidationRule(error: "File path cannot be empty.")]
-                        ).trimmingCharacters(in: .whitespacesAndNewlines))
+                            question: "Enter the path to the JSON datum file:",
+                            fileMatches: { $0.hasSuffix(".json") }
+                        )
                     case .inlineFile:
-                        txOutInlineDatumFile = FilePath(noora.textPrompt(
+                        txOutInlineDatumFile = try filePathPrompt(
                             title: "Inline Datum File",
-                            prompt: "Enter the path to the inline datum JSON file:",
-                            validationRules: [NonEmptyValidationRule(error: "File path cannot be empty.")]
-                        ).trimmingCharacters(in: .whitespacesAndNewlines))
+                            question: "Enter the path to the inline datum JSON file:",
+                            fileMatches: { $0.hasSuffix(".json") }
+                        )
                     case .inlineValue:
                         txOutInlineDatumValue = noora.textPrompt(
                             title: "Inline Datum Value",
@@ -141,11 +141,11 @@ extension TransactionMainCommand {
             )
 
             if hasRefScript {
-                txOutReferenceScriptFile = FilePath(noora.textPrompt(
+                txOutReferenceScriptFile = try filePathPrompt(
                     title: "Reference Script File",
-                    prompt: "Enter the path to the reference script file:",
-                    validationRules: [NonEmptyValidationRule(error: "File path cannot be empty.")]
-                ).trimmingCharacters(in: .whitespacesAndNewlines))
+                    question: "Enter the path to the reference script file:",
+                    fileMatches: { [".script", ".plutus", ".json"].contains(where: $0.hasSuffix) }
+                )
             }
 
             tool = try await getToolToUse()

@@ -52,12 +52,10 @@ extension SignMainCommand {
                     validationRules: [NonEmptyValidationRule(error: "Hex data cannot be empty.")]
                 ).trimmingCharacters(in: .whitespacesAndNewlines)
             case .file:
-                let path = noora.textPrompt(
+                dataFile = try filePathPrompt(
                     title: "Data File",
-                    prompt: "Enter the path to the file:",
-                    validationRules: [NonEmptyValidationRule(error: "Path cannot be empty.")]
-                ).trimmingCharacters(in: .whitespacesAndNewlines)
-                dataFile = FilePath(path)
+                    question: "Enter the path to the file:"
+                )
             }
             secretKey = SignerUtils.promptSecretKeyPath()
         }

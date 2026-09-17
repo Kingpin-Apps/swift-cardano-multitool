@@ -46,30 +46,11 @@ extension GovernanceMainCommand {
 
         mutating func wizard() async throws {
             if actionFile.isEmpty {
-                let cwd = FilePath(FileManager.default.currentDirectoryPath)
-                let entries = (try? FileManager.default.contentsOfDirectory(atPath: cwd.string))?
-                    .filter { $0.lowercased().hasSuffix(".action") }
-                    .sorted() ?? []
-
-                if entries.isEmpty {
-                    let input = noora.textPrompt(
-                        title: "Action File",
-                        prompt: "Enter the path to a .action file:",
-                        collapseOnAnswer: true,
-                        validationRules: [NonEmptyValidationRule(error: "Path cannot be empty.")]
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
-                    actionFile = [FilePath(input)]
-                } else {
-                    let chosen = noora.singleChoicePrompt(
-                        title: "Action File",
-                        question: "Select the .action file to submit:",
-                        options: entries,
-                        description: "Discovered .action files in current directory.",
-                        collapseOnSelection: true,
-                        filterMode: .enabled
-                    )
-                    actionFile = [cwd.appending(chosen)]
-                }
+                actionFile = [try filePathPrompt(
+                    title: "Action File",
+                    question: "Select the .action file to submit:",
+                    fileMatches: { $0.lowercased().hasSuffix(".action") }
+                )]
             }
 
             if transactionOptions.feePaymentAddress == nil {
