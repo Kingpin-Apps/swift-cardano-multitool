@@ -1,4 +1,7 @@
 import ArgumentParser
+import Foundation
+import SwiftCardanoChain
+import SwiftCardanoCore
 import Testing
 @testable import SwiftCardanoMultitool
 
@@ -134,6 +137,59 @@ struct StakePoolRegistrationOnChainParseTests {
         #expect(throws: (any Error).self) {
             _ = try CertificateMainCommand.StakePoolRegistrationCertificate.parse(["--pool-operator", pool, "--metadata-hash", String(repeating: "ab", count: 32)])
         }
+    }
+}
+
+@Suite("StakePoolRegistrationCertificate registration status")
+struct StakePoolRegistrationStatusTests {
+    typealias Command = CertificateMainCommand.StakePoolRegistrationCertificate
+
+    static let poolOperator = PoolOperator(poolKeyHash: PoolKeyHash(payload: Data(repeating: 0x77, count: 28)))
+
+    static func info(_ status: PoolStatus?) throws -> StakePoolInfo {
+        StakePoolInfo(poolParams: try PoolParamsDraftTests.sampleParams(), status: status)
+    }
+
+    static func determine(_ args: [String] = [], context: MockChainContext) async throws -> Bool {
+        let cmd = try Command.parse(["--pool-name", "mypool"] + args)
+        return try await cmd.determineInitialRegistration(
+            context: context,
+            poolOperator: poolOperator,
+            stakePoolDeposit: 500_000_000
+        )
+    }
+
+    @Test("--force decides without querying the chain")
+    func forceWins() async throws {
+        let context = MockChainContext()
+        #expect(try await Self.determine(["--force", "registration"], context: context) == true)
+        #expect(try await Self.determine(["--force", "reregistration"], context: context) == false)
+    }
+
+    @Test("a registered or retiring pool is a re-registration, a retired pool pays the deposit")
+    func usesPoolStatus() async throws {
+        let registered = MockChainContext()
+        registered.stubStakePoolInfo = { _ in try Self.info(.registered) }
+        #expect(try await Self.determine(context: registered) == false)
+
+        let retiring = MockChainContext()
+        retiring.stubStakePoolInfo = { _ in try Self.info(.retiring(epoch: 700)) }
+        #expect(try await Self.determine(context: retiring) == false)
+
+        let retired = MockChainContext()
+        retired.stubStakePoolInfo = { _ in try Self.info(.retired) }
+        #expect(try await Self.determine(context: retired) == true)
+    }
+
+    @Test("falls back to the pool list when the pool lookup fails")
+    func fallsBackToPoolList() async throws {
+        let listed = MockChainContext()
+        listed.stubStakePools = { [Self.poolOperator] }
+        #expect(try await Self.determine(context: listed) == false)
+
+        let notListed = MockChainContext()
+        notListed.stubStakePools = { [PoolOperator(poolKeyHash: PoolKeyHash(payload: Data(repeating: 0x11, count: 28)))] }
+        #expect(try await Self.determine(context: notListed) == true)
     }
 }
 

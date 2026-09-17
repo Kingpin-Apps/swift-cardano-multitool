@@ -52,7 +52,7 @@ extension CertificateMainCommand {
         
         @Option(
             name: .long,
-            help: "Force registration even if the pool is already registered. Use with caution, as this may lead to unexpected consequences if the pool is already registered."
+            help: "Set whether the transaction is an initial registration (pays the pool deposit) or a re-registration (no deposit), instead of detecting it from the chain. Use with caution: the wrong choice makes the transaction fail."
         )
         var force: ForceOption? = nil
 
@@ -142,8 +142,8 @@ extension CertificateMainCommand {
 
             var details: String {
                 switch self {
-                    case .registration: return "Force registration even if the pool is already registered (will create a new certificate that can be used for re-registration)."
-                    case .reregistration: return "Force re-registration by creating a new certificate with the same pool ID (use with caution, as this may lead to unexpected consequences if the pool is already registered)."
+                    case .registration: return "Initial registration of a new or retired pool. Pays the pool deposit."
+                    case .reregistration: return "Updates an already registered pool. No deposit."
                 }
             }
         }
@@ -226,9 +226,26 @@ extension CertificateMainCommand {
 
             try await self.wizardForCertificate()
             if certificateOptions.generateTransaction {
+                // The registration type only decides the pool deposit in the transaction
+                if force == nil {
+                    let useForce = noora.yesOrNoChoicePrompt(
+                        title: "Registration Type",
+                        question: "Set the registration type manually (force)?",
+                        defaultAnswer: false,
+                        description: "By default it is detected from the chain. Choose yes if detection fails, e.g. the pool can't be queried."
+                    )
+                    if useForce {
+                        force = noora.singleChoicePrompt(
+                            title: "Registration Type",
+                            question: "Which registration type should be forced?",
+                            options: ForceOption.allCases,
+                            description: "The wrong choice makes the transaction fail."
+                        )
+                    }
+                }
                 try await self.wizardForTransaction()
             }
-            
+
             try self.validate()
         }
         
@@ -858,31 +875,12 @@ extension CertificateMainCommand {
                     }
                 }
                 
-                // Determine if this is an initial registration or re-registration
-                // by checking if the pool ID is already on-chain
-                let isInitialRegistration: Bool
-                do {
-                    let onChainPools = try await context.stakePools()
-                    let alreadyRegistered = try onChainPools.contains(
-                        where: { try $0.id() == poolIdBech }
-                    )
-                    isInitialRegistration = !alreadyRegistered
-                    
-                    if alreadyRegistered {
-                        spacedPrint(
-                            "Pool ID is already on the chain, continuing with a \(.primary("Re-Registration"))."
-                        )
-                    } else {
-                        spacedPrint(
-                            "Pool ID is not on the chain yet, continuing with a normal \(.primary("Registration"))."
-                        )
-                    }
-                } catch {
-                    noora.warning(
-                        "Unable to query on-chain stake pools to determine registration status. Defaulting to initial registration."
-                    )
-                    isInitialRegistration = true
-                }
+                // Initial registration (pays the pool deposit) or re-registration (no deposit)
+                let isInitialRegistration = try await determineInitialRegistration(
+                    context: context,
+                    poolOperator: poolOperatorId,
+                    stakePoolDeposit: Int(stakePoolDeposit)
+                )
                 
                 guard let feePaymentAddress = transactionOptions.feePaymentAddress else {
                     noora.error(.alert(
@@ -967,6 +965,85 @@ extension CertificateMainCommand {
                 )
             }
         }
+    }
+}
+
+// MARK: - Registration status
+
+extension CertificateMainCommand.StakePoolRegistrationCertificate {
+    /// Whether the transaction is an initial registration (pays the pool deposit) or a
+    /// re-registration (no deposit). A wrong answer makes the transaction fail, so this
+    /// never guesses: `--force`, then the pool's on-chain status, then the chain's pool
+    /// list, then asks the user (or fails when non-interactive).
+    func determineInitialRegistration(
+        context: any ChainContext,
+        poolOperator: PoolOperator,
+        stakePoolDeposit: Int
+    ) async throws -> Bool {
+        let poolIdBech = try poolOperator.toBech32()
+
+        switch force {
+            case .registration:
+                spacedPrint("Using \(.primary("--force registration")): continuing with a normal \(.primary("Registration")).")
+                return true
+            case .reregistration:
+                spacedPrint("Using \(.primary("--force reregistration")): continuing with a \(.primary("Re-Registration")).")
+                return false
+            case nil:
+                break
+        }
+
+        // 1. The pool's own on-chain status (the same query as `scm query pool`)
+        var lookupErrors: [String] = []
+        do {
+            let info = try await context.stakePoolInfo(poolId: poolIdBech)
+            if case .retired = info.status {
+                spacedPrint("Pool ID is retired on the chain, continuing with a normal \(.primary("Registration")) (deposit required).")
+                return true
+            }
+            spacedPrint("Pool ID is already on the chain, continuing with a \(.primary("Re-Registration")).")
+            return false
+        } catch {
+            lookupErrors.append("Pool lookup: \(error)")
+        }
+
+        // 2. The chain's list of registered pools
+        do {
+            let onChainPools = try await context.stakePools()
+            let alreadyRegistered = onChainPools.contains { $0.poolKeyHash.payload == poolOperator.poolKeyHash.payload }
+            if alreadyRegistered {
+                spacedPrint("Pool ID is already on the chain, continuing with a \(.primary("Re-Registration")).")
+            } else {
+                spacedPrint("Pool ID is not on the chain yet, continuing with a normal \(.primary("Registration")).")
+            }
+            return !alreadyRegistered
+        } catch {
+            lookupErrors.append("Pool list: \(error)")
+        }
+
+        // 3. Can't tell from the chain: ask, never guess
+        let deposit = lovelaceToAdaFormatString(UInt64(max(stakePoolDeposit, 0)))
+        guard isInteractiveSession() else {
+            noora.error(.alert(
+                "Could not determine whether \(poolIdBech) is already registered.",
+                takeaways: [
+                    "Pass --force reregistration if the pool is registered (no deposit), or --force registration for a new pool (\(deposit) deposit)."
+                ] + lookupErrors.map { TerminalText(stringLiteral: $0) }
+            ))
+            throw ExitCode.validationFailure
+        }
+
+        noora.warning(.alert(
+            "Could not determine whether \(poolIdBech) is already registered.",
+            takeaway: TerminalText(stringLiteral: lookupErrors.joined(separator: " | "))
+        ))
+        let choice = noora.singleChoicePrompt(
+            title: "Registration Type",
+            question: "Is this an initial registration or a re-registration?",
+            options: ForceOption.allCases,
+            description: "Re-registration updates a registered pool (no deposit). Registration is for a new or retired pool (\(deposit) deposit). The wrong choice makes the transaction fail."
+        )
+        return choice == .registration
     }
 }
 
@@ -1168,6 +1245,12 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
         PoolParamsFormat.printSummary(original, title: "Registered Pool Parameters", keys: keys)
 
         var isInitialRegistration = false
+        switch force {
+            case .registration: isInitialRegistration = true
+            case .reregistration: isInitialRegistration = false
+            case nil: break
+        }
+        if force == nil {
         switch info.status {
             case .retiring(let epoch):
                 noora.warning(.alert(
@@ -1182,6 +1265,7 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
                 ))
             default:
                 break
+        }
         }
 
         // 2. Edits: flags, else pick fields interactively

@@ -82,7 +82,7 @@ scm certificate pool-registration --pool-name myPool
 |--------|-------------|
 | `--pool-name`, `-p` | Pool name — looks for `<poolName>.pool.json` in the current directory. |
 | `--pool-json`, `-j` | Explicit path to the `pool.json` file. |
-| `--force` | Force `registration` or `reregistration` even if the pool is already registered. Use with caution. |
+| `--force` | Set the transaction's registration type instead of detecting it from the chain: `registration` (new or retired pool, pays the pool deposit) or `reregistration` (registered pool, no deposit). The wizard offers the same choice. The wrong type makes the transaction fail. |
 
 Create the `pool.json` file first with `scm generate pool-json` — it captures pledge, margin, cost, owners, relays, metadata URL, and key file locations.
 
