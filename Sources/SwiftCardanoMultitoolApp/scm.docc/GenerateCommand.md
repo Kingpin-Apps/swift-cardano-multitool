@@ -233,7 +233,7 @@ These subcommands target more specialized workflows; pass `--help` for the full 
 | Subcommand | Purpose |
 |------------|---------|
 | `drep` | Generate Conway-era DRep keys. |
-| `policy` | Generate a native-script minting policy and its `.policy.{id,script,vkey,skey}` files. |
+| `policy` | Generate a native-script minting policy and its `.policy.{id,script,vkey,skey}` files. A time-locked policy uses a `"type": "before"` clause (valid only before the slot), as in cardano-cli. |
 | `asset-meta` | Generate signed off-chain asset metadata for the Cardano Token Registry. |
 | `ed25519` | Generate a raw Ed25519 keypair with no derivation tree. |
 | `derived-key` | Derive any Cardano-role BIP-32 key from a mnemonic. |
@@ -244,5 +244,6 @@ These subcommands target more specialized workflows; pass `--help` for the full 
 ## Notes
 
 - All generated key files use the standard Cardano `TextEnvelope` JSON format, compatible with `cardano-cli` and the broader Cardano toolchain.
+- Use <doc:HashCommand> to compute key hashes, pool IDs, DRep IDs, policy IDs and metadata hashes from existing files, and <doc:TextViewCommand> to inspect any generated file.
 - After generating addresses, use `scm build` to re-derive addresses from existing keys without regenerating them.
 - Encrypt sensitive key files with `scm protect encrypt` before storing them on networked machines, or use `--key-gen-method enc` to generate them already encrypted.

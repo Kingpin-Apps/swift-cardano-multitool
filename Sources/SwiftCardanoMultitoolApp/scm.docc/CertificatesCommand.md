@@ -109,7 +109,7 @@ scm certificate pool-registration \
 | `--relay` | `ipv4:1.2.3.4:3001`, `ipv6:[2001:db8::1]:3001`, `dns:relay.example.com:3001`, or `srv:_cardano._tcp.example.com`. |
 | `--owner`, `--reward-account` | Stake address, stake key hash, or stake `.vkey` file. |
 | `--vrf-vkey` | New VRF verification key file. |
-| `--metadata-url` | New metadata URL, with `--metadata-hash`, `--metadata-file` (hashes a local copy), or neither (downloads the URL). |
+| `--metadata-url` | New metadata URL, with `--metadata-hash`, `--metadata-file` (hashes a local copy), or neither (downloads the URL). `scm hash pool-metadata` computes and checks the hash separately. |
 | `--cold-signing-key`, `--owner-signing-key` | Signing keys for the transaction. Keys in the current directory that match the registered hashes are found automatically. |
 
 On-chain parameters only contain hashes, so no key files are needed to build the certificate. With `--use-cardano-cli`, the certificate is built by `cardano-cli` only when all verification key files are found locally; otherwise it is built natively (the certificate is identical). Every owner must still sign the transaction.
@@ -208,7 +208,7 @@ All DRep subcommands take `--drep-credential` — a bech32 ID (`drep1...`), hex 
 
 ### register-drep
 
-Register as a Delegated Representative (`drep-reg`). The DRep deposit is required and deducted from the fee payment address. An optional anchor (URL + metadata hash) links the registration to off-chain CIP-100 metadata.
+Register as a Delegated Representative (`drep-reg`). The DRep deposit is required and deducted from the fee payment address. An optional anchor (URL + metadata hash) links the registration to off-chain CIP-100 metadata. Compute the metadata hash with `scm hash drep-metadata --drep-metadata-file myDRep.jsonld`; `scm hash drep-key` prints the DRep key hash and IDs.
 
 ```bash
 scm certificate register-drep --drep-credential drep1...
@@ -245,3 +245,5 @@ Create a Move Instantaneous Rewards certificate (`mir`) — deprecated in the Co
 - Pass `--generate-transaction --submit` to create the certificate, wrap it in a balanced transaction, sign, and broadcast in one step. Without those flags only the `.cert` file is written — include it later with `scm transaction build --certificate-file`.
 - Most certificate operations require the corresponding signing key to be available on disk next to the verification key when building the transaction witness.
 - Conway-era certificates (`vote-delegation`, `register-drep`, etc.) are only valid on networks running in the Conway era or later.
+- Check a certificate before submitting it with `scm text-view <file>.cert`, which shows its fields (pool parameters, credentials, deposits, anchors) in readable form. See <doc:TextViewCommand>.
+- Pool IDs, VRF key hashes and metadata hashes can be computed separately with `scm hash pool-id`, `scm hash vrf-key` and `scm hash pool-metadata`. See <doc:HashCommand>.

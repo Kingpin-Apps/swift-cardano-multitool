@@ -296,3 +296,5 @@ scm transaction submit --tx-file tx.signed
 - For air-gapped (offline) signing workflows, use <doc:WorkOfflineCommand> instead of running `sign` and `submit` individually.
 - `build` requires chain access (via node socket or API) to query UTxOs and protocol parameters. `sign`, `witness`, `assemble`, `id`, `view`, and `inspect` can run fully offline.
 - All amounts are in **lovelace** (1 ADA = 1,000,000 lovelace).
+- `scm text-view` decodes transaction files as well as the certificates, votes, proposals and witnesses they carry. See <doc:TextViewCommand>.
+- `scm hash script` (alias `policy-id`) is the equivalent of `cardano-cli transaction policyid`. See <doc:HashCommand>.

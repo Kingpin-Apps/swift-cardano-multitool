@@ -71,6 +71,7 @@ scm asset burn \
 
 ## Notes
 
+- Before building, the policy ID in `<policyName>.policy.id` is checked against the hash of `<policyName>.policy.script`, and minting or burning stops if they differ, since the transaction would fail on-chain. Time-locked policies generated with SwiftCardano by older scm versions recorded a policy ID with the time lock reversed; generate a new policy for those. `scm hash script --script-file <policyName>.policy.script` shows the correct policy ID.
 - The asset name is matched literally — wrap arbitrary bytes in `{hex}` (e.g. `{deadbeef}`) when ASCII is not appropriate.
 - Without `--submit`, the transaction is built and signed but not broadcast; this is useful for inspecting fees or hand-off to an air-gapped signer.
 - See <doc:GenerateCommand> for creating a minting policy and <doc:TransactionCommand> for finer-grained control over the build / sign / submit steps.

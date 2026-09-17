@@ -81,7 +81,7 @@ Keys use snake_case. File-path fields may point anywhere; relative paths are res
 | `meta_homepage` | Pool homepage URL. |
 | `meta_url` | URL where the metadata JSON is hosted (max 64 chars). |
 | `extended_meta_url` | Optional extended metadata URL. |
-| `metadata_hash` | Hash of the hosted metadata file. |
+| `metadata_hash` | Hash of the hosted metadata file (`scm hash pool-metadata --pool-metadata-url <url>` computes it). |
 | `id_hex` / `id_bech` | Pool ID in hex / bech32. |
 | `id_hex_file` / `id_bech_file` | Paths to the pool ID files. |
 | `cold_vkey` / `cold_skey` / `node_counter` | Cold key pair and opcert issue counter paths. |

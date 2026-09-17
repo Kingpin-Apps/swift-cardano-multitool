@@ -40,7 +40,7 @@ scm governance vote gov_action1xyz... yes \
 | `--voter-vkey-file` | Voter verification key (`.drep.vkey` / `.node.vkey` / `.cc-hot.vkey`). |
 | `--voter-role` | Override the voter role inferred from the vkey filename. |
 | `--anchor-url` | Optional CIP-100 vote-rationale anchor URL. |
-| `--anchor-hash` | 64-hex anchor blake2b-256 hash (required if `--anchor-url` is set). |
+| `--anchor-hash` | 64-hex anchor blake2b-256 hash (required if `--anchor-url` is set). Compute it with `scm hash anchor-data`. |
 | `--skip-anchor-verify` | Skip download + blake2b + CIP-100 verification of the anchor. |
 | `--ttl-extra` / `--ttl-override` | TTL controls (default: tip + 500 slots). |
 
@@ -160,5 +160,7 @@ scm governance cip129 decode --id drep1ygx...
 ## Notes
 
 - A `.action` file produced with `--generate-only` is portable: it can be reviewed offline, signed under a separate identity, and submitted later with `submit-action`.
+- Compute an anchor hash with `scm hash anchor-data --file-text rationale.jsonld` (or `--url`), and check a hosted document against a hash with `--expected-hash`. See <doc:HashCommand>.
+- `scm text-view` shows a `.vote` or `.action` file field by field, including voters, governance action IDs and anchors. See <doc:TextViewCommand>.
 - Anchors are downloaded over HTTP(S) or IPFS — if the URL is unreachable, pass `--skip-anchor-verify` (at your own risk) or pre-fetch the document and rebuild the action against a local path.
 - See <doc:SignCommand> for producing the CIP-100 author witnesses an anchor references, and <doc:CertificatesCommand> for the underlying DRep / CC certificates.

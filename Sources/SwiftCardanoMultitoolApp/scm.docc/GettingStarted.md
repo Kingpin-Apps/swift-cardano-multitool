@@ -8,11 +8,39 @@ Install `scm` and run your first commands.
 
 ## Requirements
 
-- macOS 15 or later (for macOS users)
-- Swift 6.2 or later (to build from source)
+- macOS 15 or later (Apple Silicon or Intel), or Linux: Ubuntu 22.04+ / Debian 12+ (x86_64 or arm64)
+- Swift 6.2 or later (only to build from source)
 - A running `cardano-node` (required only for `query`, `run`, and `transaction` commands)
 
 ## Installation
+
+### Homebrew (macOS)
+
+Install the signed, notarized universal binary (Apple Silicon and Intel) from the Kingpin Apps tap:
+
+```bash
+brew install Kingpin-Apps/tap/scm
+```
+
+Upgrade later with `brew upgrade scm`.
+
+### APT (Debian / Ubuntu)
+
+Add the Kingpin Apps APT repository and install the `swift-cardano-multitool` package, which provides the `scm` command:
+
+```bash
+sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://kingpin-apps.github.io/apt/kingpin-apps.gpg | sudo tee /etc/apt/keyrings/kingpin-apps.gpg > /dev/null
+echo "deb [signed-by=/etc/apt/keyrings/kingpin-apps.gpg] https://kingpin-apps.github.io/apt stable main" | sudo tee /etc/apt/sources.list.d/kingpin-apps.list
+sudo apt update
+sudo apt install swift-cardano-multitool
+```
+
+Upgrade later with `sudo apt update && sudo apt upgrade`. The package conflicts with Debian's unrelated `scm` (Scheme) package, which also installs `/usr/bin/scm`.
+
+### Release downloads
+
+Every [GitHub release](https://github.com/Kingpin-Apps/swift-cardano-multitool/releases) has the macOS universal binary, Linux tarballs (`scm-<version>-linux-x86_64.tar.gz`, `scm-<version>-linux-aarch64.tar.gz`) and `.deb` packages. The Linux binaries need `libcurl4`.
 
 ### Build from source
 

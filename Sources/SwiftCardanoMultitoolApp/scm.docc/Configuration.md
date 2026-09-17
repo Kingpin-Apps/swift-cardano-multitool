@@ -19,6 +19,7 @@ Set up your environment and configuration file for `scm`.
 | `CARDANO_MULTITOOL_USE_SWIFT_CARDANO` | Set to `1` to force the Swift Cardano execution backend. |
 | `CARDANO_NODE_SOCKET_PATH` | Node socket path autodetected by `config init` (falls back to `CARDANO_SOCKET_PATH`). |
 | `CARDANO_SOCKET_PATH` | Fallback node socket path used by `config init` autodetection. |
+| `IPFS_GATEWAY_URI` | Gateway for `ipfs://` URLs in `scm hash` (default `https://ipfs.io/`), as in `cardano-cli`. |
 
 ## Creating a config file
 
