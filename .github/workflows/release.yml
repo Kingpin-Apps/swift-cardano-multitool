@@ -30,7 +30,7 @@ jobs:
           echo "prefix=swiftpm-macos-debug-${TOOLCHAIN}-" >> "$GITHUB_OUTPUT"
       # Saved by the Swift workflow on pushes to main.
       - name: Restore build cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .build
           key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
@@ -81,9 +81,9 @@ jobs:
           security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychain -d user | tr -d '"')
           rm -f "$CERT_PATH"
 
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v4
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: scm-macos-*
           path: bin
@@ -127,7 +127,7 @@ jobs:
           mkdir -p dist
           tar -czf "dist/scm-${GITHUB_REF_NAME}-macos-universal.tar.gz" -C "$BIN_PATH" scm
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-macos
           path: dist/
@@ -141,7 +141,7 @@ jobs:
     runs-on: macos-15-intel
     timeout-minutes: 15
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist-macos
           path: dist
@@ -160,9 +160,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v4
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: dist-*
           path: dist

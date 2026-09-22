@@ -28,7 +28,7 @@ jobs:
         echo "prefix=swiftpm-macos-debug-${TOOLCHAIN}-" >> "$GITHUB_OUTPUT"
     - name: Restore build cache
       id: cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v6
       with:
         path: .build
         key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
@@ -40,7 +40,7 @@ jobs:
     # Only main-branch caches are visible to other branches, PRs and tag runs.
     - name: Save build cache
       if: github.event_name == 'push' && steps.cache.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v6
       with:
         path: .build
         key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}

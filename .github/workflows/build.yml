@@ -35,7 +35,7 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v4
 
       - name: Cache key
         id: key
@@ -46,7 +46,7 @@ jobs:
 
       - name: Restore build cache
         id: cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .build
           key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
@@ -57,12 +57,12 @@ jobs:
 
       - name: Save build cache
         if: inputs.save-cache && steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .build
           key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: scm-macos-${{ matrix.arch }}
           path: .build/${{ matrix.arch }}-apple-macosx/release/scm
@@ -86,7 +86,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v4
 
       # The image tag floats across 6.2.x patch releases; key on its digest.
       - name: Cache key
@@ -98,7 +98,7 @@ jobs:
 
       - name: Restore build cache
         id: cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .build/linux
           key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
@@ -112,7 +112,7 @@ jobs:
 
       - name: Save build cache
         if: inputs.save-cache && steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .build/linux
           key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
@@ -138,7 +138,7 @@ jobs:
             echo "::endgroup::"
           done
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: inputs.version != ''
         with:
           name: dist-linux-${{ matrix.arch }}
