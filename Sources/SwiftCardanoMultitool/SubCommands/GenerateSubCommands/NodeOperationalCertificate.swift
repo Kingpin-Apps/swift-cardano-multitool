@@ -379,7 +379,7 @@ extension GenerateMainCommand {
                 spacedPrint("\(.primary("Ok"))")
                 
                 switch config.mode {
-                    case .auto, .lite, .online:
+                    case .auto, .lite, .online, .devkit:
                         // check the opcert file against the current chain status to use the right OpCertCounter value
                         
                         spacedPrint(

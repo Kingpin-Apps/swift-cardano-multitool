@@ -95,15 +95,24 @@ The positional argument is an asset subject (56–120 hex chars: policy ID + ass
 Query information about a specific stake pool. The `pool` alias is also accepted.
 
 ```bash
-scm query stake-pool --pool-operator pool1...
-scm query stake-pool --pool-name myPool
+scm query pool pool1...
+scm query pool myPool
+scm query pool --pool-operator pool1...
+scm query pool --pool-name myPool
 ```
+
+The positional argument works like the one on `scm query address`: a pool ID in
+bech32 (`pool1…`) or hex, a cold verification key (`pool_vk1…` or hex), a path to
+a key / pool-ID / `pool.json` file, or a pool name. A pool name is resolved
+against the current directory, trying `<poolName>.pool.id-bech`,
+`<poolName>.pool.id`, `<poolName>.pool.json`, `<poolName>.cold.vkey` and
+`<poolName>.node.vkey` in that order.
 
 **Options:**
 
 | Option | Description |
 |--------|-------------|
-| `--pool-operator`, `-o` | The pool: bech32 (`pool1...`), hex hash, or `.node.vkey` file. |
+| `--pool-operator`, `-o` | The pool, in any of the forms the positional argument accepts. |
 | `--pool-name`, `-p` | Pool name — resolves `<poolName>.vrf.skey` and `<poolName>.pool.id-bech` in the current directory. |
 | `--pool-json`, `-j` | Path to the `pool.json` file. |
 | `--strict` | Download the pool's off-chain metadata and verify its hash; fail if it is unreachable or does not match. By default metadata problems are tolerated and on-chain parameters are still shown. |
@@ -162,10 +171,25 @@ Query on-chain registration, anchor metadata, and CIP-100 signatures for a DRep.
 
 ```bash
 scm query drep drep1...
+scm query drep myDRep
 scm query drep myDRep.drep.vkey
+scm query drep 6ab890434e8d93592c97252de87034fb39a986bbdea9dd075d3f575d
 ```
 
-The positional argument accepts bech32 (`drep1…`, `drep_script1…`, `drep_always_abstain`, `drep_always_no_confidence`), a hex hash, or a `.drep` / `.drep.id` / `.drep.vkey` file.
+The positional argument accepts the same breadth of inputs as `scm query pool`
+and `scm query address`:
+
+| Form | Examples |
+|------|----------|
+| Bech32 | `drep1…` (CIP-105 or CIP-129), `drep_script1…` |
+| Predefined | `always-abstain`, `no-confidence`, `drep_always_abstain`, `drep_always_no_confidence` |
+| Hex | the bare 28-byte credential hash, with or without a `0x` prefix, or the 29-byte CIP-129 form carrying its header byte |
+| File | a path to, or the base name of, a `.drep.id`, `.drep`, `.drep.vkey`, `.drep.extended.vkey` or `.drep.skey` file |
+
+A bare name is resolved against the current directory, so `scm query drep myDRep`
+finds the files `scm generate drep --drep-name myDRep` wrote. A bare hex hash is
+read as a key hash, matching `cardano-cli --drep-key-hash`; use the CIP-129 form
+or `drep_script1…` bech32 for a script credential.
 
 ### committee-member
 

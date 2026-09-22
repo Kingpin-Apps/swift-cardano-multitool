@@ -6,15 +6,21 @@ import Testing
 @Suite("DRep+ExpressibleByArgument")
 struct DRepExpressibleByArgumentTests {
 
-    // DRep.init(from: Data) expects a structured (tagged) DRep encoding, not a raw
-    // 28-byte key hash. The argument parser preserves that: a bare hex blob falls
-    // through to the file fallback, which fails to find anything and returns nil.
-    // Use DRepCredential for the raw key-hash case.
+    // A bare 56-character hex string is a 28-byte credential hash. It used to be
+    // rejected, because the parser handed it to `DRep.init(from: Data)`, which
+    // expects a structured (tagged) encoding. It is now read as a key hash, the
+    // same assumption cardano-cli makes for `--drep-key-hash`.
+    // See DRepArgumentParsingTests for the full matrix of accepted spellings.
 
-    @Test("returns nil for a bare 56-character hex string")
-    func bareHexIsNil() {
+    @Test("reads a bare 56-character hex string as a key hash")
+    func bareHexIsKeyHash() {
         let hex = String(repeating: "ab", count: 28)
-        #expect(DRep(argument: hex) == nil)
+        let drep = DRep(argument: hex)
+        guard case let .verificationKeyHash(hash) = drep?.credential else {
+            Issue.record("expected a verification key hash, got \(String(describing: drep))")
+            return
+        }
+        #expect(hash.payload.toHex == hex)
     }
 
     @Test("returns nil for an empty string")

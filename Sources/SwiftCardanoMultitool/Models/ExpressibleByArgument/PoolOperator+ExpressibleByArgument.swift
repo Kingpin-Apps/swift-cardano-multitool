@@ -69,10 +69,15 @@ extension PoolOperator: @retroactive ExpressibleByArgument {
             return fromFile(path(trimmed))
         }
 
+        // Ordered cheapest-and-least-ambiguous first, matching the lookup order
+        // `generate pool-json` uses. A pool.json carries the ID outright; the key
+        // files require deriving it.
         let variations = [
-            "\(trimmed).node.vkey",
-            "\(trimmed).pool.id",
             "\(trimmed).pool.id-bech",
+            "\(trimmed).pool.id",
+            "\(trimmed).pool.json",
+            "\(trimmed).cold.vkey",
+            "\(trimmed).node.vkey",
         ]
         for fileName in variations where fileManager.fileExists(atPath: path(fileName)) {
             if let loaded = fromFile(path(fileName)) {
@@ -96,6 +101,12 @@ extension PoolOperator: @retroactive ExpressibleByArgument {
     /// the type, so reading a key file as a pool ID (or a signing key as a verification
     /// key) silently yields the wrong pool hash.
     private static func fromFile(_ filePath: String) -> PoolOperator? {
+        // A pool.json holds the ID directly, but it also decodes as neither a key
+        // file nor a pool ID file, so it has to be dispatched on its extension.
+        if filePath.hasSuffix(".pool.json") {
+            return (try? Pool.load(from: FilePath(filePath)))?.toPoolOperator()
+        }
+
         if let vkey = try? StakePoolVerificationKey.load(from: filePath) {
             if vkey._type.contains("SigningKey") {
                 guard let skey = try? StakePoolSigningKey.load(from: filePath),

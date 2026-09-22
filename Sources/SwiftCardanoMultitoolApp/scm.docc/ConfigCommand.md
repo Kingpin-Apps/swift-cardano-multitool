@@ -25,7 +25,7 @@ scm config init
 
 The wizard prompts for:
 
-1. **Network** — mainnet, preprod, preview, guildnet, or sanchonet
+1. **Network** — mainnet, preprod, preview, guildnet, sanchonet, or devkit (a local Yaci DevKit devnet)
 2. **Node socket path** — path to the `cardano-node` Unix socket (e.g. `/run/cardano-node/node.socket`)
 3. **Node config directory** — directory containing the network's `config.json`, `topology.json`, and genesis files
 4. **Blockchain provider** — Blockfrost project ID and/or Koios API key (optional, used for queries without a local node)
@@ -37,6 +37,14 @@ After initialization, set the `CARDANO_MULTITOOL_CONFIG` environment variable to
 
 ```bash
 export CARDANO_MULTITOOL_CONFIG=~/.config/scm/mainnet.json
+```
+
+Choosing `devkit` skips the node socket, config, and topology steps — a Yaci DevKit
+devnet has none — and instead sets `mode = "devkit"` with the `[yaci]` endpoints
+and protocol magic 42 that DevKit uses by default:
+
+```bash
+scm config init --network devkit
 ```
 
 ### show

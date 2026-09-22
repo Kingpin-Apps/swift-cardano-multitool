@@ -1,5 +1,5 @@
 {
-  "originHash" : "21c5d6e87d619795d92d3d1180f02e1abf9ba0dbf2b1584cf8f810853689df10",
+  "originHash" : "e8354c467074dd28034e4cf6177697e2ef95195726a356eb58874deb5b22befa",
   "pins" : [
     {
       "identity" : "base32",
@@ -177,8 +177,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
       "state" : {
-        "revision" : "ae186a9bfbcb4df99baa241cc05d4fea560ea127",
-        "version" : "0.7.4"
+        "revision" : "f482d776b9aed5f061e9fb9e7669b0008ccf62e9",
+        "version" : "0.9.0"
       }
     },
     {
@@ -195,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "e8febfc32058a51d3efe0b3be769a53f87950bdc",
-        "version" : "0.5.2"
+        "revision" : "806ee4d296621652f6543986c719eb3f20d72950",
+        "version" : "0.5.3"
       }
     },
     {
@@ -249,8 +249,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-uplc.git",
       "state" : {
-        "revision" : "ac59a040f0f941ecade908ad85ae87aefd1066c5",
-        "version" : "0.3.3"
+        "revision" : "a518fd1b7250156948c0cde75283596b6de4dc7c",
+        "version" : "0.3.4"
       }
     },
     {
@@ -258,8 +258,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-utils.git",
       "state" : {
-        "revision" : "39cf5406f72c9d12596dbd19ad86fda100f8cba0",
-        "version" : "0.5.6"
+        "revision" : "71f88c0706c1cd9e8bbb3f18b9ae1c41ea04eb78",
+        "version" : "0.5.7"
       }
     },
     {
@@ -537,8 +537,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-ogmios.git",
       "state" : {
-        "revision" : "319b8dc637174ce1be58e00976394efb72d60487",
-        "version" : "0.3.1"
+        "revision" : "0279ebfcf0ec9a000380f152bf5eb35be36d3de0",
+        "version" : "0.3.2"
       }
     },
     {
@@ -629,6 +629,15 @@
       "state" : {
         "revision" : "23349c4f7c66eed19dee3cccd186e131eebc503f",
         "version" : "0.2.1"
+      }
+    },
+    {
+      "identity" : "swift-yaci-api",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kingpin-Apps/swift-yaci-api.git",
+      "state" : {
+        "revision" : "03f584419f39c7a901dd7f649edd6b4badb529ee",
+        "version" : "0.1.0"
       }
     },
     {

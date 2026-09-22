@@ -56,10 +56,14 @@ extension GenerateMainCommand {
             let fm = FileManager.default
             
             // The default is either the file itself or a directory holding `<poolName><fileExtension>`.
+            // `poolName` is the command's optional @Option, which `run()` guarantees is set
+            // before any prompt helper runs; interpolating it directly built a default of
+            // `Optional("myPool").cold.vkey`.
+            let baseName = poolName ?? ""
             var isDirectory: ObjCBool = false
             let defaultExists = fm.fileExists(atPath: defaultPath.string, isDirectory: &isDirectory)
             let filePath = defaultExists && isDirectory.boolValue
-                ? defaultPath.appending("\(poolName)\(fileExtension)")
+                ? defaultPath.appending("\(baseName)\(fileExtension)")
                 : defaultPath
             
             // Check default path

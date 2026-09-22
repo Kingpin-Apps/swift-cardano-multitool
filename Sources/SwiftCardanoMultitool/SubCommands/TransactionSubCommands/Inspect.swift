@@ -161,13 +161,15 @@ extension TransactionMainCommand {
                         continue
                     }
                     
-                    let txURL = try explorer.viewTransaction(
+                    // No explorer on this network (devnet, guildnet, sanchonet):
+                    // show the bare hash rather than failing the whole inspect.
+                    let txURL = (try? explorer.viewTransaction(
                         transactionId: TransactionId(payload: parts[0].hexStringToData)
-                    )
+                    ))?.absoluteString ?? parts[0]
                     inputRows.append([
                         "\(.muted("\(parts[1])"))",
                         "\(.primary("\(parts[0])"))",
-                        "\(.muted("\(txURL.absoluteString)"))",
+                        "\(.muted("\(txURL)"))",
                     ])
                 }
                 
@@ -190,13 +192,15 @@ extension TransactionMainCommand {
                         continue
                     }
                     
-                    let txURL = try explorer.viewTransaction(
+                    // No explorer on this network (devnet, guildnet, sanchonet):
+                    // show the bare hash rather than failing the whole inspect.
+                    let txURL = (try? explorer.viewTransaction(
                         transactionId: TransactionId(payload: parts[0].hexStringToData)
-                    )
+                    ))?.absoluteString ?? parts[0]
                     refRows.append([
                         "\(.muted("\(parts[1])"))",
                         "\(.primary("\(parts[0])"))",
-                        "\(.muted("\(txURL.absoluteString)"))",
+                        "\(.muted("\(txURL)"))",
                     ])
                 }
                 
@@ -219,13 +223,15 @@ extension TransactionMainCommand {
                         continue
                     }
                     
-                    let txURL = try explorer.viewTransaction(
+                    // No explorer on this network (devnet, guildnet, sanchonet):
+                    // show the bare hash rather than failing the whole inspect.
+                    let txURL = (try? explorer.viewTransaction(
                         transactionId: TransactionId(payload: parts[0].hexStringToData)
-                    )
+                    ))?.absoluteString ?? parts[0]
                     colRows.append([
                         "\(.muted("\(parts[1])"))",
                         "\(.primary("\(parts[0])"))",
-                        "\(.muted("\(txURL.absoluteString)"))",
+                        "\(.muted("\(txURL)"))",
                     ])
                 }
                 

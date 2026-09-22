@@ -117,7 +117,9 @@ scm transaction submit --tx-file tx.signed
 scm transaction submit --cbor-hex 84a40081825820...
 ```
 
-On success, the transaction ID is printed and linked to the configured blockchain explorer.
+On success, the transaction ID is printed, and linked to the configured blockchain
+explorer on networks that have one. A devnet has no public explorer, so the link is
+omitted there — the submission itself still succeeds.
 
 ## Fee and balance utilities
 

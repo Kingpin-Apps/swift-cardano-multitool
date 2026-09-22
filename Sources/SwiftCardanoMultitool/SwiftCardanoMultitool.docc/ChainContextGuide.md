@@ -37,7 +37,7 @@ import SwiftCardanoMultitool
 // Load config from the path in $CARDANO_MULTITOOL_CONFIG
 let config = try await MultitoolConfig.load()
 
-// Obtain a ChainContext (Blockfrost, Koios, Ogmios, or local node socket)
+// Obtain a ChainContext (Blockfrost, Koios, Ogmios, Yaci DevKit, or local node socket)
 let context = try await getContext(config: config)
 
 // Query the current protocol parameters
@@ -54,7 +54,56 @@ The provider returned by ``getContext(config:)`` depends on your ``MultitoolConf
 | `auto` | Tries Ogmios/Kupo → Blockfrost → Koios in order |
 | `online` | Requires a local node socket (Ogmios or direct) |
 | `lite` | Uses Blockfrost or Koios (no local node required) |
+| `devkit` | A local Yaci DevKit devnet, read through its Yaci Store and admin APIs |
 | `offline` | No network provider — for air-gapped use only |
+
+`devkit` is only ever reached by asking for it. `auto` never falls through to it,
+so a `[yaci]` block left over from a devnet session cannot silently redirect a
+mainnet command at a throw-away chain.
+
+## Developing against a Yaci DevKit devnet
+
+[Yaci DevKit](https://github.com/bloxbean/yaci-devkit) starts a pre-funded local
+Cardano network in seconds, with epochs measured in minutes rather than days. Set
+`mode` to `devkit` and `scm` reads it through the Yaci Store REST API that DevKit
+embeds, taking genesis and cost models from DevKit's admin (cluster) API.
+
+Generate a ready-to-use config with:
+
+```bash
+scm config init --network devkit
+```
+
+Or write the block by hand — every field is optional and the defaults match a
+DevKit started on the local machine:
+
+```toml
+mode = "devkit"
+
+[cardano]
+# The devnet's protocol magic. DevKit's default is 42.
+network = 42
+era = "conway"
+ttl_buffer = 3600
+
+[yaci]
+api_url = "http://localhost:8080"       # Yaci Store
+admin_url = "http://localhost:10000"    # DevKit admin / cluster API
+network_magic = 42
+```
+
+There is no API key, no node socket, and no Ogmios process to run — but
+`evaluateTx` needs DevKit started with `ogmios_enabled=true`.
+
+> Important: `network` under `[cardano]` is what the rest of `scm` uses to build
+> addresses and explorer links, so it must match the devnet's magic. `scm` warns
+> if it is left on mainnet while `mode` is `devkit`.
+
+Yaci Store indexes certificates and outputs rather than ledger state, so some
+queries are reconstructions and a few have no data source at all — notably the
+treasury and the SPO stake distribution, which throw `notImplemented`, and
+governance action outcomes, which always read as still open. See
+`SwiftCardanoChain`'s *Using YaciDevkit* article for the full capability table.
 
 ## Loading config programmatically
 

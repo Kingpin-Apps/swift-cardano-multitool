@@ -150,7 +150,10 @@ public struct MultitoolConfig: Codable, Sendable {
     /// Kupo configuration
     public var kupo: KupoConfig?
     
-    /// Operation mode (Auto, Online, Offline, Lite)
+    /// Yaci DevKit configuration (used when `mode` is `devkit`)
+    public var yaci: YaciConfig?
+    
+    /// Operation mode (Auto, Online, Offline, Lite, Devkit)
     public var mode: Mode
     
     /// Path to offline transfer file
@@ -216,6 +219,7 @@ public struct MultitoolConfig: Codable, Sendable {
         case mithril
         case ogmios
         case kupo
+        case yaci
         case mode
         case offlineFile = "offline_file"
         case tokenMetaServer = "token_meta_server"
@@ -244,6 +248,7 @@ public struct MultitoolConfig: Codable, Sendable {
         self.mithril = try container.decodeIfPresent(MithrilConfig.self, forKey: .mithril)
         self.ogmios = try container.decodeIfPresent(OgmiosConfig.self, forKey: .ogmios)
         self.kupo = try container.decodeIfPresent(KupoConfig.self, forKey: .kupo)
+        self.yaci = try container.decodeIfPresent(YaciConfig.self, forKey: .yaci)
         self.mode = try container.decodeIfPresent(Mode.self, forKey: .mode) ?? .auto
         let offlineFileStr = try container.decodeIfPresent(String.self, forKey: .offlineFile)
         self.offlineFile = offlineFileStr.map { FilePath($0) }
@@ -268,6 +273,7 @@ public struct MultitoolConfig: Codable, Sendable {
         try container.encodeIfPresent(mithril, forKey: .mithril)
         try container.encodeIfPresent(ogmios, forKey: .ogmios)
         try container.encodeIfPresent(kupo, forKey: .kupo)
+        try container.encodeIfPresent(yaci, forKey: .yaci)
         try container.encode(mode, forKey: .mode)
         try container.encodeIfPresent(offlineFile?.string, forKey: .offlineFile)
         try container.encode(tokenMetaServer, forKey: .tokenMetaServer)
@@ -289,6 +295,7 @@ public struct MultitoolConfig: Codable, Sendable {
         mithril: MithrilConfig? = nil,
         ogmios: OgmiosConfig? = nil,
         kupo: KupoConfig? = nil,
+        yaci: YaciConfig? = nil,
         mode: Mode = .auto,
         offlineFile: FilePath? = nil,
         tokenMetaServer: TokenMetaServerURLs,
@@ -307,6 +314,7 @@ public struct MultitoolConfig: Codable, Sendable {
         self.mithril = mithril
         self.ogmios = ogmios
         self.kupo = kupo
+        self.yaci = yaci
         self.mode = mode
         self.offlineFile = offlineFile
         self.tokenMetaServer = tokenMetaServer
@@ -338,6 +346,7 @@ public struct MultitoolConfig: Codable, Sendable {
         self.mithril = try? MithrilConfig(config: config)
         self.ogmios = try? OgmiosConfig(config: config)
         self.kupo = try? KupoConfig(config: config)
+        self.yaci = YaciConfig(config: config)
         
         self.mode = config.string(
             forKey: CodingKeys.mode.configKey,
@@ -426,7 +435,7 @@ public struct MultitoolConfig: Codable, Sendable {
         ))
     }
     
-    static func `default`(network: Network = .mainnet) throws -> MultitoolConfig {
+    static func `default`(network: Network = .mainnet, mode: Mode = .auto) throws -> MultitoolConfig {
         let cwd = FilePath(FileManager.default.currentDirectoryPath)
         var cardanoConfig = try CardanoConfig.default()
         cardanoConfig.network = network
@@ -442,7 +451,8 @@ public struct MultitoolConfig: Codable, Sendable {
             mithril: try? MithrilConfig.default(),
             ogmios: try? OgmiosConfig.default(),
             kupo: try? KupoConfig.default(),
-            mode: .auto,
+            yaci: .default(),
+            mode: mode,
             offlineFile: cwd.appending("offline-transfer.json"),
             tokenMetaServer: TokenMetaServerURLs(),
             blockchainExplorer: .cexplorer,

@@ -91,11 +91,13 @@ extension TransactionMainCommand {
                 let explorer = config.blockchainExplorer.explorer(
                     network: cardanoConfig.network
                 )
-                let trackingURL = try explorer.viewTransaction(
+                // The transaction is already submitted by this point, so a
+                // network with no explorer must never turn that into a failure.
+                if let trackingURL = try? explorer.viewTransaction(
                     transactionId: tx.transactionBody.id
-                )
-                
-                spacedPrint("Tracking: \(.link(title:trackingURL.absoluteString, href: trackingURL.absoluteString))")
+                ) {
+                    spacedPrint("Tracking: \(.link(title:trackingURL.absoluteString, href: trackingURL.absoluteString))")
+                }
                 
                 noora.success(
                     "Transaction submitted with ID: \(txId)"

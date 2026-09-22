@@ -92,7 +92,8 @@ extension TransactionMainCommand {
                     id = tx.id!.description
             }
             
-            let txURL = try explorer.viewTransaction(
+            // nil on a network with no public explorer (devnet, guildnet, sanchonet).
+            let txURL = try? explorer.viewTransaction(
                 transactionId: TransactionId(payload: id.hexStringToData)
             )
             
@@ -100,12 +101,14 @@ extension TransactionMainCommand {
                 spacedPrint(
                     "Transaction ID (\(.muted("using \(tool.description)")): \(.primary(id))"
                 )
-                spacedPrint("Transaction URL: \(.link(title:txURL.absoluteString, href: txURL.absoluteString))")
+                if let txURL {
+                    spacedPrint("Transaction URL: \(.link(title:txURL.absoluteString, href: txURL.absoluteString))")
+                }
             } else {
-                let outputDictionary: [String: String] = [
-                    "id": id,
-                    "explorerUrl": txURL.absoluteString
-                ]
+                var outputDictionary: [String: String] = ["id": id]
+                if let txURL {
+                    outputDictionary["explorerUrl"] = txURL.absoluteString
+                }
                 
                 let outputJSON = try JSONSerialization.data(
                     withJSONObject: outputDictionary,

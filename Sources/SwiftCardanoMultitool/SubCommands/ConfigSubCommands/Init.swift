@@ -12,7 +12,7 @@ extension ConfigMainCommand {
             abstract: "Initialize a configuration file."
         )
 
-        @Option(name: .shortAndLong, help: "The Cardano network (mainnet, preprod, preview, guildnet, sanchonet).")
+        @Option(name: .shortAndLong, help: "The Cardano network (mainnet, preprod, preview, guildnet, sanchonet, devkit).")
         var network: ConfigNetwork? = nil
 
         @Option(name: .shortAndLong, help: "The config file format (json, toml).")
@@ -147,7 +147,24 @@ extension ConfigMainCommand {
                 }
             }
             
-            var config = try MultitoolConfig.default(network: network.network)
+            var config = try MultitoolConfig.default(
+                network: network.network,
+                mode: network.mode
+            )
+
+            // A DevKit devnet ships no node socket, config, or topology — chain data
+            // comes from the Yaci Store and admin APIs — so there is nothing to detect.
+            guard network != .devkit else {
+                noora.info(.alert(
+                    "Configured for a local Yaci DevKit devnet.",
+                    takeaways: [
+                        "Mode is set to \(.primary(Mode.devkit.rawValue)); chain data comes from the \(.primary("[yaci]")) endpoints, not a node socket.",
+                        "Start the devnet before running other commands, and enable Ogmios (\(.primary("ogmios_enabled=true"))) if you need transaction evaluation.",
+                    ]
+                ))
+                try await write(config: config, fileType: fileType)
+                return
+            }
 
             // Autodetect node socket / config / topology so the generated file works
             // against a local node without hand-editing.
@@ -167,6 +184,12 @@ extension ConfigMainCommand {
                 ))
             }
 
+            try await write(config: config, fileType: fileType)
+        }
+
+        /// Render the config to the terminal and, unless this is a dry run, write it
+        /// to ``configPath``.
+        private mutating func write(config: MultitoolConfig, fileType: ConfigFileType) async throws {
             switch fileType {
                 case .json:
                     let encoder = JSONEncoder()

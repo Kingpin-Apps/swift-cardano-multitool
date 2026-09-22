@@ -123,7 +123,7 @@ log_level = "info"
 |-------|------|---------|-------------|
 | `blockfrost_project_id` | String | — | Blockfrost API project ID |
 | `koios_api_key` | String | — | Koios API key |
-| `mode` | String | `"auto"` | Operation mode: `auto`, `online`, `offline`, or `lite` |
+| `mode` | String | `"auto"` | Operation mode: `auto`, `online`, `offline`, `lite`, or `devkit` |
 | `offline_file` | String | `./offline-transfer.json` | Path to the offline transfer file used by `work-offline` |
 | `blockchain_explorer` | String | `"cexplorer"` | Explorer for transaction links: `cexplorer`, `cardanoscan`, `pooltool`, `eutxo`, `adastat` |
 | `log_level` | String | `"info"` | Logging verbosity: `trace`, `debug`, `info`, `notice`, `warning`, `error`, `critical` |
@@ -137,7 +137,7 @@ log_level = "info"
 
 | Field | Description |
 |-------|-------------|
-| `network` | Network name: `mainnet`, `preprod`, `preview`, `guildnet`, `sanchonet` |
+| `network` | Network name: `mainnet`, `preprod`, `preview`, `guildnet`, `sanchonet`, or a bare protocol magic such as `42` for a devnet |
 | `socket` | Path to the `cardano-node` Unix socket |
 | `config` | Path to the node's `config.json` |
 | `topology` | Path to the node's `topology.json` |
@@ -163,6 +163,41 @@ log_level = "info"
 |-------|---------|-------------|
 | `host` | `localhost` | Kupo host |
 | `port` | `1442` | Kupo port |
+
+### yaci section
+
+Read only when `mode` is `devkit`. Every field is optional; the defaults match a
+[Yaci DevKit](https://github.com/bloxbean/yaci-devkit) started on the local machine.
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `api_url` | `http://localhost:8080` | Yaci Store REST API, where chain data is read from |
+| `admin_url` | `http://localhost:10000` | DevKit admin (cluster) API, where genesis and cost models come from |
+| `network_magic` | `42` | The devnet's protocol magic |
+
+## Developing against a Yaci DevKit devnet
+
+Yaci DevKit starts a pre-funded local Cardano network in seconds, with epochs
+measured in minutes rather than days — useful for exercising a whole delegation
+or governance lifecycle in one sitting. Generate a config for it with:
+
+```bash
+scm config init --network devkit
+```
+
+That sets `mode = "devkit"`, points `[cardano] network` at magic 42, and fills in
+the `[yaci]` endpoints. There is no API key, no node socket, and no Ogmios process
+to run — though `scm transaction build` needs DevKit started with
+`ogmios_enabled=true` for script evaluation.
+
+`devkit` is only ever used when asked for: `auto` never falls back to it, so a
+leftover `[yaci]` block cannot silently redirect a mainnet command at a devnet.
+Keep `[cardano] network` matching the devnet's magic — it is what `scm` uses to
+build addresses and explorer links, and `scm` warns if it is left on mainnet.
+
+Yaci Store indexes certificates and outputs rather than ledger state, so the
+treasury and SPO stake distribution are unavailable, and governance actions always
+read as still open even once they have concluded.
 
 ## Multi-environment (named configs)
 

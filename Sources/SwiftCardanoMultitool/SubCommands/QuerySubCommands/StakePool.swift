@@ -11,18 +11,30 @@ extension QueryMainCommand {
             commandName: "stake-pool",
             abstract: "Query stake pool information.",
             usage: """
-            scm query pool <poolId>
+            scm query pool <pool>
+            scm query pool --pool-operator <pool>
+            scm query pool --pool-name <poolName>
+            scm query pool --pool-json <path>
             """,
             discussion: """
             This command allows you to query information about a specific stake 
-            pool. You can specify the pool operator using various formats, 
-            including bech32 (e.g., pool1...), hex hash, or a .node.vkey file. 
+            pool. The pool can be given as a positional argument, the same way 
+            `scm query address` takes an address: a pool ID in bech32 
+            (pool1...) or hex, a cold verification key (pool_vk1... or hex), a 
+            path to a key or pool ID file, or a pool name. A pool name is 
+            resolved against the current directory, trying <poolName>.pool.id-bech, 
+            <poolName>.pool.id, <poolName>.pool.json, <poolName>.cold.vkey and 
+            <poolName>.node.vkey in that order.
+            
             The command will return details about the specified stake pool, such
             as its metadata, performance, and delegation status.
             """,
             aliases: ["pool"]
         )
         
+        @Argument(help: "The stake pool to query: pool ID (pool1… or hex), cold verification key (pool_vk1… or hex), a key/pool-id/pool.json file, or a pool name to look up in the current directory.")
+        var pool: PoolOperator? = nil
+
         @Option(name: .shortAndLong, help: "The pool name. Searches for <poolName>.vrf.skey and <poolName>.pool.id-bech in the current directory.")
         var poolName: String?
         
@@ -111,6 +123,18 @@ extension QueryMainCommand {
         // MARK: - Run
         
         mutating func run() async throws {
+            // Resolve the other ways of naming a pool before deciding whether
+            // anything is still missing, so all of them work non-interactively.
+            if poolOperator == nil {
+                poolOperator = pool
+            }
+            if poolOperator == nil, let poolJSON {
+                poolOperator = try Pool.load(from: poolJSON).toPoolOperator()
+            }
+            if poolOperator == nil, let poolName {
+                poolOperator = PoolOperator(argument: poolName)
+            }
+
             // Run wizard if required parameters are missing
             if poolOperator == nil && isInteractiveSession() {
                 try await wizard()

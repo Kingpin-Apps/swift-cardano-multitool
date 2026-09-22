@@ -145,6 +145,31 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
         }
     }
     
+    func getDevkitContext(config: MultitoolConfig) throws -> any ChainContext {
+        let yaciConfig = config.yaci ?? .default()
+        let network = yaciConfig.network
+
+        // Everything else in scm — address building, explorer links, the token
+        // registry — takes its network from [cardano]. A devnet is a testnet,
+        // so a mainnet [cardano] block paired with devkit mode would have those
+        // build mainnet addresses for a chain that cannot hold them.
+        if config.cardano?.network == .mainnet {
+            noora.warning(
+                .alert(
+                    "\(.danger("Mode is \(Mode.devkit.rawValue) but [cardano] network is mainnet."))",
+                    takeaway: "Set \(.primary("network")) under \(.primary("[cardano]")) to the devnet's magic (\(.primary("\(yaciConfig.networkMagic ?? YaciConfig.defaultNetworkMagic)"))) so addresses are built for the devnet."
+                )
+            )
+            print()
+        }
+
+        return try YaciDevkitChainContext(
+            apiURL: yaciConfig.apiUrl,
+            adminURL: yaciConfig.adminUrl,
+            network: network
+        )
+    }
+    
     func getOfflineContext(config: MultitoolConfig) async throws -> any ChainContext {
         guard let offlineFile = config.offlineFile else {
             throw SwiftCardanoMultitoolError.invalidConfiguration(
@@ -200,6 +225,8 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
             }
         case .lite:
             return try await getLiteContext(config: config)
+        case .devkit:
+            return try getDevkitContext(config: config)
         case .offline:
             return try await getOfflineContext(config: config)
             
@@ -284,9 +311,11 @@ public func stakeAddressInfoSummary(
         let blockchainExplorer = config.blockchainExplorer.explorer(
             network: cardanoConfig.network
         )
-        let poolURL = try blockchainExplorer.viewPool(pool: poolOperator)
-        
-        spacedPrint("\(.link(title:poolURL.absoluteString, href: poolURL.absoluteString))")
+        // Networks without a public explorer (devnets, guildnet, sanchonet)
+        // have no pool page; the pool data itself is still worth printing.
+        if let poolURL = try? blockchainExplorer.viewPool(pool: poolOperator) {
+            spacedPrint("\(.link(title:poolURL.absoluteString, href: poolURL.absoluteString))")
+        }
         
         let koiosContext = try await KoiosChainContext(
             apiKey: config.koiosApiKey,

@@ -145,7 +145,7 @@ Most commands require a configuration file that tells `scm` how to connect to th
 scm config init
 ```
 
-This wizard walks you through creating a config file for your chosen network (mainnet, preprod, preview, guildnet, sanchonet) and saves it at a path you specify. It autodetects the node socket (`CARDANO_NODE_SOCKET_PATH`, falling back to `CARDANO_SOCKET_PATH`) and the `config.json` + `topology.json` shipped in the cardano-node install's `share/<network>/` directory, filling in any paths you haven't set explicitly.
+This wizard walks you through creating a config file for your chosen network (mainnet, preprod, preview, guildnet, sanchonet, devkit) and saves it at a path you specify. It autodetects the node socket (`CARDANO_NODE_SOCKET_PATH`, falling back to `CARDANO_SOCKET_PATH`) and the `config.json` + `topology.json` shipped in the cardano-node install's `share/<network>/` directory, filling in any paths you haven't set explicitly.
 
 ### Config file format
 
@@ -172,6 +172,42 @@ Point `scm` at your config before running other commands:
 export CARDANO_MULTITOOL_CONFIG=~/.config/scm/mainnet.json
 scm query tip
 ```
+
+### Operating modes
+
+`mode` decides where chain data comes from:
+
+| Mode | Source |
+|------|--------|
+| `auto` | Tries a local node / Ogmios, then Blockfrost or Koios, then the offline transfer file |
+| `online` | A local `cardano-node` via `cardano-cli`, its socket, or Ogmios |
+| `lite` | Blockfrost or Koios — no local node needed |
+| `devkit` | A local [Yaci DevKit](https://github.com/bloxbean/yaci-devkit) devnet |
+| `offline` | No network at all — for air-gapped machines |
+
+### Local devnet with Yaci DevKit
+
+Yaci DevKit starts a pre-funded Cardano network in seconds, with epochs measured in minutes rather than days. Start the devnet, then:
+
+```bash
+scm config init --network devkit
+```
+
+That writes `mode = "devkit"`, points `[cardano] network` at magic 42, and fills in the `[yaci]` endpoints (Yaci Store on port 8080, DevKit's admin API on port 10000). No API key, node socket, or Ogmios process is required — although script evaluation needs DevKit started with `ogmios_enabled=true`.
+
+```toml
+mode = "devkit"
+
+[cardano]
+network = 42
+
+[yaci]
+api_url = "http://localhost:8080"
+admin_url = "http://localhost:10000"
+network_magic = 42
+```
+
+`auto` never falls back to `devkit`, so a leftover `[yaci]` block cannot silently point a mainnet command at a throw-away chain. Note that Yaci indexes certificates and outputs rather than ledger state: the treasury and SPO stake distribution are unavailable, and governance actions always read as still open.
 
 ---
 
@@ -486,6 +522,18 @@ scm query vote                   # Votes filtered by voter, action, or type
 scm query calidus-key            # CIP-88 Calidus pool-key registrations
 ```
 
+`address`, `stake-pool` and `drep` take their subject as a positional argument in
+whatever form you have it — an ID in bech32 or hex, a key file, or a bare name
+resolved against the files in the current directory:
+
+```bash
+scm query address addr_test1...
+scm query pool pool1...          # or a hex ID, pool_vk1..., or a pool name
+scm query pool myPool            # finds myPool.pool.id-bech / .pool.json / .cold.vkey
+scm query drep drep1...          # CIP-105 or CIP-129 bech32, or a hex hash
+scm query drep myDRep            # finds myDRep.drep.id / .drep.vkey / .drep.skey
+```
+
 ---
 
 ### `run`
@@ -627,6 +675,10 @@ scm --version
 - [Pool Tool](https://pooltool.io)
 - [Eutxo](https://eutxo.org)
 - [AdaStat](https://adastat.net)
+
+These explorers cover mainnet, preprod and preview. On a network without a public
+explorer — a Yaci DevKit devnet, guildnet or sanchonet — the links are simply left
+out; the query results themselves are unaffected.
 
 ---
 

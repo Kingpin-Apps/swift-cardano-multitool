@@ -7,6 +7,12 @@ public enum Mode: String, CaseIterable, CodingKeyRepresentable, Codable, Hashabl
     case online = "online"
     case offline = "offline"
     case lite = "lite"
+    /// A local Yaci DevKit devnet, read through its Yaci Store and admin APIs.
+    ///
+    /// Only ever selected explicitly: a `devkit` block left over in a config
+    /// must not silently redirect a mainnet command at a throw-away devnet,
+    /// so `auto` never falls through to it.
+    case devkit = "devkit"
 }
 
 enum GetAddressBy: String, CaseIterable, AlignedChoiceDescribable {
@@ -468,6 +474,8 @@ enum ConfigNetwork: String, ExpressibleByArgument, CaseIterable, CustomStringCon
     case preview
     case guildnet
     case sanchonet
+    /// A local Yaci DevKit devnet.
+    case devkit
     
     var description: String { rawValue }
     
@@ -478,7 +486,13 @@ enum ConfigNetwork: String, ExpressibleByArgument, CaseIterable, CustomStringCon
             case .preview: return .preview
             case .guildnet: return .guildnet
             case .sanchonet: return .sanchonet
+            case .devkit: return .custom(YaciConfig.defaultNetworkMagic)
         }
+    }
+
+    /// The operating mode a config for this network should start in.
+    var mode: Mode {
+        self == .devkit ? .devkit : .auto
     }
 }
 

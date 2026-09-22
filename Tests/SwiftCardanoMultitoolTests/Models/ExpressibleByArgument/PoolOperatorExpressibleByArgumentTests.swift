@@ -59,6 +59,48 @@ struct PoolOperatorExpressibleByArgumentTests {
         #expect(PoolOperator(argument: skeyPath)?.poolKeyHash == expected)
     }
 
+    @Test("resolves a bare pool name against the files in the current directory")
+    func resolvesPoolNameFromDirectory() throws {
+        // `query pool <poolName>` looks up the standard file set that
+        // `generate pool-json` writes, the same way `query address` takes an
+        // address directly.
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pool-name-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let pair = try StakePoolKeyPair.generate()
+        let expected = try pair.verificationKey.poolKeyHash()
+        let bech32 = try PoolOperator(poolKeyHash: expected).toBech32()
+
+        try pair.verificationKey.save(to: dir.appendingPathComponent("mypool.cold.vkey").path)
+        try Data(bech32.utf8).write(to: dir.appendingPathComponent("mypool.pool.id-bech"))
+
+        WorkingDirectory.withCurrent(dir.path) {
+            // Bare name, and each individual file, agree on the same pool.
+            #expect(PoolOperator(argument: "mypool")?.poolKeyHash == expected)
+            #expect(PoolOperator(argument: "mypool.pool.id-bech")?.poolKeyHash == expected)
+            #expect(PoolOperator(argument: "mypool.cold.vkey")?.poolKeyHash == expected)
+            #expect(PoolOperator(argument: "absent") == nil)
+        }
+    }
+
+    @Test("resolves a cold verification key named <poolName>.cold.vkey")
+    func resolvesColdVkeyVariation() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pool-cold-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let pair = try StakePoolKeyPair.generate()
+        let expected = try pair.verificationKey.poolKeyHash()
+        try pair.verificationKey.save(to: dir.appendingPathComponent("solo.cold.vkey").path)
+
+        WorkingDirectory.withCurrent(dir.path) {
+            #expect(PoolOperator(argument: "solo")?.poolKeyHash == expected)
+        }
+    }
+
     @Test("returns nil for an empty string")
     func rejectsEmpty() {
         #expect(PoolOperator(argument: "") == nil)

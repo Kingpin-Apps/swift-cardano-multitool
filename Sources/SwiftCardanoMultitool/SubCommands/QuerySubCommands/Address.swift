@@ -167,9 +167,11 @@ extension QueryMainCommand {
                         config: config
                     )
                     
-                    let addressURL = try blockchainExplorer.viewAddress(address: address)
-                    
-                    spacedPrint("\(.link(title:addressURL.absoluteString, href: addressURL.absoluteString))")
+                    // A devnet has no public explorer. The query has already
+                    // succeeded, so a missing link must not fail the command.
+                    if let addressURL = try? blockchainExplorer.viewAddress(address: address) {
+                        spacedPrint("\(.link(title:addressURL.absoluteString, href: addressURL.absoluteString))")
+                    }
                     
                 case .stake:
                     
@@ -196,12 +198,11 @@ extension QueryMainCommand {
                         protocolParams: protocolParams
                     )
                     
-                    let addressURL = try blockchainExplorer.viewAccount(
+                    if let addressURL = try? blockchainExplorer.viewAccount(
                         address: address
-                    )
-                    
-                    
-                    spacedPrint("\(.link(title:addressURL.absoluteString, href: addressURL.absoluteString))")
+                    ) {
+                        spacedPrint("\(.link(title:addressURL.absoluteString, href: addressURL.absoluteString))")
+                    }
                     
             }
         }
