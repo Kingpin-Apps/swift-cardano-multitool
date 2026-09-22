@@ -414,8 +414,21 @@ extension TransactionSendable {
             defaultAnswer: false,
             description: "Requires network connectivity and sufficient funds."
         )
+
+        // Submitting signs with the fee payment address keys, so make sure they exist now
+        // rather than failing after the transaction has been built.
+        if transactionOptions.submit, let feePaymentAddress = transactionOptions.feePaymentAddress {
+            try ensureSigningKeys(for: feePaymentAddress.info)
+        }
         
 //        try self.validateForTransaction()
+    }
+
+    /// Ensure the signing key (`.skey` / `.hwsfile`) and verification key (`.vkey`) for `info`
+    /// exist next to its address file. Errors and throws when either is missing.
+    func ensureSigningKeys(for info: AddressInfo) throws {
+        _ = try info.getSigningMethod()
+        _ = try info.getVerificationKey()
     }
     
     // MARK: - Query Stake Address

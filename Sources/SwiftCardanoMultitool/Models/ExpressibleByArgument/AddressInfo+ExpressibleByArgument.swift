@@ -103,72 +103,110 @@ extension AddressInfo: @retroactive ExpressibleByArgument {
         }
     }
     
-    public func getSigningMethod() throws -> SigningMethod {
+    /// Directory that holds this address's key files: the folder the address file was loaded
+    /// from, or the current working directory when the address did not come from a file.
+    private var keyDirectory: FilePath {
         let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        
-        // remove .payment.addr, .stake, or .addr suffixes if present
-        let cleanedName: String
-        if let name = self.name {
-            if name.hasSuffix(".payment") {
-                cleanedName = String(name.dropLast(".payment".count))
-            } else if name.hasSuffix(".addr") {
-                cleanedName = String(name.dropLast(".addr".count))
-            } else if name.hasSuffix(".stake") {
-                cleanedName = String(name.dropLast(".stake".count))
-            } else {
-                cleanedName = name
-            }
-        } else {
+        guard let addressFile = self.addressFile else { return cwd }
+        let dir = addressFile.removingLastComponent()
+        return dir.string.isEmpty ? cwd : FileUtils.absolutePath(dir).lexicallyNormalized()
+    }
+
+    /// The address name without a `.payment` / `.stake` / `.addr` suffix, used as the key file stem.
+    private func keyStem(purpose: String) throws -> String {
+        guard let name = self.name else {
             noora.error(.alert(
-                "Address name is missing; cannot determine signing key file.",
+                "Address name is missing; cannot determine \(purpose) file.",
                 takeaways: [
                     "Ensure the address was loaded from a file with a valid name."
                 ]
             ))
             throw ExitCode.validationFailure
         }
-        
-        let fm = FileManager.default
-        
-        // Build ordered candidates based on address type
-        let contextLabel: String
-        let candidates: [(FilePath, (FilePath) -> SigningMethod)]
+        // remove .payment.addr, .stake, or .addr suffixes if present
+        if name.hasSuffix(".payment") {
+            return String(name.dropLast(".payment".count))
+        } else if name.hasSuffix(".addr") {
+            return String(name.dropLast(".addr".count))
+        } else if name.hasSuffix(".stake") {
+            return String(name.dropLast(".stake".count))
+        }
+        return name
+    }
+
+    private var keyContextLabel: String {
+        switch self.type {
+            case .payment?: return "payment"
+            case .stake?: return "stake"
+            default: return "address"
+        }
+    }
+
+    /// Signing file candidates next to the address file, in lookup priority order.
+    private func signingMethodCandidates() throws -> [(FilePath, (FilePath) -> SigningMethod)] {
+        let dir = keyDirectory
+        let stem = try keyStem(purpose: "signing key")
         switch self.type {
             case .payment?:
-                contextLabel = "payment"
-                candidates = [
-                    (cwd.appending("\(cleanedName).payment.hwsfile"), SigningMethod.hardwareWallet),
-                    (cwd.appending("\(cleanedName).payment.skey"), SigningMethod.softwareKey),
-                    (cwd.appending("\(cleanedName).hwsfile"), SigningMethod.hardwareWallet),
-                    (cwd.appending("\(cleanedName).skey"), SigningMethod.softwareKey)
+                return [
+                    (dir.appending("\(stem).payment.hwsfile"), SigningMethod.hardwareWallet),
+                    (dir.appending("\(stem).payment.skey"), SigningMethod.softwareKey),
+                    (dir.appending("\(stem).hwsfile"), SigningMethod.hardwareWallet),
+                    (dir.appending("\(stem).skey"), SigningMethod.softwareKey)
                 ]
             case .stake?:
-                contextLabel = "stake"
-                candidates = [
-                    (cwd.appending("\(cleanedName).stake.hwsfile"), SigningMethod.hardwareWallet),
-                    (cwd.appending("\(cleanedName).stake.skey"), SigningMethod.softwareKey),
-                    (cwd.appending("\(cleanedName).hwsfile"), SigningMethod.hardwareWallet),
-                    (cwd.appending("\(cleanedName).skey"), SigningMethod.softwareKey)
+                return [
+                    (dir.appending("\(stem).stake.hwsfile"), SigningMethod.hardwareWallet),
+                    (dir.appending("\(stem).stake.skey"), SigningMethod.softwareKey),
+                    (dir.appending("\(stem).hwsfile"), SigningMethod.hardwareWallet),
+                    (dir.appending("\(stem).skey"), SigningMethod.softwareKey)
                 ]
             default:
-                contextLabel = "address"
-                candidates = [
-                    (cwd.appending("\(cleanedName).hwsfile"), SigningMethod.hardwareWallet),
-                    (cwd.appending("\(cleanedName).skey"), SigningMethod.softwareKey)
+                return [
+                    (dir.appending("\(stem).hwsfile"), SigningMethod.hardwareWallet),
+                    (dir.appending("\(stem).skey"), SigningMethod.softwareKey)
                 ]
         }
-        
-        // Resolve first existing candidate
-        for (file, wrap) in candidates {
-            if fm.fileExists(atPath: file.string) {
-                return wrap(file)
-            }
+    }
+
+    /// Verification key candidates next to the address file, in lookup priority order.
+    private func verificationKeyCandidates() throws -> [FilePath] {
+        let dir = keyDirectory
+        let stem = try keyStem(purpose: "verification key")
+        switch self.type {
+            case .payment?:
+                return [dir.appending("\(stem).payment.vkey"), dir.appending("\(stem).vkey")]
+            case .stake?:
+                return [dir.appending("\(stem).stake.vkey"), dir.appending("\(stem).vkey")]
+            default:
+                return [dir.appending("\(stem).vkey")]
         }
-        
+    }
+
+    /// The signing method for this address, or nil when no signing file exists next to it.
+    public func findSigningMethod() -> SigningMethod? {
+        guard let candidates = try? signingMethodCandidates() else { return nil }
+        let fm = FileManager.default
+        return candidates.first { fm.fileExists(atPath: $0.0.string) }.map { $0.1($0.0) }
+    }
+
+    /// The verification key file for this address, or nil when none exists next to it.
+    public func findVerificationKey() -> FilePath? {
+        guard let candidates = try? verificationKeyCandidates() else { return nil }
+        let fm = FileManager.default
+        return candidates.first { fm.fileExists(atPath: $0.string) }
+    }
+
+    public func getSigningMethod() throws -> SigningMethod {
+        let candidates = try signingMethodCandidates()
+        if let method = findSigningMethod() {
+            return method
+        }
+
         // Nothing found — report what we looked for
         let expectedList = candidates.map { $0.0.string }.joined(separator: ", ")
         noora.error(.alert(
-            "No signing key found for \(contextLabel) address '\(cleanedName)'",
+            "No signing key found for \(keyContextLabel) address '\(try keyStem(purpose: "signing key"))'",
             takeaways: [
                 "Searched (in order): \(expectedList)"
             ]
@@ -177,66 +215,15 @@ extension AddressInfo: @retroactive ExpressibleByArgument {
     }
     
     public func getVerificationKey() throws -> FilePath {
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        
-        // remove .payment.addr, .stake, or .addr suffixes if present
-        let cleanedName: String
-        if let name = self.name {
-            if name.hasSuffix(".payment") {
-                cleanedName = String(name.dropLast(".payment".count))
-            } else if name.hasSuffix(".addr") {
-                cleanedName = String(name.dropLast(".addr".count))
-            } else if name.hasSuffix(".stake") {
-                cleanedName = String(name.dropLast(".stake".count))
-            } else {
-                cleanedName = name
-            }
-        } else {
-            noora.error(.alert(
-                "Address name is missing; cannot determine verification key file.",
-                takeaways: [
-                    "Ensure the address was loaded from a file with a valid name."
-                ]
-            ))
-            throw ExitCode.validationFailure
+        let candidates = try verificationKeyCandidates()
+        if let file = findVerificationKey() {
+            return file
         }
-        
-        let fm = FileManager.default
-        
-        // Build ordered candidates based on address type
-        let contextLabel: String
-        let candidates: [FilePath]
-        switch self.type {
-            case .payment?:
-                contextLabel = "payment"
-                candidates = [
-                    cwd.appending("\(cleanedName).payment.vkey"),
-                    cwd.appending("\(cleanedName).vkey")
-                ]
-            case .stake?:
-                contextLabel = "stake"
-                candidates = [
-                    cwd.appending("\(cleanedName).stake.vkey"),
-                    cwd.appending("\(cleanedName).vkey")
-                ]
-            default:
-                contextLabel = "address"
-                candidates = [
-                    cwd.appending("\(cleanedName).vkey")
-                ]
-        }
-        
-        // Resolve first existing candidate
-        for file in candidates {
-            if fm.fileExists(atPath: file.string) {
-                return file
-            }
-        }
-        
+
         // Nothing found — report what we looked for
         let expectedList = candidates.map { $0.string }.joined(separator: ", ")
         noora.error(.alert(
-            "No verification key found for \(contextLabel) address '\(cleanedName)'",
+            "No verification key found for \(keyContextLabel) address '\(try keyStem(purpose: "verification key"))'",
             takeaways: [
                 "Searched (in order): \(expectedList)"
             ]

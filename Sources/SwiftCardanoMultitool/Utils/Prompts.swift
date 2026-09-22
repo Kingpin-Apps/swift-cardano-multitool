@@ -160,50 +160,22 @@ func getDestinationAddress(title: TerminalText? = nil) async throws -> PaymentAd
     return PaymentAddressInfo(info: info)
 }
 
-/// Prompt user to select a fee payment address from the current directory or by name.
+/// Prompt user to select a fee payment address file, with path completion, from any directory.
 /// - Parameter title: Optional title for the prompt.
 /// - Returns: PaymentAddressInfo of the selected fee payment address.
-/// - Throws: ExitCode.failure if no payment address files are found.
+/// - Throws: ValidationError when not interactive.
 func getFeePaymentAddress(title: TerminalText? = nil) async throws -> PaymentAddressInfo {
     guard isInteractiveSession() else {
         throw ValidationError("A fee payment address is required when not running interactively. Provide --fee-payment-address.")
     }
-    let addressBy = try await getAddressBy(title: title)
-    
-    let info: AddressInfo
-    
-    switch addressBy {
-        case .path:
-            let addressFile = try promptPaymentAddressFile(title: "Fee Payment Address", question: "Select the fee payment address file:")
-            info = try AddressInfo(
-                fromFile: FileUtils.absolutePath(addressFile),
-                name: PaymentAddressFiles.stem(of: addressFile.lastComponent?.string ?? addressFile.string)
-            )
-        case .name:
-            let addressName = noora.textPrompt(
-                title: "Fee Payment Address Name",
-                prompt: "Enter the name of the fee payment address (as used during its creation):",
-                collapseOnAnswer: true,
-                validationRules: [NonEmptyValidationRule(error: "Address name cannot be empty.")]
-            ).trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            guard let addressFilePath = PaymentAddressFiles.resolve(name: addressName, in: cwd) else {
-                let searched = PaymentAddressFiles.candidateFileNames(for: addressName)
-                    .joined(separator: ", ")
-                noora.error(.alert(
-                    "No payment address file found for '\(addressName)'.",
-                    takeaways: ["Searched (in order): \(searched)"]
-                ))
-                throw ExitCode.failure
-            }
-            
-            info = try AddressInfo(
-                fromFile: addressFilePath,
-                name: PaymentAddressFiles.stem(of: addressName)
-            )
-    }
-    
+    let addressFile = try promptPaymentAddressFile(
+        title: title ?? "Fee Payment Address",
+        question: "Select the fee payment address file:"
+    )
+    let info = try AddressInfo(
+        fromFile: FileUtils.absolutePath(addressFile),
+        name: PaymentAddressFiles.stem(of: addressFile.lastComponent?.string ?? addressFile.string)
+    )
     return PaymentAddressInfo(info: info)
 }
 

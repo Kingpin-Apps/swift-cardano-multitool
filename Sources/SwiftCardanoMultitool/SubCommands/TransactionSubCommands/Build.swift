@@ -38,6 +38,17 @@ extension TransactionMainCommand {
             Builds a balanced transaction from explicit inputs and outputs. Fees are
             automatically calculated. Mirrors cardano-cli conway transaction build.
 
+            Addresses (--change-address and the ADDRESS part of --tx-out) accept a
+            bech32 address, a $adahandle, an address file path, or an address name
+            (e.g. owner resolves owner.payment.addr / owner.addr in the current directory).
+
+            --tx-out is optional: a transaction that only carries certificates,
+            votes, etc. needs no explicit output; everything left after fees and
+            deposits is returned to the change address.
+
+            --change-address is optional: when omitted, the change goes back to
+            the address that owns the first --tx-in.
+
             For advanced Plutus script options (--spending-tx-in-reference,
             --tx-in-script-file, etc.), use --extra-args to pass them directly to
             cardano-cli, or use --use-cardano-cli.
@@ -49,10 +60,10 @@ extension TransactionMainCommand {
         @Option(name: .long, parsing: .upToNextOption, help: "Transaction input (TxId#TxIx). Repeat for multiple inputs.")
         var txIn: [String] = []
 
-        @Option(name: .long, parsing: .upToNextOption, help: "Transaction output as ADDRESS VALUE. Repeat for multiple outputs.")
+        @Option(name: .long, parsing: .upToNextOption, help: "Transaction output as ADDRESS+VALUE (address, $adahandle, address file or name). Optional; repeat for multiple outputs.")
         var txOut: [String] = []
 
-        @Option(name: .long, help: "Address where ADA in excess of the tx fee will go.")
+        @Option(name: .long, help: "Address where ADA in excess of the tx fee will go (address, $adahandle, address file or name). Defaults to the address of the first --tx-in.")
         var changeAddress: String?
 
         @Option(name: [.short, .long], help: "Output filepath of the JSON TxBody.")
@@ -187,6 +198,8 @@ extension TransactionMainCommand {
             // === REQUIRED: Transaction Inputs ===
             spacedPrint("\n\(.primary("━━━ Transaction Inputs ━━━"))\n")
             let txInPattern = "^[0-9a-fA-F]{64}#[0-9]+$"
+            // Addresses the inputs were browsed from — offered as the change address below.
+            var inputAddresses: [String] = []
             var addMore = true
             while addMore {
                 let method = noora.singleChoicePrompt(
@@ -197,21 +210,17 @@ extension TransactionMainCommand {
                 )
 
                 if method == "By Address (browse UTxOs)" {
-                    let addrStr = noora.textPrompt(
-                        title: "Address",
-                        prompt: "Enter the address to fetch UTxOs from:",
-                        description: "Bech32 address (addr1...) or $adahandle",
-                        collapseOnAnswer: true,
-                        validationRules: [NonEmptyValidationRule(error: "Address cannot be empty.")]
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
-
-                    guard let addr = try? Address(from: .string(addrStr)) else {
-                        noora.warning(.alert("Invalid address: \(addrStr). Skipped."))
-                        continue
-                    }
-
                     do {
                         let config = try await MultitoolConfig.load()
+                        let network = try getCardanoConfig(config: config).network
+
+                        var sourceAddress = try await getDestinationAddress(title: "Source Address")
+                        let addr = try await Self.resolvedAddress(of: &sourceAddress.info, network: network)
+                        let addrStr = try addr.toBech32()
+                        if !inputAddresses.contains(addrStr) {
+                            inputAddresses.append(addrStr)
+                        }
+
                         let context = try await getContext(config: config)
 
                         let utxos = try await noora.progressStep(
@@ -282,12 +291,17 @@ extension TransactionMainCommand {
 
             // === REQUIRED: Transaction Outputs ===
             spacedPrint("\n\(.primary("━━━ Transaction Outputs ━━━"))\n")
-            addMore = true
+            addMore = noora.yesOrNoChoicePrompt(
+                title: "Transaction Outputs",
+                question: "Add explicit transaction outputs?",
+                defaultAnswer: true,
+                description: "Not needed for transactions that only carry certificates (stake/pool registration, delegation), votes, etc. — the remaining funds are returned to the change address."
+            )
             while addMore {
                 let output = noora.textPrompt(
                     title: "Tx Output \(txOut.count + 1)",
                     prompt: "Enter transaction output (ADDRESS+VALUE):",
-                    description: "Example: addr1...xyz+2000000 or addr1...xyz+2000000+1 policyId.assetName",
+                    description: "ADDRESS can be a bech32 address, $adahandle, address file or name. Example: addr1...xyz+2000000 or owner.payment+2000000",
                     collapseOnAnswer: true,
                     validationRules: [NonEmptyValidationRule(error: "Tx output cannot be empty.")]
                 ).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -303,13 +317,23 @@ extension TransactionMainCommand {
 
             // === REQUIRED: Change Address ===
             spacedPrint("\n\(.primary("━━━ Change Address ━━━"))\n")
-            changeAddress = noora.textPrompt(
-                title: "Change Address",
-                prompt: "Enter the change address (bech32):",
-                description: "Excess ADA after fees will be sent here.",
-                collapseOnAnswer: true,
-                validationRules: [NonEmptyValidationRule(error: "Change address cannot be empty.")]
-            ).trimmingCharacters(in: .whitespacesAndNewlines)
+            if changeAddress == nil {
+                let useInputAddress = noora.yesOrNoChoicePrompt(
+                    title: "Change Address",
+                    question: "Return the change to the address of the first input?",
+                    defaultAnswer: true,
+                    description: inputAddresses.first.map { "\($0)" } ?? "The address is looked up from the first input UTxO on chain."
+                )
+                // Leave changeAddress nil when using the input address: run() resolves it from the first tx-in.
+                if useInputAddress, inputAddresses.count == 1, let inputAddress = inputAddresses.first {
+                    changeAddress = inputAddress
+                }
+                if !useInputAddress {
+                    let network = try getCardanoConfig(config: try await MultitoolConfig.load()).network
+                    var change = try await getDestinationAddress(title: "Change Address")
+                    changeAddress = try await Self.resolvedAddress(of: &change.info, network: network).toBech32()
+                }
+            }
 
             // === OPTIONAL SECTIONS — multi-select ===
             let optionalSectionChoices: [String] = [
@@ -725,17 +749,12 @@ extension TransactionMainCommand {
         // MARK: - Run
 
         mutating func run() async throws {
-            if txIn.isEmpty || changeAddress == nil || outFile == nil, isInteractiveSession() {
+            if txIn.isEmpty || outFile == nil, isInteractiveSession() {
                 try await wizard()
             }
 
             guard !txIn.isEmpty else {
                 noora.error("At least one --tx-in is required.")
-                throw ExitCode.validationFailure
-            }
-
-            guard let changeAddress = changeAddress else {
-                noora.error("--change-address is required.")
                 throw ExitCode.validationFailure
             }
 
@@ -750,6 +769,38 @@ extension TransactionMainCommand {
 
             let config = try await MultitoolConfig.load()
             let logger = getLogger(config: config)
+
+            // Resolve versatile address inputs (bech32, $adahandle, address file or name) to bech32.
+            let network = try getCardanoConfig(config: config).network
+            let changeAddress: String
+            if let changeAddressInput = self.changeAddress {
+                changeAddress = try await Self.resolveAddressInput(changeAddressInput, label: "change address", network: network)
+            } else {
+                // No change address given: return the change to the address that owns the first input.
+                let context = try await getContext(config: config)
+                let firstInput = try TransactionInput(from: txIn[0])
+                let resolved = try await noora.progressStep(
+                    message: "Looking up the address of input \(txIn[0])...",
+                    successMessage: "Change address resolved from first input.",
+                    errorMessage: "Failed to look up the first input.",
+                    showSpinner: true
+                ) { _ in
+                    try await context.utxo(input: firstInput)
+                }
+                guard let (utxo, _) = resolved else {
+                    noora.error(.alert(
+                        "Could not find input \(txIn[0]) on chain.",
+                        takeaways: ["Check the transaction hash and index, or pass --change-address explicitly."]
+                    ))
+                    throw ExitCode.failure
+                }
+                changeAddress = try utxo.output.address.toBech32()
+                spacedPrint("Change address: \(.primary(changeAddress))")
+            }
+            txOut = try await resolveTxOutAddresses(txOut, network: network)
+            if let returnCollateral = txOutReturnCollateral {
+                txOutReturnCollateral = try await resolveTxOutAddresses([returnCollateral], network: network).first
+            }
 
             spacedPrint("\n\(.primary("━━━ Building Transaction ━━━"))\n")
 
@@ -777,6 +828,54 @@ extension TransactionMainCommand {
             } else if !save {
                 try? FileManager.default.removeItem(atPath: resolvedOutFile.string)
             }
+        }
+
+        // MARK: - Address Resolution
+
+        /// The on-chain address of `info`, resolving a pending `$adahandle` against the chain first.
+        static func resolvedAddress(of info: inout AddressInfo, network: Network) async throws -> Address {
+            if info.address == nil, info.adaHandle != nil {
+                try await info.checkAdaHandle(network: network)
+            }
+            guard let address = info.address else {
+                throw ValidationError("Could not resolve an address for '\(info.adaHandle ?? info.name ?? "?")'.")
+            }
+            return address
+        }
+
+        /// Resolve a versatile address input — bech32 address, `$adahandle`, address file path,
+        /// or address name (`owner` → `owner.payment.addr` / `owner.addr`) — to a bech32 string.
+        static func resolveAddressInput(_ input: String, label: String, network: Network) async throws -> String {
+            let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard var paymentAddress = PaymentAddressInfo(argument: trimmed) else {
+                // Not a payment address, handle or file — accept any other valid address as-is (e.g. Byron).
+                if (try? Address(from: .string(trimmed))) != nil { return trimmed }
+                noora.error(.alert(
+                    "Invalid \(label): \(trimmed)",
+                    takeaways: ["Provide a bech32 address, a $adahandle, an address file path, or an address name (e.g. owner for owner.payment.addr)."]
+                ))
+                throw ExitCode.validationFailure
+            }
+            return try await resolvedAddress(of: &paymentAddress.info, network: network).toBech32()
+        }
+
+        /// Resolve the ADDRESS part of each `ADDRESS+VALUE` output, leaving the value untouched.
+        private func resolveTxOutAddresses(_ outputs: [String], network: Network) async throws -> [String] {
+            var resolved: [String] = []
+            for output in outputs {
+                guard let plusIdx = output.firstIndex(of: "+") else {
+                    noora.error(.alert(
+                        "Invalid tx-out '\(output)'.",
+                        takeaways: ["Expected ADDRESS+VALUE, e.g. addr1...+2000000 or owner.payment+2000000."]
+                    ))
+                    throw ExitCode.validationFailure
+                }
+                let address = try await Self.resolveAddressInput(
+                    String(output[..<plusIdx]), label: "tx-out address", network: network
+                )
+                resolved.append(address + String(output[plusIdx...]))
+            }
+            return resolved
         }
 
         // MARK: - cardano-cli Build
@@ -912,47 +1011,33 @@ extension TransactionMainCommand {
                 throw ExitCode.validationFailure
             }
 
-            // Resolve tx-ins by querying UTxOs at the change address
+            // Resolve tx-ins from chain (each input may live at any address).
             spacedPrint("\nResolving transaction inputs from chain...")
-            let allUtxos = try await noora.progressStep(
-                message: "Fetching UTxOs from change address...",
-                successMessage: "UTxOs retrieved.",
-                errorMessage: "Failed to retrieve UTxOs.",
-                showSpinner: true
-            ) { _ in
-                try await context.utxos(address: changeAddr)
-            }
-
-            let utxoMap = Dictionary(uniqueKeysWithValues: allUtxos.map { ($0.input.description, $0) })
-
-            var unresolvedInputs: [String] = []
             for input in txIn {
-                if let utxo = utxoMap[input] {
-                    txBuilder.addInput(utxo)
-                } else {
-                    unresolvedInputs.append(input)
+                let txInput = try TransactionInput(from: input)
+                let resolved = try await noora.progressStep(
+                    message: "Fetching \(input)...",
+                    successMessage: "Resolved \(input).",
+                    errorMessage: "Failed to resolve \(input).",
+                    showSpinner: true
+                ) { _ in
+                    try await context.utxo(input: txInput)
                 }
-            }
-
-            if !unresolvedInputs.isEmpty {
-                noora.warning(.alert(
-                    "Could not resolve \(unresolvedInputs.count) input(s) from the change address: \(unresolvedInputs.joined(separator: ", "))",
-                    takeaway: "These UTxOs may belong to a different address. Use --use-cardano-cli for transactions spanning multiple addresses."
-                ))
-
-                if txBuilder.inputs.isEmpty {
-                    noora.error("No inputs could be resolved. Cannot build transaction.")
+                guard let (utxo, isSpent) = resolved else {
+                    noora.error(.alert(
+                        "Input \(input) was not found on chain.",
+                        takeaways: ["Check the transaction hash and output index."]
+                    ))
                     throw ExitCode.failure
                 }
-
-                let continueAnyway = noora.yesOrNoChoicePrompt(
-                    title: "Continue?",
-                    question: "Continue building with only the resolvable inputs?",
-                    defaultAnswer: false
-                )
-                guard continueAnyway else {
+                guard !isSpent else {
+                    noora.error(.alert(
+                        "Input \(input) has already been spent.",
+                        takeaways: ["Pick an unspent UTxO (scm query address <address>)."]
+                    ))
                     throw ExitCode.failure
                 }
+                txBuilder.addInput(utxo)
             }
 
             // Transaction outputs
@@ -988,13 +1073,19 @@ extension TransactionMainCommand {
             // Witness override
             if let override = witnessOverride { txBuilder.witnessOverride = override }
 
-            // Certificates — loading from file is not available in the SwiftCardano public API.
-            // Warn the user and suggest --use-cardano-cli.
-            if !certificateFile.isEmpty {
-                noora.warning(.alert(
-                    "Certificate files are not supported in SwiftCardano build mode.",
-                    takeaway: "Use --use-cardano-cli to include certificates in the transaction."
-                ))
+            // Certificates — deposits/refunds are accounted for when balancing, so a
+            // certificate-only transaction needs no explicit output.
+            for certFile in certificateFile {
+                let path = FileUtils.absolutePath(certFile).string
+                guard let cborHex = try? TextEnvelope.load(from: path).cborHex,
+                      let certificate = try? Certificate.fromCBORHex(cborHex) else {
+                    noora.error(.alert(
+                        "Could not load certificate file: \(path)",
+                        takeaways: ["Ensure it is a text-envelope certificate file, or use --use-cardano-cli."]
+                    ))
+                    throw ExitCode.failure
+                }
+                txBuilder.certificates = (txBuilder.certificates ?? []) + [certificate]
             }
 
             // Withdrawals
