@@ -1,3 +1,10 @@
+## 0.12.0 (2026-09-22)
+
+### Feat
+
+- accept versatile address inputs when building transactions
+- add yaci devkit chain context and devkit mode
+
 ## 0.11.0 (2026-09-16)
 
 ### Feat
