@@ -41,7 +41,7 @@ let package = Package(
         .package(url: "https://github.com/Kingpin-Apps/swift-koios.git", from: "0.2.2"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-wallet.git", from: "1.1.2"),
         .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.1"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.5"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.6"),
         .package(url: "https://github.com/Kingpin-Apps/swift-nacl.git", .upToNextMinor(from: "1.0.2")),
         .package(url: "https://github.com/mattt/swift-configuration-toml.git", from: "2.0.0"),
         .package(url: "https://github.com/mattt/swift-toml.git", from: "2.0.0"),

@@ -135,11 +135,11 @@ public struct TextEnvelope: JSONLoadable, Sendable {
             extraArgs: args
         )
 
-        // Deliberately not `outData.isSuccessful`: that is only true when gpg emits a status
-        // line the GnuPG package recognises, and gpg 2.x reports DECRYPTION_OKAY, which it does
-        // not map, so every successful symmetric decryption reads as a failure. Judge the
-        // outcome by the plaintext gpg actually handed back; a wrong password yields none.
-        guard let cborData = outData.data, !cborData.isEmpty,
+        // Require both gpg's own verdict and usable plaintext. `isSuccessful` needs
+        // swift-gnupg >= 0.1.6, which is the first release to recognise gpg's DECRYPTION_OKAY
+        // status; before that it read every successful symmetric decryption as a failure.
+        guard outData.isSuccessful,
+              let cborData = outData.data, !cborData.isEmpty,
               let cborString = String(data: cborData, encoding: .utf8),
               !cborString.isEmpty
         else {

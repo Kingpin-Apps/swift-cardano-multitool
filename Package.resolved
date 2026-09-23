@@ -1,5 +1,5 @@
 {
-  "originHash" : "e8354c467074dd28034e4cf6177697e2ef95195726a356eb58874deb5b22befa",
+  "originHash" : "734e2f38ca2838dcc03b56348fc0f208dccb8527755b90ee5b154960b8dfde58",
   "pins" : [
     {
       "identity" : "base32",
@@ -375,8 +375,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-gnupg.git",
       "state" : {
-        "revision" : "81e1508db32be91780bba1816174e531b178a7bd",
-        "version" : "0.1.5"
+        "revision" : "1fb04e199332b203e7ed47c29b5017a0028394ce",
+        "version" : "0.1.6"
       }
     },
     {
