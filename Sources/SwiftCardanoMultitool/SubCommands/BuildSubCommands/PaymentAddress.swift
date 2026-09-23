@@ -56,7 +56,7 @@ extension BuildMainCommand {
                     paymentVkey = try filePathPrompt(
                         title: "Payment Verification Key",
                         question: "Select the payment verification key file:",
-                        fileMatches: { $0.hasSuffix(".vkey") }
+                        fileMatches: { $0.hasSuffix(".vkey") || $0.hasSuffix(".json") }
                     )
                     
                     let isStakeNeeded = noora.yesOrNoChoicePrompt(
@@ -70,7 +70,7 @@ extension BuildMainCommand {
                         stakeVkey = try filePathPrompt(
                             title: "Stake Verification Key",
                             question: "Select the stake verification key file:",
-                            fileMatches: { $0.hasSuffix(".vkey") }
+                            fileMatches: { $0.hasSuffix(".vkey") || $0.hasSuffix(".json") }
                         )
                     }
             }

@@ -163,7 +163,7 @@ func editPoolParams(
                     title: "VRF Verification Key",
                     question: "Select the new VRF verification key:",
                     description: "Changing the VRF key requires the node to run with the matching VRF signing key.",
-                    fileMatches: { $0.hasSuffix(".vrf.vkey") }
+                    fileMatches: { $0.hasSuffix(".vrf.vkey") || $0.hasSuffix(".json") }
                 )
                 draft.vrfKeyHash = try VRFVerificationKey.load(from: FileUtils.absolutePath(path).string).hash()
 
@@ -263,8 +263,8 @@ func promptStakeKey(title: String, question: String, keys: PoolKeyFileMatcher) t
         let path = try filePathPrompt(
             title: TerminalText(stringLiteral: title),
             question: "Select the stake verification key file:",
-            description: "Stake verification keys (.stake.vkey) are suggested.",
-            fileMatches: { $0.hasSuffix(".stake.vkey") },
+            description: "Stake verification keys (.stake.vkey, .json) are suggested.",
+            fileMatches: { $0.hasSuffix(".stake.vkey") || $0.hasSuffix(".json") },
             validationRules: [StakeVkeyFileValidationRule(error: "Not a stake verification key file.")]
         )
         let absolute = FileUtils.absolutePath(path)

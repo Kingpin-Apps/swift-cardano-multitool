@@ -422,7 +422,7 @@ extension TransactionMainCommand {
                     let certPath = try filePathPrompt(
                         title: "Certificate File \(certificateFile.count + 1)",
                         question: "Enter certificate file path:",
-                        fileMatches: { $0.hasSuffix(".cert") }
+                        fileMatches: { $0.hasSuffix(".cert") || $0.hasSuffix(".json") }
                     )
                     certificateFile.append(certPath)
 
@@ -510,7 +510,7 @@ extension TransactionMainCommand {
                         let path = try filePathPrompt(
                             title: "Signer Key File",
                             question: "Enter signing key file path:",
-                            fileMatches: { $0.hasSuffix(".skey") || $0.hasSuffix(".vkey") }
+                            fileMatches: { [".skey", ".vkey", ".json"].contains(where: $0.hasSuffix) }
                         )
                         requiredSigner.append(path)
                     } else {
@@ -644,7 +644,7 @@ extension TransactionMainCommand {
                         let path = try filePathPrompt(
                             title: "Vote File \(voteFile.count + 1)",
                             question: "Enter vote file path:",
-                            fileMatches: { $0.hasSuffix(".vote") }
+                            fileMatches: { $0.hasSuffix(".vote") || $0.hasSuffix(".json") }
                         )
                         voteFile.append(path)
                         addMore = noora.yesOrNoChoicePrompt(
@@ -666,7 +666,7 @@ extension TransactionMainCommand {
                         let path = try filePathPrompt(
                             title: "Proposal File \(proposalFile.count + 1)",
                             question: "Enter proposal file path:",
-                            fileMatches: { $0.hasSuffix(".action") || $0.hasSuffix(".proposal") }
+                            fileMatches: { [".action", ".proposal", ".json"].contains(where: $0.hasSuffix) }
                         )
                         proposalFile.append(path)
                         addMore = noora.yesOrNoChoicePrompt(

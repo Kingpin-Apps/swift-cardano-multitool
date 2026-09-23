@@ -21,7 +21,7 @@ extension ProtectMainCommand {
             fileName = try filePathPrompt(
                 title: "Signing Key Files",
                 question: "Select the .skey file to decrypt.",
-                fileMatches: { $0.hasSuffix(".skey") }
+                fileMatches: { $0.hasSuffix(".skey") || $0.hasSuffix(".json") }
             )
         }
         

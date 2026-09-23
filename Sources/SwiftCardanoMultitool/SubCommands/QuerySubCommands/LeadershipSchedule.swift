@@ -129,7 +129,7 @@ extension QueryMainCommand {
                     vrfSkey = try filePathPrompt(
                         title: "VRF Signing Key",
                         question: "Select the VRF signing key file:",
-                        fileMatches: { $0.hasSuffix(".vrf.skey") }
+                        fileMatches: { $0.hasSuffix(".vrf.skey") || $0.hasSuffix(".json") }
                     )
                     
                     poolOperator = try await getPoolOperator()

@@ -83,14 +83,14 @@ extension GenerateMainCommand {
                     title: "\(title)",
                     question: "Enter the \(title.lowercased()) file path (leave empty to skip):",
                     description: description,
-                    fileMatches: { $0.hasSuffix(fileExtension) }
+                    fileMatches: { $0.hasSuffix(fileExtension) || $0.hasSuffix(".json") }
                 )
             }
             return try filePathPrompt(
                 title: "\(title)",
                 question: "Enter the \(title.lowercased()) file path:",
                 description: description,
-                fileMatches: { $0.hasSuffix(fileExtension) }
+                fileMatches: { $0.hasSuffix(fileExtension) || $0.hasSuffix(".json") }
             )
         }
         

@@ -614,7 +614,7 @@ struct KeyHashInput {
             verificationKeyFile = try promptFilePath(
                 title: "\(role.label.prefix(1).uppercased() + role.label.dropFirst()) Verification Key",
                 question: "Select the \(role.label) verification key file:",
-                matching: { $0.hasSuffix(".vkey") }
+                matching: { $0.hasSuffix(".vkey") || $0.hasSuffix(".json") }
             )
         } else {
             verificationKey = noora.textPrompt(

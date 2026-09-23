@@ -59,7 +59,7 @@ extension CertificateMainCommand {
                 genesisVerificationKeyFile = try filePathPrompt(
                     title: "Genesis VKey",
                     question: "Select the genesis verification key file:",
-                    fileMatches: { $0.hasSuffix(".genesis.vkey") || $0.hasSuffix(".genesis-vkey") }
+                    fileMatches: { [".genesis.vkey", ".genesis-vkey", ".json"].contains(where: $0.hasSuffix) }
                 ).string
             }
 
@@ -67,7 +67,7 @@ extension CertificateMainCommand {
                 genesisDelegateVerificationKeyFile = try filePathPrompt(
                     title: "Genesis Delegate VKey",
                     question: "Select the genesis delegate verification key file:",
-                    fileMatches: { $0.hasSuffix(".delegate.vkey") || $0.hasSuffix(".genesis-delegate.vkey") }
+                    fileMatches: { [".delegate.vkey", ".genesis-delegate.vkey", ".json"].contains(where: $0.hasSuffix) }
                 ).string
             }
 
@@ -75,7 +75,7 @@ extension CertificateMainCommand {
                 vrfVerificationKeyFile = try filePathPrompt(
                     title: "VRF VKey",
                     question: "Select the VRF verification key file (.vrf.vkey):",
-                    fileMatches: { $0.hasSuffix(".vrf.vkey") }
+                    fileMatches: { $0.hasSuffix(".vrf.vkey") || $0.hasSuffix(".json") }
                 ).string
             }
 

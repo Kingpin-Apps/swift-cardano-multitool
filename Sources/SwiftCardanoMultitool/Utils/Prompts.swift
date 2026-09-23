@@ -196,8 +196,8 @@ func getTransactionFilePath(title: TerminalText? = nil) async throws -> FilePath
     try filePathPrompt(
         title: title ?? "Transaction File",
         question: "Select the transaction file:",
-        description: "Transaction files (.tx, .raw, .signed) are suggested; any file can be chosen.",
-        fileMatches: { [".tx", ".raw", ".signed"].contains(where: $0.hasSuffix) }
+        description: "Transaction files (.tx, .raw, .signed, .json) are suggested; any file can be chosen.",
+        fileMatches: { [".tx", ".raw", ".signed", ".json"].contains(where: $0.hasSuffix) }
     )
 }
 
@@ -208,8 +208,8 @@ func getSigningKeyFilePath(title: TerminalText? = nil) async throws -> FilePath 
     try filePathPrompt(
         title: title ?? "Signing Key File",
         question: "Select the signing key file:",
-        description: "Signing keys (.skey, .hwsfile) are suggested; any file can be chosen.",
-        fileMatches: { $0.hasSuffix(".skey") || $0.hasSuffix(".hwsfile") }
+        description: "Signing keys (.skey, .hwsfile, .json) are suggested; any file can be chosen.",
+        fileMatches: { [".skey", ".hwsfile", ".json"].contains(where: $0.hasSuffix) }
     )
 }
 
@@ -220,8 +220,8 @@ func getWitnessFilePath(title: TerminalText? = nil) async throws -> FilePath {
     try filePathPrompt(
         title: title ?? "Witness File",
         question: "Select the witness file:",
-        description: "Witness files (.witness) are suggested; any file can be chosen.",
-        fileMatches: { $0.hasSuffix(".witness") }
+        description: "Witness files (.witness, .json) are suggested; any file can be chosen.",
+        fileMatches: { $0.hasSuffix(".witness") || $0.hasSuffix(".json") }
     )
 }
 
@@ -278,8 +278,8 @@ func getDRep(title: TerminalText? = nil) async throws -> DRep {
             let drepFileName = try filePathPrompt(
                 title: "DRep ID",
                 question: "Select the DRep Verification Key file:",
-                description: ".drep.vkey files are suggested.",
-                fileMatches: { $0.hasSuffix(".drep.vkey") }
+                description: ".drep.vkey and .json files are suggested.",
+                fileMatches: { $0.hasSuffix(".drep.vkey") || $0.hasSuffix(".json") }
             )
             let drepVKey = try DRepVerificationKey.load(from: FileUtils.absolutePath(drepFileName).string)
             return DRep(credential: .verificationKeyHash(try drepVKey.hash()))
@@ -287,8 +287,8 @@ func getDRep(title: TerminalText? = nil) async throws -> DRep {
             let drepFileName = try filePathPrompt(
                 title: "DRep ID",
                 question: "Select the DRep Signing Key file:",
-                description: ".drep.skey files are suggested.",
-                fileMatches: { $0.hasSuffix(".drep.skey") }
+                description: ".drep.skey and .json files are suggested.",
+                fileMatches: { $0.hasSuffix(".drep.skey") || $0.hasSuffix(".json") }
             )
             let drepSKey = try DRepSigningKey.load(
                 from: FileUtils.absolutePath(drepFileName).string
@@ -336,8 +336,8 @@ func getPoolOperator(title: TerminalText? = nil) async throws -> PoolOperator {
             let poolOperatorFileName = try filePathPrompt(
                 title: "Pool VKey",
                 question: "Select the Node Verification Key file:",
-                description: ".node.vkey files are suggested.",
-                fileMatches: { $0.hasSuffix(".node.vkey") }
+                description: ".node.vkey and .json files are suggested.",
+                fileMatches: { $0.hasSuffix(".node.vkey") || $0.hasSuffix(".json") }
             )
             let poolOperatorVKey = try StakePoolVerificationKey.load(from: FileUtils.absolutePath(poolOperatorFileName).string
             )
@@ -346,8 +346,8 @@ func getPoolOperator(title: TerminalText? = nil) async throws -> PoolOperator {
             let poolOperatorFileName = try filePathPrompt(
                 title: "Pool SKey",
                 question: "Select the Node Signing Key file:",
-                description: ".node.skey files are suggested.",
-                fileMatches: { $0.hasSuffix(".node.skey") }
+                description: ".node.skey and .json files are suggested.",
+                fileMatches: { $0.hasSuffix(".node.skey") || $0.hasSuffix(".json") }
             )
             let poolOperatorSKey = try StakePoolSigningKey.load(
                 from: FileUtils.absolutePath(poolOperatorFileName).string
@@ -397,8 +397,8 @@ func getCommitteeColdCredential(title: TerminalText? = nil) async throws -> Comm
             let fileName = try filePathPrompt(
                 title: "CC Cold VKey",
                 question: "Select the Committee Cold verification key file:",
-                description: ".cc-cold.vkey files are suggested.",
-                fileMatches: { $0.hasSuffix(".cc-cold.vkey") }
+                description: ".cc-cold.vkey and .json files are suggested.",
+                fileMatches: { $0.hasSuffix(".cc-cold.vkey") || $0.hasSuffix(".json") }
             )
             let vkey = try CommitteeColdVerificationKey.load(from: FileUtils.absolutePath(fileName).string)
             return CommitteeColdCredential(credential: .verificationKeyHash(try vkey.hash()))
@@ -406,8 +406,8 @@ func getCommitteeColdCredential(title: TerminalText? = nil) async throws -> Comm
             let fileName = try filePathPrompt(
                 title: "CC Cold SKey",
                 question: "Select the Committee Cold signing key file:",
-                description: ".cc-cold.skey files are suggested.",
-                fileMatches: { $0.hasSuffix(".cc-cold.skey") }
+                description: ".cc-cold.skey and .json files are suggested.",
+                fileMatches: { $0.hasSuffix(".cc-cold.skey") || $0.hasSuffix(".json") }
             )
             let skey = try CommitteeColdSigningKey.load(from: FileUtils.absolutePath(fileName).string)
             let vkey: CommitteeColdVerificationKey = try skey.toVerificationKey()
@@ -444,8 +444,8 @@ func getCommitteeHotCredential(title: TerminalText? = nil) async throws -> Commi
             let fileName = try filePathPrompt(
                 title: "CC Hot VKey",
                 question: "Select the Committee Hot verification key file:",
-                description: ".cc-hot.vkey files are suggested.",
-                fileMatches: { $0.hasSuffix(".cc-hot.vkey") }
+                description: ".cc-hot.vkey and .json files are suggested.",
+                fileMatches: { $0.hasSuffix(".cc-hot.vkey") || $0.hasSuffix(".json") }
             )
             let vkey = try CommitteeHotVerificationKey.load(from: FileUtils.absolutePath(fileName).string)
             return CommitteeHotCredential(credential: .verificationKeyHash(try vkey.hash()))
@@ -453,8 +453,8 @@ func getCommitteeHotCredential(title: TerminalText? = nil) async throws -> Commi
             let fileName = try filePathPrompt(
                 title: "CC Hot SKey",
                 question: "Select the Committee Hot signing key file:",
-                description: ".cc-hot.skey files are suggested.",
-                fileMatches: { $0.hasSuffix(".cc-hot.skey") }
+                description: ".cc-hot.skey and .json files are suggested.",
+                fileMatches: { $0.hasSuffix(".cc-hot.skey") || $0.hasSuffix(".json") }
             )
             let skey = try CommitteeHotSigningKey.load(from: FileUtils.absolutePath(fileName).string)
             let vkey: CommitteeHotVerificationKey = try skey.toVerificationKey()
@@ -491,8 +491,8 @@ func getDRepCredential(title: TerminalText? = nil) async throws -> DRepCredentia
             let fileName = try filePathPrompt(
                 title: "DRep VKey",
                 question: "Select the DRep verification key file:",
-                description: ".drep.vkey files are suggested.",
-                fileMatches: { $0.hasSuffix(".drep.vkey") }
+                description: ".drep.vkey and .json files are suggested.",
+                fileMatches: { $0.hasSuffix(".drep.vkey") || $0.hasSuffix(".json") }
             )
             let vkey = try DRepVerificationKey.load(from: FileUtils.absolutePath(fileName).string)
             return DRepCredential(credential: .verificationKeyHash(try vkey.hash()))
@@ -500,8 +500,8 @@ func getDRepCredential(title: TerminalText? = nil) async throws -> DRepCredentia
             let fileName = try filePathPrompt(
                 title: "DRep SKey",
                 question: "Select the DRep signing key file:",
-                description: ".drep.skey files are suggested.",
-                fileMatches: { $0.hasSuffix(".drep.skey") }
+                description: ".drep.skey and .json files are suggested.",
+                fileMatches: { $0.hasSuffix(".drep.skey") || $0.hasSuffix(".json") }
             )
             let skey = try DRepSigningKey.load(from: FileUtils.absolutePath(fileName).string)
             let vkey: DRepVerificationKey = try skey.toVerificationKey()

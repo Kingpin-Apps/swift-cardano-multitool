@@ -140,12 +140,13 @@ func selectVoterVKeyInteractive() throws -> FilePath {
     try filePathPrompt(
         title: "Voter Key",
         question: "Select the voter verification key to use:",
-        description: "Voter keys (.drep.vkey, .node.vkey, .cc-hot.vkey) are suggested; the role is inferred from the file name.",
+        description: "Voter keys (.drep.vkey, .node.vkey, .cc-hot.vkey, .json) are suggested; the role is inferred from the file name.",
         fileMatches: { name in
             let lower = name.lowercased()
             return lower.hasSuffix(".drep.vkey")
                 || lower.hasSuffix(".node.vkey")
                 || lower.hasSuffix(".cc-hot.vkey")
+                || lower.hasSuffix(".json")
         }
     )
 }

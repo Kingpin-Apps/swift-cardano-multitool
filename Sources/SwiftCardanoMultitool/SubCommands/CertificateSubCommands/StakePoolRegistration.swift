@@ -1415,7 +1415,7 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
             coldSkey = try promptSigningKeyFile(
                 title: "Pool Cold Signing Key",
                 question: "Select the pool cold signing key:",
-                suffixes: [".skey", ".hwsfile"]
+                suffixes: [".skey", ".hwsfile", ".json"]
             )
         }
         guard let coldSkey else {
@@ -1450,7 +1450,7 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
                 skey = try promptSigningKeyFile(
                     title: "Owner Stake Signing Key",
                     question: "Select the stake signing key for owner \(label):",
-                    suffixes: [".skey", ".hwsfile"]
+                    suffixes: [".skey", ".hwsfile", ".json"]
                 )
                 if let chosen = skey, PoolKeyFileMatcher.envelopeType(of: chosen) != nil,
                    PoolKeyFileMatcher.stakeKeyHash(ofSkeyFile: chosen)?.payload != owner.payload {

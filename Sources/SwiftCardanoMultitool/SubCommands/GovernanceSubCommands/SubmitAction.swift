@@ -49,7 +49,7 @@ extension GovernanceMainCommand {
                 actionFile = [try filePathPrompt(
                     title: "Action File",
                     question: "Select the .action file to submit:",
-                    fileMatches: { $0.lowercased().hasSuffix(".action") }
+                    fileMatches: { $0.lowercased().hasSuffix(".action") || $0.lowercased().hasSuffix(".json") }
                 )]
             }
 

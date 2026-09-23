@@ -146,7 +146,7 @@ extension CertificateMainCommand {
                 title: "Pool Cold Signing Key",
                 question: "Select the pool cold signing key:",
                 description: "The cold key must witness the retirement transaction.",
-                fileMatches: { $0.hasSuffix(".node.skey") }
+                fileMatches: { $0.hasSuffix(".node.skey") || $0.hasSuffix(".json") }
             )
         }
         

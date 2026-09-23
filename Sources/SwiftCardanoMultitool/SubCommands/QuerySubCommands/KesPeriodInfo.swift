@@ -93,7 +93,7 @@ extension QueryMainCommand {
                     opCert = try filePathPrompt(
                         title: "OpCert Files",
                         question: "Select the OpCert file:",
-                        fileMatches: { $0.hasSuffix(".opcert") }
+                        fileMatches: { $0.hasSuffix(".opcert") || $0.hasSuffix(".json") }
                     )
                     
             }

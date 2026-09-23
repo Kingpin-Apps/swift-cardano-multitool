@@ -55,7 +55,7 @@ struct TextViewMainCommand: AsyncParsableCommand {
             question: "Select the file to decode:",
             matching: { name in
                 [".vkey", ".skey", ".cert", ".opcert", ".counter", ".vote", ".action", ".tx", ".raw",
-                 ".signed", ".witness", ".plutus", ".script"].contains(where: name.hasSuffix)
+                 ".signed", ".witness", ".plutus", ".script", ".json"].contains(where: name.hasSuffix)
             }
         )
         outputCBOR = noora.yesOrNoChoicePrompt(
