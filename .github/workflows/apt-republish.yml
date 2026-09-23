@@ -1,0 +1,102 @@
+name: Republish APT
+
+# Recovery path for when a release's GitHub assets exist but the APT repo was not
+# updated — e.g. the Release run was cancelled after the build jobs succeeded.
+#
+# Takes the .deb assets already attached to a published release and runs the same
+# `just apt-publish` the Release workflow does. Nothing is rebuilt, so this costs a
+# couple of Linux minutes instead of a full ~40-minute release matrix.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Released tag whose .deb assets should be published (e.g. 0.13.0).
+        type: string
+        required: true
+      dry-run:
+        description: Build and sign the indexes but do not push to the APT repo.
+        type: boolean
+        default: false
+
+# Shares the Release workflow's group: both rewrite the APT repo, so they must
+# never run at the same time. Never cancel — a half-written repo is worse than a wait.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  republish:
+    name: Republish ${{ inputs.version }} to APT
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: extractions/setup-just@v4
+
+      - name: Check publishing secrets
+        env:
+          APT_REPO_TOKEN: ${{ secrets.APT_REPO_TOKEN }}
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+        # Fail before touching anything rather than halfway through.
+        run: |
+          if [ -z "${APT_REPO_TOKEN:-}" ] || [ -z "${APT_GPG_PRIVATE_KEY:-}" ]; then
+            echo "::error::APT_REPO_TOKEN and APT_GPG_PRIVATE_KEY secrets are required to update Kingpin-Apps/apt." >&2
+            exit 1
+          fi
+
+      - name: Download .deb assets from the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          gh release download "$VERSION" --pattern '*.deb' --dir dist
+          # apt-publish globs dist/*.deb; make sure both arches actually arrived.
+          for arch in amd64 arm64; do
+            if ! ls dist/*_"${arch}".deb >/dev/null 2>&1; then
+              echo "::error::No ${arch} .deb among the $VERSION release assets." >&2
+              exit 1
+            fi
+          done
+          ls -la dist/
+
+      - uses: actions/checkout@v7
+        with:
+          repository: Kingpin-Apps/apt
+          token: ${{ secrets.APT_REPO_TOKEN }}
+          path: apt-repo
+
+      - name: Rebuild and sign the APT indexes
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+          APT_GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y -qq apt-utils
+          echo "$APT_GPG_PRIVATE_KEY" | gpg --batch --import
+          just apt-publish apt-repo
+
+      - name: Publish
+        if: ${{ !inputs.dry-run }}
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Published as a single orphan commit, matching the Release workflow: the
+          # pool holds ~100MB of .debs per release, which would bloat the history.
+          git checkout --orphan publish
+          git add -A
+          git commit -q -m "swift-cardano-multitool ${VERSION}"
+          git push --force origin publish:main
+
+      - name: Dry run summary
+        if: ${{ inputs.dry-run }}
+        run: |
+          echo "Dry run — nothing pushed. The APT repo would have become:"
+          ls -R apt-repo/dists apt-repo/pool | head -40
