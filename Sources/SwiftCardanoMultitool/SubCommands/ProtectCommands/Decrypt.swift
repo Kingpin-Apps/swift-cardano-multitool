@@ -14,6 +14,15 @@ extension ProtectMainCommand {
         
         @Option(name: .shortAndLong, help: "The name of the file to decrypt.")
         var fileName: FilePath? = nil
+
+        @Flag(
+            name: [.customShort("y"), .long],
+            help: """
+                Answer yes to every confirmation. Combined with \(Environment.decryptPassword.rawValue) \
+                and --file-name this lets 'protect decrypt' run without a terminal.
+                """
+        )
+        var yes: Bool = false
         
         mutating func validate() throws {}
         
@@ -26,19 +35,33 @@ extension ProtectMainCommand {
         }
         
         mutating func run() async throws {
-            // Decryption needs an interactive password prompt (no flag for it),
-            // so fail clearly instead of aborting inside a prompt when there is
-            // no interactive terminal.
-            guard isInteractiveSession() else {
-                noora.error(.alert(
-                    "'protect decrypt' requires an interactive terminal.",
-                    takeaways: [
-                        "It asks you to confirm the file and whether to write the result, which have no command-line flags.",
-                        "Set \(Environment.decryptPassword.rawValue) to supply the password without a prompt; the confirmations still need a terminal.",
-                        "Run it in an interactive shell (not piped/CI), and make sure CARDANO_MULTITOOL_SKIP_PROMPT is not set."
-                    ]
-                ))
-                throw ExitCode.validationFailure
+            // Without a terminal every input must come from the command line: --yes for the
+            // confirmations, the environment for the password and --file-name for the file.
+            let interactive = isInteractiveSession()
+            if !interactive {
+                var missing: [TerminalText] = []
+                if !yes {
+                    missing.append("Pass --yes to answer the confirmations, which otherwise need a terminal.")
+                }
+                if Environment.get(.decryptPassword) == nil {
+                    missing.append(
+                        "Set \(Environment.decryptPassword.rawValue) to supply the password, which has no command-line flag."
+                    )
+                }
+                if fileName == nil {
+                    missing.append("Pass --file-name, since the file cannot be chosen interactively.")
+                }
+
+                if !missing.isEmpty {
+                    missing.append(
+                        "Or run it in an interactive shell and make sure CARDANO_MULTITOOL_SKIP_PROMPT is not set."
+                    )
+                    noora.error(.alert(
+                        "'protect decrypt' requires an interactive terminal, or enough input to run without one.",
+                        takeaways: missing
+                    ))
+                    throw ExitCode.validationFailure
+                }
             }
 
             if fileName == nil {
@@ -63,7 +86,7 @@ extension ProtectMainCommand {
                 throw ExitCode.validationFailure
             }
             
-            let confirm = noora.yesOrNoChoicePrompt(
+            let confirm = yes || noora.yesOrNoChoicePrompt(
                 title: "Confirmation",
                 question: "Is this correct, continue?",
                 defaultAnswer: false,
@@ -97,7 +120,7 @@ extension ProtectMainCommand {
             ))
             try noora.json(skey)
             
-            let saveFile = noora.yesOrNoChoicePrompt(
+            let saveFile = yes || noora.yesOrNoChoicePrompt(
                 title: "Save File",
                 question: "Write decrypted SKEY-File to disc?",
                 defaultAnswer: false,
