@@ -9,6 +9,12 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Rapid pushes used to stack full macOS runs that nobody reads. Keep only the
+# newest run per ref; macOS minutes bill at 10x Linux.
+concurrency:
+  group: swift-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   macos:

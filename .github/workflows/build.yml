@@ -1,7 +1,7 @@
 name: Build binaries
 
-# Reusable release build: one job per platform/arch, all in parallel, each
-# restoring its compiled dependencies from the Actions cache.
+# Reusable release build: one job per platform (both macOS slices share a job),
+# running in parallel and restoring compiled dependencies from the Actions cache.
 #
 # Caches are keyed on the toolchain + Package.resolved. Tag runs can only read
 # caches saved on the default branch, so the Release workflow restores only and
@@ -20,14 +20,14 @@ on:
         default: false
 
 jobs:
+  # Both macOS slices build in ONE job. They were a 2-job matrix, but each job paid
+  # a separate macOS runner spin-up (checkout, Xcode select, toolchain warm-up) to
+  # produce halves that are immediately lipo'd together — and macOS minutes bill at
+  # 10x Linux. Building both here reuses one spin-up and one shared .build cache.
   macos:
-    name: macOS ${{ matrix.arch }}
+    name: macOS universal slices
     runs-on: macos-15
     timeout-minutes: 60
-    strategy:
-      fail-fast: true
-      matrix:
-        arch: [arm64, x86_64]
     steps:
       - uses: actions/checkout@v7
 
@@ -42,8 +42,10 @@ jobs:
         run: |
           swift --version
           TOOLCHAIN=$(swift --version 2>&1 | shasum -a 256 | cut -c1-16)
-          echo "prefix=swiftpm-macos-release-${{ matrix.arch }}-${TOOLCHAIN}-" >> "$GITHUB_OUTPUT"
+          echo "prefix=swiftpm-macos-release-${TOOLCHAIN}-" >> "$GITHUB_OUTPUT"
 
+      # One cache for both slices: swiftpm keeps them in separate
+      # .build/<arch>-apple-macosx directories, so they never collide.
       - name: Restore build cache
         id: cache
         uses: actions/cache/restore@v6
@@ -52,8 +54,11 @@ jobs:
           key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
           restore-keys: ${{ steps.key.outputs.prefix }}
 
-      - name: Build
-        run: just release-arch ${{ matrix.arch }}
+      - name: Build arm64
+        run: just release-arch arm64
+
+      - name: Build x86_64
+        run: just release-arch x86_64
 
       - name: Save build cache
         if: inputs.save-cache && steps.cache.outputs.cache-hit != 'true'
@@ -62,10 +67,19 @@ jobs:
           path: .build
           key: ${{ steps.key.outputs.prefix }}${{ hashFiles('Package.resolved') }}
 
+      # Artifact names are unchanged so the Release workflow's `scm-macos-*`
+      # download pattern keeps working.
       - uses: actions/upload-artifact@v7
         with:
-          name: scm-macos-${{ matrix.arch }}
-          path: .build/${{ matrix.arch }}-apple-macosx/release/scm
+          name: scm-macos-arm64
+          path: .build/arm64-apple-macosx/release/scm
+          if-no-files-found: error
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: scm-macos-x86_64
+          path: .build/x86_64-apple-macosx/release/scm
           if-no-files-found: error
           retention-days: 1
 

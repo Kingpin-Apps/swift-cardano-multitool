@@ -8,6 +8,12 @@ on:
 permissions:
   contents: write
 
+# Releases queue rather than cancel: a half-finished run can leave the GitHub
+# release, the APT repo and the Homebrew tap out of step with each other.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   # Gate publishing on a green build + test of the exact tagged commit. The
   # Swift workflow only runs on branch/PR pushes, not tags, so we re-run the
