@@ -263,20 +263,107 @@ struct TextEnvelopeAsyncLoadTests {
     }
 }
 
-/// True when a `gpg` binary is on PATH; the encryption suite needs one.
-func gpgIsAvailable() -> Bool {
+/// Whether this environment can actually perform gpg symmetric crypto.
+///
+/// Finding the binary is not enough. CI runners ship `gpg` but often have no usable gpg-agent,
+/// and a gpg call that blocks there never returns — which starves Swift's cooperative thread
+/// pool and wedges the whole test process rather than failing. So prove it works with a real
+/// encrypt/decrypt round-trip under a hard timeout, and let the gpg suites skip when it does not.
+///
+/// The probe runs once; the result is cached for the lifetime of the test process. It uses plain
+/// subprocesses and files (never async, never pipes) so it cannot deadlock the runner or fill a
+/// pipe buffer, and it works in an isolated GNUPGHOME so it never touches the user's keyring.
+let gpgIsAvailableResult: Bool = probeGPG()
+
+func gpgIsAvailable() -> Bool { gpgIsAvailableResult }
+
+/// Locate `gpg`, tolerating a PATH that lacks Homebrew (Xcode's test runner strips it).
+private func locateGPG() -> String? {
+    let candidates = ["/opt/homebrew/bin/gpg", "/usr/local/bin/gpg", "/usr/bin/gpg", "/bin/gpg"]
+    for candidate in candidates where FileManager.default.isExecutableFile(atPath: candidate) {
+        return candidate
+    }
+
+    let which = Process()
+    which.executableURL = URL(fileURLWithPath: "/usr/bin/which")
+    which.arguments = ["gpg"]
+    let out = Pipe()
+    which.standardOutput = out
+    which.standardError = Pipe()
+    guard (try? which.run()) != nil else { return nil }
+    which.waitUntilExit()
+    guard which.terminationStatus == 0 else { return nil }
+    let path = String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    return path.isEmpty ? nil : path
+}
+
+/// Run gpg to completion, killing it and reporting failure if it outlasts `timeout`.
+private func runGPG(_ gpg: String, _ arguments: [String], timeout: TimeInterval = 20) -> Bool {
     let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/which")
-    process.arguments = ["gpg"]
-    process.standardOutput = Pipe()
-    process.standardError = Pipe()
-    do {
-        try process.run()
-        process.waitUntilExit()
-        return process.terminationStatus == 0
-    } catch {
+    process.executableURL = URL(fileURLWithPath: gpg)
+    process.arguments = arguments
+    process.standardOutput = FileHandle.nullDevice
+    process.standardError = FileHandle.nullDevice
+    process.standardInput = FileHandle.nullDevice
+    guard (try? process.run()) != nil else { return false }
+
+    let deadline = Date().addingTimeInterval(timeout)
+    while process.isRunning && Date() < deadline {
+        usleep(50_000)
+    }
+    if process.isRunning {
+        process.terminate()
+        usleep(200_000)
+        if process.isRunning { kill(process.processIdentifier, SIGKILL) }
         return false
     }
+    return process.terminationStatus == 0
+}
+
+private func probeGPG() -> Bool {
+    guard let gpg = locateGPG() else { return false }
+
+    let fm = FileManager.default
+    // Deliberately short, and deliberately NOT an isolated --homedir. gpg-agent's socket lives
+    // in GNUPGHOME and a Unix socket path is capped near 104 bytes, so a long temp path fails
+    // with "can't connect to the gpg-agent: File name too long". More importantly, the code
+    // under test uses the *default* home, so the probe has to exercise that same home for its
+    // answer to mean anything. Symmetric encryption writes no keys to the keyring.
+    let root = URL(fileURLWithPath: "/tmp")
+        .appendingPathComponent("scmgpg-\(UUID().uuidString.prefix(8))")
+    guard (try? fm.createDirectory(
+        at: root,
+        withIntermediateDirectories: true,
+        attributes: [.posixPermissions: 0o700]
+    )) != nil else { return false }
+    defer { try? fm.removeItem(at: root) }
+
+    let plain = root.appendingPathComponent("plain.txt")
+    let cipher = root.appendingPathComponent("cipher.gpg")
+    let out = root.appendingPathComponent("out.txt")
+    let payload = "swift-cardano-multitool gpg probe"
+    guard (try? payload.write(to: plain, atomically: true, encoding: .utf8)) != nil else {
+        return false
+    }
+
+    let base = [
+        "--batch", "--yes",
+        "--pinentry-mode", "loopback",
+        "--passphrase", "Pr0be!Passphrase#1",
+        "--no-tty",
+    ]
+
+    guard runGPG(gpg, base + [
+        "--symmetric", "--cipher-algo", "AES256",
+        "--output", cipher.path, plain.path,
+    ]) else { return false }
+
+    guard runGPG(gpg, base + ["--decrypt", "--output", out.path, cipher.path]) else {
+        return false
+    }
+
+    return (try? String(contentsOf: out, encoding: .utf8)) == payload
 }
 
 @Suite("TextEnvelope description marker")
@@ -493,5 +580,35 @@ struct TextEnvelopeLoadRawTests {
             let json = String(data: try JSONEncoder().encode(raw), encoding: .utf8)!
             #expect(!json.contains("encrHex"))
         }
+    }
+}
+
+@Suite("gpg probe safety")
+struct GPGProbeSafetyTests {
+
+    @Test("a gpg that never exits is killed and reported unavailable")
+    func hangingProcessTimesOut() {
+        // The property that keeps CI from wedging: a blocked gpg must be killed, not waited on.
+        let start = Date()
+        let succeeded = runGPG("/bin/sh", ["-c", "sleep 120"], timeout: 2)
+        let elapsed = Date().timeIntervalSince(start)
+
+        #expect(succeeded == false)
+        #expect(elapsed < 15, "the probe should give up after its timeout, not block")
+    }
+
+    @Test("a failing gpg is reported unavailable")
+    func failingProcessReportsFailure() {
+        #expect(runGPG("/bin/sh", ["-c", "exit 3"], timeout: 10) == false)
+    }
+
+    @Test("a succeeding gpg is reported available")
+    func succeedingProcessReportsSuccess() {
+        #expect(runGPG("/bin/sh", ["-c", "exit 0"], timeout: 10) == true)
+    }
+
+    @Test("a missing binary is reported unavailable")
+    func missingBinaryReportsFailure() {
+        #expect(runGPG("/nonexistent/gpg-\(UUID().uuidString)", ["--version"], timeout: 10) == false)
     }
 }
