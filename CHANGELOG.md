@@ -1,3 +1,16 @@
+## 0.13.0 (2026-09-23)
+
+### Feat
+
+- add --yes to protect decrypt for non-interactive use
+- honor CARDANO_MULTITOOL_DECRYPT_PASSWORD in protect decrypt
+- suggest .json files in envelope file prompts
+
+### Fix
+
+- read the stored envelope in protect encrypt and decrypt
+- drop the plaintext cborHex when encrypting a signing key
+
 ## 0.12.0 (2026-09-22)
 
 ### Feat
