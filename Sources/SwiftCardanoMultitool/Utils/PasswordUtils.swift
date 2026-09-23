@@ -104,6 +104,42 @@ public class PasswordUtils {
         }
     }
     
+    /// The password used to decrypt a file.
+    ///
+    /// When `CARDANO_MULTITOOL_DECRYPT_PASSWORD` is set its value is used, so decryption can run
+    /// without a password prompt; the value must still meet the strength rules. Otherwise the
+    /// user is prompted.
+    /// - Parameter prompt: The prompt shown when falling back to interactive entry.
+    /// - Returns: The password, and whether it came from the environment.
+    /// - Throws: `ExitCode.validationFailure` if the environment password is not strong enough.
+    public static func getDecryptionPassword(
+        prompt: TerminalText
+    ) async throws -> (password: String, fromEnvironment: Bool) {
+        guard let envPassword = Environment.get(.decryptPassword) else {
+            let password = try await getSecurePassword(
+                prompt: prompt,
+                allowEmpty: false,
+                validateStrength: true
+            )
+            return (password, false)
+        }
+
+        guard PasswordUtils(envPassword).isValid else {
+            noora.error(
+                .alert(
+                    "This is not a strong password via \(Environment.decryptPassword.rawValue)... abort!",
+                    takeaways: [
+                        "Please provide a strong password that meets the criteria.",
+                        "Ensure the password is at least 10 characters long and includes a mix of uppercase letters, lowercase letters, numbers, and special characters.",
+                    ]
+                )
+            )
+            throw ExitCode.validationFailure
+        }
+
+        return (envPassword, true)
+    }
+
     public static func getConfirmedPassword(prompt: TerminalText, cleanup: [FilePath]? = nil) async throws-> String {
         print(
             noora.format("Please provide a strong password \(.primary("(min. 10 chars, uppercase, lowercase, special chars)")) for the encryption ...\n"),

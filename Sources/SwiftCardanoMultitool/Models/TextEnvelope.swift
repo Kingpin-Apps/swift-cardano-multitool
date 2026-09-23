@@ -232,34 +232,10 @@ public struct TextEnvelope: JSONLoadable, Sendable {
         
         var decrypted: TextEnvelope? = nil
         while decrypted == nil {
-            let envPassword = Environment.get(.decryptPassword)
-            
-            let password: String
-            var viaEnv = ""
-            
-            if let _envPassword = envPassword {
-                // validate strength
-                if !PasswordUtils(_envPassword).isValid {
-                    noora.error(
-                        .alert(
-                            "This is not a strong password via \(Environment.decryptPassword.rawValue)... abort!",
-                            takeaways: [
-                                "Please provide a strong password that meets the criteria.",
-                                "Ensure the password is at least 10 characters long and includes a mix of uppercase letters, lowercase letters, numbers, and special characters.",
-                            ]
-                        )
-                    )
-                    throw ExitCode.validationFailure
-                }
-                password = _envPassword
-                viaEnv = "via ENV_DECRYPT_PASSWORD "
-            } else {
-                password = try await PasswordUtils.getSecurePassword(
-                    prompt: "Enter the Password to decrypt: \(pathComponent(path.string))",
-                    allowEmpty: false,
-                    validateStrength: true
-                )
-            }
+            let (password, fromEnvironment) = try await PasswordUtils.getDecryptionPassword(
+                prompt: "Enter the Password to decrypt: \(pathComponent(path.string))"
+            )
+            let viaEnv = fromEnvironment ? "via \(Environment.decryptPassword.rawValue) " : ""
             
             // validate required fields before decrypt
             guard textEnvelope.type != nil else {
@@ -295,7 +271,7 @@ public struct TextEnvelope: JSONLoadable, Sendable {
                 // in Python they loop until success, so give user chance to retry
                 print("Couldn't decrypt: \(String(describing: error)). Try again.")
                 // if ENV provided, abort, because it shouldn't loop silently in env case
-                if envPassword != nil {
+                if fromEnvironment {
                     noora.error(
                         .alert(
                             "Couldn't decrypt the file \(path.string) with the provided password.",

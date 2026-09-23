@@ -33,7 +33,8 @@ extension ProtectMainCommand {
                 noora.error(.alert(
                     "'protect decrypt' requires an interactive terminal.",
                     takeaways: [
-                        "It prompts for the decryption password, which has no command-line flag.",
+                        "It asks you to confirm the file and whether to write the result, which have no command-line flags.",
+                        "Set \(Environment.decryptPassword.rawValue) to supply the password without a prompt; the confirmations still need a terminal.",
                         "Run it in an interactive shell (not piped/CI), and make sure CARDANO_MULTITOOL_SKIP_PROMPT is not set."
                     ]
                 ))
@@ -74,9 +75,12 @@ extension ProtectMainCommand {
                 throw ExitCode.success
             }
             
-            let password = try await PasswordUtils.getSecurePassword(
+            let (password, fromEnvironment) = try await PasswordUtils.getDecryptionPassword(
                 prompt: "\(.secondary("Please provide a strong password (min. 10 chars, uppercase, lowercase, specialchars) for the decryption ... (empty to abort)"))"
             )
+            if fromEnvironment {
+                noora.info("Using the password from \(Environment.decryptPassword.rawValue).")
+            }
             
             _ = try await noora.progressStep(
                 message: "Decrypting the cborHex...",
