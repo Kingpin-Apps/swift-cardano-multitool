@@ -185,12 +185,15 @@ public struct TextEnvelope: JSONLoadable, Sendable {
         }
     }
     
-    /// Load a TextEnvelope from a file, handling decryption if necessary.
-    /// If the file is encrypted, prompts for a password (or uses ENV variable) to decrypt it.
+    /// Load a TextEnvelope exactly as it is stored on disc, without decrypting it.
+    ///
+    /// Use this instead of ``load(from:)-(FilePath)`` when the caller needs to see whether the
+    /// file is encrypted, because that overload transparently decrypts and so always reports
+    /// an encrypted file as decrypted.
     /// - Parameter path: The file path to load from.
-    /// - Returns: The loaded (and possibly decrypted) TextEnvelope.
-    /// - Throws: An error if loading or decryption fails.
-    public static func load(from path: FilePath) async throws -> Self {
+    /// - Returns: The envelope as stored, still encrypted when the file is encrypted.
+    /// - Throws: An error if the file is missing or cannot be decoded.
+    public static func loadRaw(from path: FilePath) throws -> Self {
         do {
             try FileUtils.checkFileExists(path)
         } catch {
@@ -205,8 +208,17 @@ public struct TextEnvelope: JSONLoadable, Sendable {
             )
             throw ExitCode.failure
         }
-        
-        var textEnvelope = try TextEnvelope.load(from: path.string)
+
+        return try TextEnvelope.load(from: path.string)
+    }
+
+    /// Load a TextEnvelope from a file, handling decryption if necessary.
+    /// If the file is encrypted, prompts for a password (or uses ENV variable) to decrypt it.
+    /// - Parameter path: The file path to load from.
+    /// - Returns: The loaded (and possibly decrypted) TextEnvelope.
+    /// - Throws: An error if loading or decryption fails.
+    public static func load(from path: FilePath) async throws -> Self {
+        var textEnvelope = try TextEnvelope.loadRaw(from: path)
         
         if !textEnvelope.isEncrypted {
             print(

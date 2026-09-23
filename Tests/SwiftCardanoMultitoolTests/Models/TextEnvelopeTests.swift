@@ -395,3 +395,103 @@ struct TextEnvelopeEncryptionTests {
         }
     }
 }
+
+@Suite("TextEnvelope.loadRaw(from:)", .serialized, .enabled(if: gpgIsAvailable()))
+struct TextEnvelopeLoadRawTests {
+
+    static let password = "Str0ng!Passw0rd#2026"
+    static let plaintextCBOR = "5820d4b1a2c3e4f50617283940516273849506a7b8c9dae1f2031425364758697a0b"
+
+    /// Write an envelope to a throwaway file and hand back its path plus a cleanup closure.
+    func withTempFile(_ envelope: TextEnvelope, _ body: (FilePath) async throws -> Void) async throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("scm-loadraw-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("key.skey")
+        try envelope.save(to: url.path)
+        try await body(FilePath(url.path))
+    }
+
+    func encryptedEnvelope() async throws -> TextEnvelope {
+        var env = TextEnvelope(
+            type: "PaymentSigningKeyShelley_ed25519",
+            description: "Payment Signing Key",
+            cborHex: Self.plaintextCBOR,
+            encrHex: nil,
+            path: nil,
+            cborXPubKeyHex: nil
+        )
+        try await env.encrypt(with: Self.password)
+        return env
+    }
+
+    @Test("reports an encrypted file as encrypted, without decrypting it")
+    func keepsEncryptedFileEncrypted() async throws {
+        try await withTempFile(try await encryptedEnvelope()) { path in
+            let raw = try TextEnvelope.loadRaw(from: path)
+            #expect(raw.isEncrypted == true)
+            #expect(raw.cborHex == nil)
+            #expect(raw.encrHex != nil)
+        }
+    }
+
+    @Test("load(from:) decrypts the same file, which is why the commands need loadRaw")
+    func loadDecryptsWhereLoadRawDoesNot() async throws {
+        try await withTempFile(try await encryptedEnvelope()) { path in
+            setenv("CARDANO_MULTITOOL_DECRYPT_PASSWORD", Self.password, 1)
+            defer { unsetenv("CARDANO_MULTITOOL_DECRYPT_PASSWORD") }
+
+            let decrypted = try await TextEnvelope.load(from: path)
+            #expect(decrypted.isEncrypted == false)
+            #expect(decrypted.cborHex == Self.plaintextCBOR)
+
+            let raw = try TextEnvelope.loadRaw(from: path)
+            #expect(raw.isEncrypted == true)
+        }
+    }
+
+    @Test("reads an unencrypted file unchanged")
+    func readsUnencryptedFile() async throws {
+        let env = TextEnvelope(
+            type: "PaymentSigningKeyShelley_ed25519",
+            description: "Payment Signing Key",
+            cborHex: Self.plaintextCBOR,
+            encrHex: nil,
+            path: nil,
+            cborXPubKeyHex: nil
+        )
+        try await withTempFile(env) { path in
+            let raw = try TextEnvelope.loadRaw(from: path)
+            #expect(raw.isEncrypted == false)
+            #expect(raw.cborHex == Self.plaintextCBOR)
+        }
+    }
+
+    @Test("throws when the file does not exist")
+    func throwsOnMissingFile() {
+        let bogus = FilePath("/tmp/scm-loadraw-missing-\(UUID().uuidString).skey")
+        #expect(throws: (any Error).self) {
+            _ = try TextEnvelope.loadRaw(from: bogus)
+        }
+    }
+
+    @Test("decrypting a legacy file drops the leaked plaintext alongside the ciphertext")
+    func decryptRepairsLegacyFile() async throws {
+        // What the old encrypt wrote: ciphertext AND the plaintext it failed to clear.
+        var legacy = try await encryptedEnvelope()
+        legacy.cborHex = Self.plaintextCBOR
+
+        try await withTempFile(legacy) { path in
+            var raw = try TextEnvelope.loadRaw(from: path)
+            #expect(raw.isEncrypted == true)
+
+            try await raw.decrypt(with: Self.password)
+            #expect(raw.cborHex == Self.plaintextCBOR)
+            #expect(raw.encrHex == nil)
+
+            let json = String(data: try JSONEncoder().encode(raw), encoding: .utf8)!
+            #expect(!json.contains("encrHex"))
+        }
+    }
+}

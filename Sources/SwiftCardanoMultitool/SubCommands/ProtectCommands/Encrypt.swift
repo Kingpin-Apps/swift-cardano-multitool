@@ -53,7 +53,9 @@ extension ProtectMainCommand {
                 "SKEY-File that will be encrypted: \(.primary(fileName.string))\n"
             ))
             
-            var skey = try await TextEnvelope.load(from: fileName)
+            // Read the file as stored: TextEnvelope.load(from:) would transparently
+            // decrypt it, and the guard below needs the on-disc state.
+            var skey = try TextEnvelope.loadRaw(from: fileName)
             
             if skey.isEncrypted {
                 noora.error(.alert("The provided SKEY-File is already encrypted."))
