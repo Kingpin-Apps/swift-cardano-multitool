@@ -38,7 +38,9 @@ jobs:
     - name: Build
       run: swift build -v
     - name: Build and test
-      run: swift test -v --parallel --enable-test-discovery
+      # --no-parallel: the gpg-backed tests drive blocking subprocesses, which starve
+      # Swift Testing's cooperative thread pool and wedge the whole run under --parallel.
+      run: swift test -v --no-parallel --enable-test-discovery
     # Only main-branch caches are visible to other branches, PRs and tag runs.
     - name: Save build cache
       if: github.event_name == 'push' && steps.cache.outputs.cache-hit != 'true'

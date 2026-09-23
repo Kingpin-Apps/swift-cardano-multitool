@@ -38,7 +38,9 @@ jobs:
       - name: Build
         run: swift build -v
       - name: Test
-        run: swift test -v --parallel
+        # --no-parallel: see the note in swift.yml; the gpg-backed tests deadlock the
+        # cooperative thread pool when run in parallel.
+        run: swift test -v --no-parallel
 
   # Per-arch macOS binaries and packaged Linux binaries, all in parallel.
   build:
