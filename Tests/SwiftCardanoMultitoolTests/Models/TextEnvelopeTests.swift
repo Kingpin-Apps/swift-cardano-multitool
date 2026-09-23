@@ -262,3 +262,136 @@ struct TextEnvelopeAsyncLoadTests {
         }
     }
 }
+
+/// True when a `gpg` binary is on PATH; the encryption suite needs one.
+func gpgIsAvailable() -> Bool {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/which")
+    process.arguments = ["gpg"]
+    process.standardOutput = Pipe()
+    process.standardError = Pipe()
+    do {
+        try process.run()
+        process.waitUntilExit()
+        return process.terminationStatus == 0
+    } catch {
+        return false
+    }
+}
+
+@Suite("TextEnvelope description marker")
+struct TextEnvelopeMarkerTests {
+
+    @Test("strips the marker and its separating space")
+    func stripsMarkerAndSpace() {
+        #expect(
+            TextEnvelope.strippingEncryptedMarker("Encrypted Payment Signing Key")
+                == "Payment Signing Key"
+        )
+    }
+
+    @Test("strips a bare marker to an empty description")
+    func stripsBareMarker() {
+        #expect(TextEnvelope.strippingEncryptedMarker("Encrypted") == "")
+    }
+
+    @Test("leaves an unmarked description untouched")
+    func leavesUnmarkedAlone() {
+        #expect(
+            TextEnvelope.strippingEncryptedMarker("Payment Signing Key")
+                == "Payment Signing Key"
+        )
+    }
+
+    @Test("does not strip the word from the middle of a description")
+    func ignoresNonPrefixOccurrence() {
+        #expect(
+            TextEnvelope.strippingEncryptedMarker("Not Encrypted Yet")
+                == "Not Encrypted Yet"
+        )
+    }
+}
+
+@Suite("TextEnvelope encryption", .enabled(if: gpgIsAvailable()))
+struct TextEnvelopeEncryptionTests {
+
+    static let password = "Str0ng!Passw0rd#2026"
+    static let plaintextCBOR = "5820d4b1a2c3e4f50617283940516273849506a7b8c9dae1f2031425364758697a0b"
+
+    func makeSigningKey() -> TextEnvelope {
+        TextEnvelope(
+            type: "PaymentSigningKeyShelley_ed25519",
+            description: "Payment Signing Key",
+            cborHex: Self.plaintextCBOR,
+            encrHex: nil,
+            path: nil,
+            cborXPubKeyHex: nil
+        )
+    }
+
+    @Test("encrypt clears the plaintext cborHex")
+    func encryptClearsPlaintext() async throws {
+        var env = makeSigningKey()
+        try await env.encrypt(with: Self.password)
+
+        #expect(env.cborHex == nil)
+        #expect(env.encrHex != nil)
+        #expect(env.description == "Encrypted Payment Signing Key")
+        #expect(env.isEncrypted == true)
+    }
+
+    @Test("the encrypted envelope serialises without the plaintext key")
+    func encryptedJSONHasNoPlaintext() async throws {
+        var env = makeSigningKey()
+        try await env.encrypt(with: Self.password)
+
+        let json = String(data: try JSONEncoder().encode(env), encoding: .utf8)!
+        #expect(!json.contains("cborHex"))
+        #expect(!json.contains(Self.plaintextCBOR))
+        #expect(json.contains("encrHex"))
+    }
+
+    @Test("decrypt restores the original cborHex and clears the ciphertext")
+    func decryptRoundTrips() async throws {
+        var env = makeSigningKey()
+        try await env.encrypt(with: Self.password)
+        try await env.decrypt(with: Self.password)
+
+        #expect(env.cborHex == Self.plaintextCBOR)
+        #expect(env.encrHex == nil)
+        #expect(env.description == "Payment Signing Key")
+        #expect(env.isEncrypted == false)
+    }
+
+    @Test("decrypt with the wrong password throws and leaves the envelope untouched")
+    func decryptWithWrongPasswordThrows() async throws {
+        var env = makeSigningKey()
+        try await env.encrypt(with: Self.password)
+        let encrypted = env
+
+        await #expect(throws: (any Error).self) {
+            try await env.decrypt(with: "Wr0ng!Passw0rd#2026")
+        }
+        #expect(env.cborHex == nil)
+        #expect(env.encrHex == encrypted.encrHex)
+        #expect(env.isEncrypted == true)
+    }
+
+    @Test("encrypt refuses an envelope that is already encrypted")
+    func encryptRefusesAlreadyEncrypted() async throws {
+        var env = makeSigningKey()
+        try await env.encrypt(with: Self.password)
+
+        await #expect(throws: (any Error).self) {
+            try await env.encrypt(with: Self.password)
+        }
+    }
+
+    @Test("decrypt throws when there is no ciphertext")
+    func decryptWithoutCiphertextThrows() async {
+        var env = makeSigningKey()
+        await #expect(throws: (any Error).self) {
+            try await env.decrypt(with: Self.password)
+        }
+    }
+}

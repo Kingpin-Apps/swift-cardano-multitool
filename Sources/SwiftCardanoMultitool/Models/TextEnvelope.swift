@@ -37,7 +37,9 @@ public struct TextEnvelope: JSONLoadable, Sendable {
     }
     
     /// Encrypt the cborHex field using GPG symmetric encryption with the provided password.
-    /// On success, sets the encrHex field and updates the description to indicate encryption.
+    /// On success, sets the encrHex field, clears the plaintext cborHex and updates the
+    /// description to indicate encryption. The ciphertext is verified to decrypt back to the
+    /// original cborHex before the plaintext is dropped.
     /// - Parameter password: The password to use for encryption.
     /// - Throws: An error if encryption fails or if the key is already encrypted.
     public mutating func encrypt(with password: String) async throws -> Void {
@@ -83,62 +85,104 @@ public struct TextEnvelope: JSONLoadable, Sendable {
                 )
         }
         
-        self.encrHex = encHexData.hexEncodedString()
+        let encrypted = encHexData.hexEncodedString()
+
+        // Verify the ciphertext decrypts back to the exact same cborHex before dropping
+        // the plaintext, otherwise the signing key would be unrecoverable.
+        let roundTrip = try await Self.decryptHex(encrypted, with: password)
+        guard roundTrip == cbor else {
+            throw SwiftCardanoMultitoolError.encryptionError(
+                "Verification failed: the encrypted key does not decrypt back to the original cborHex."
+            )
+        }
+
+        self.encrHex = encrypted
+        self.cborHex = nil
         self.description = (self.description != nil) ? "Encrypted \(self.description!)" : "Encrypted"
     }
-    
-    /// Decrypt the encrHex field using GPG symmetric decryption with the provided password.
-    /// On success, sets the cborHex field and updates the description to remove encryption indication.
-    /// - Parameter password: The password to use for decryption.
-    /// - Throws: An error if decryption fails or if required fields are missing.
-    public mutating func decrypt(with password: String) async throws -> Void {
+
+    /// GPG-symmetric-decrypt a hex-encoded blob back to its plaintext string.
+    /// - Parameters:
+    ///   - hex: The hex-encoded ciphertext.
+    ///   - password: The password to decrypt with.
+    /// - Returns: The decrypted plaintext.
+    /// - Throws: An error if gpg is unavailable, the hex is invalid, or decryption fails.
+    private static func decryptHex(_ hex: String, with password: String) async throws -> String {
         var gpg: GnuPG
-        
+
         do {
             gpg = try GnuPG()
             gpg.encoding = .utf8
         } catch {
             throw SwiftCardanoMultitoolError.gpgNotFound
         }
-        
-        guard let encrHex = encrHex else {
-            throw SwiftCardanoMultitoolError.missingField("encrHex")
-        }
-        
-        guard let encData = Data(hexString: encrHex) else {
+
+        guard let encData = Data(hexString: hex) else {
             throw SwiftCardanoMultitoolError.invalidHex("encrHex")
         }
-        
+
+        // No "--symmetric" here: gpg.decrypt already passes "--decrypt", and gpg rejects
+        // the two together with "conflicting commands".
         let args = [
-            "--symmetric",
             "--batch",
             "--quiet",
             "--log-file", "/dev/null"
         ]
-        
+
         let outData = await gpg.decrypt(
             data: encData,
             passphrase: password,
             extraArgs: args
         )
-        
-        guard outData.isSuccessful, let cborData = outData.data else {
-            throw SwiftCardanoMultitoolError
-                .decryptionError(
-                    "Could not decrypt the data via gpg: \(outData.stderr)"
-                )
-        }
-        
-        guard let cborString = String(data: cborData, encoding: .utf8), !cborString.isEmpty else {
+
+        // Deliberately not `outData.isSuccessful`: that is only true when gpg emits a status
+        // line the GnuPG package recognises, and gpg 2.x reports DECRYPTION_OKAY, which it does
+        // not map, so every successful symmetric decryption reads as a failure. Judge the
+        // outcome by the plaintext gpg actually handed back; a wrong password yields none.
+        guard let cborData = outData.data, !cborData.isEmpty,
+              let cborString = String(data: cborData, encoding: .utf8),
+              !cborString.isEmpty
+        else {
             throw SwiftCardanoMultitoolError
                 .decryptionError("Couldn't decrypt the data via gpg! Wrong password?")
         }
-        
-        self.cborHex = cborString
-        if let desc = description {
-            self.description = desc.replacingOccurrences(of: "Encrypted", with: "")
+
+        return cborString
+    }
+
+    /// Strip the "Encrypted" marker that ``encrypt(with:)`` prefixes onto the description.
+    /// - Parameter description: The description to strip.
+    /// - Returns: The description without the marker or its trailing separator.
+    static func strippingEncryptedMarker(_ description: String) -> String {
+        guard description.hasPrefix("Encrypted") else { return description }
+        return String(description.dropFirst("Encrypted".count))
+            .trimmingCharacters(in: .whitespaces)
+    }
+    
+    /// Decrypt the encrHex field using GPG symmetric decryption with the provided password.
+    /// On success, sets the cborHex field, clears the encrHex field and updates the description
+    /// to remove the encryption indication.
+    /// - Parameter password: The password to use for decryption.
+    /// - Throws: An error if decryption fails or if required fields are missing.
+    public mutating func decrypt(with password: String) async throws -> Void {
+        guard let encrHex = encrHex else {
+            throw SwiftCardanoMultitoolError.missingField("encrHex")
         }
-        
+
+        let cbor = try await Self.decryptHex(encrHex, with: password)
+
+        // The payload must be the hex-encoded CBOR we encrypted; anything else means we
+        // decoded garbage rather than the key.
+        guard Data(hexString: cbor) != nil else {
+            throw SwiftCardanoMultitoolError
+                .decryptionError("Decrypted payload is not valid hex! Wrong password?")
+        }
+
+        self.cborHex = cbor
+        self.encrHex = nil
+        if let desc = description {
+            self.description = Self.strippingEncryptedMarker(desc)
+        }
     }
     
     /// Load a TextEnvelope from a file, handling decryption if necessary.
