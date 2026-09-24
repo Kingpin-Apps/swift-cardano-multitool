@@ -1,3 +1,9 @@
+## 0.15.0 (2026-09-24)
+
+### Feat
+
+- publish scm as a multi-arch container image
+
 ## 0.14.2 (2026-09-24)
 
 ## 0.14.1 (2026-09-24)
