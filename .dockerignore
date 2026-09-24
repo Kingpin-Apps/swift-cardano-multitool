@@ -1,0 +1,9 @@
+# Normally unused: the image is built from a small generated context (see the
+# Dockerfile), and BuildKit reads .dockerignore from the context root, not from
+# here. This is a backstop for anyone who points a build at the repository root,
+# where .build alone runs to several GB.
+.build/
+.git/
+dist/
+Packages/
+*.tar.gz

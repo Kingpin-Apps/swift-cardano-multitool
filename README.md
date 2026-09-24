@@ -44,7 +44,58 @@ Upgrade later with `sudo apt update && sudo apt upgrade`. The package conflicts 
 
 Prebuilt Linux tarballs (`scm-<version>-linux-x86_64.tar.gz`, `scm-<version>-linux-aarch64.tar.gz`) and `.deb` files are also attached to every [GitHub release](https://github.com/Kingpin-Apps/swift-cardano-multitool/releases). They need `libcurl4` installed.
 
-### Option 3 — Build from source
+### Option 3 — Docker
+
+```bash
+docker pull ghcr.io/kingpin-apps/scm
+docker run -it --rm ghcr.io/kingpin-apps/scm
+```
+
+Images are published for `linux/amd64` and `linux/arm64` on every release,
+tagged with the version and `latest`.
+
+`scm` is an interactive TUI, so **`-it` is required** for the menus — without a
+terminal the prompts have nothing to draw to. Individual subcommands still work
+headless, which is what you want in a script or CI:
+
+```bash
+docker run --rm ghcr.io/kingpin-apps/scm --version
+```
+
+Your configuration and keys stay on the host. Mount the directory holding them
+— read-only, since nothing in the container needs to change it — and point
+`CARDANO_MULTITOOL_CONFIG` at the config file *inside* the container. The
+variable is required: `scm` has no default search path, so mounting alone is not
+enough.
+
+```bash
+docker run -it --rm \
+  -v "$HOME/.scm:/home/scm/.scm:ro" \
+  -e CARDANO_MULTITOOL_CONFIG=/home/scm/.scm/config-mainnet.json \
+  ghcr.io/kingpin-apps/scm
+```
+
+Note that paths *inside* a config file are host paths. Anything they point at —
+a `cardano-node` socket, a key directory — has to be mounted too, at the same
+path, or the commands that need it will not find it. Remote backends such as
+Blockfrost, Koios and Ogmios need nothing extra.
+
+Nothing is baked into the image: it ships the binary and two runtime libraries,
+runs as an unprivileged user, and holds no configuration, keys or API
+credentials of its own.
+
+To work with files from the host — a transaction to inspect, say — mount them as
+well, and point `--tx-file` at the path *inside* the container:
+
+```bash
+docker run --rm \
+  -v "$HOME/.scm:/home/scm/.scm:ro" \
+  -v "$PWD:/work:ro" \
+  -e CARDANO_MULTITOOL_CONFIG=/home/scm/.scm/config-mainnet.json \
+  ghcr.io/kingpin-apps/scm transaction validate --tx-file /work/tx.json --json
+```
+
+### Option 4 — Build from source
 
 Clone the repository and build with Swift Package Manager:
 
@@ -60,7 +111,7 @@ The compiled binary is at `.build/release/scm`. Copy it somewhere on your `PATH`
 cp .build/release/scm ~/.local/bin/scm
 ```
 
-### Option 4 — Build & install with `just`
+### Option 5 — Build & install with `just`
 
 If you have [just](https://github.com/casey/just) installed, the `Justfile` automates building a universal binary (arm64 + x86_64), codesigning, and installing:
 

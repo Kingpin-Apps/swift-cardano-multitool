@@ -156,6 +156,33 @@ package-linux version arch:
     dpkg-deb --root-owner-group -Zxz --build "$ROOT" "dist/{{ DEB_PACKAGE }}_${VERSION}_${ARCH}.deb"
     echo "✓ Packaged dist/scm-${VERSION}-linux-${UNAME_ARCH}.tar.gz + dist/{{ DEB_PACKAGE }}_${VERSION}_${ARCH}.deb"
 
+# ── Container image ──────────────────────────────────────────────────────────
+
+# Run `just release-linux` first — this never compiles, it only packages, which is
+# also how the release workflow builds it (from the dist-linux-* artifacts).
+# Build the container image for the host arch from an already-built Linux binary
+docker-build tag="scm:dev":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{ justfile_directory() }}"
+    if [ ! -f .build/linux/scm ]; then
+        echo "no .build/linux/scm — run 'just release-linux' first" >&2
+        exit 1
+    fi
+    # buildx names architectures amd64/arm64; uname says x86_64/aarch64.
+    case "$(uname -m)" in
+        arm64|aarch64) ARCH=arm64 ;;
+        x86_64|amd64)  ARCH=amd64 ;;
+        *) echo "unsupported host arch: $(uname -m)" >&2; exit 1 ;;
+    esac
+    CTX=.build/docker-context
+    rm -rf "$CTX"
+    mkdir -p "$CTX/$ARCH"
+    cp .build/linux/scm "$CTX/$ARCH/scm"
+    {{ CONTAINER_CLI }} build -f Dockerfile -t "{{ tag }}" "$CTX"
+    echo "✓ Built {{ tag }} ($ARCH)"
+    {{ CONTAINER_CLI }} run --rm "{{ tag }}" --version
+
 # Add dist/*.deb to a checkout of the APT repo (Kingpin-Apps/apt, served by GitHub
 # Pages), regenerate the indexes and sign them. Needs apt-utils + a GPG secret key
 # in the keyring (APT_GPG_KEY_ID, else the first secret key; APT_GPG_PASSPHRASE if set).
