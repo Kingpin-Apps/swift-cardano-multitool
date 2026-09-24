@@ -1,3 +1,10 @@
+## 0.13.1 (2026-09-23)
+
+### Fix
+
+- label the redeemer table as remaining budget and mark unmeasured budgets
+- skip gpg tests unless gpg actually works, so CI cannot hang
+
 ## 0.13.0 (2026-09-23)
 
 ### Feat
