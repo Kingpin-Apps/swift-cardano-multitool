@@ -1,5 +1,5 @@
 {
-  "originHash" : "e1afe2202010de6b3add03bb481dc69b0c8d309f90c48749900107f1e86449d2",
+  "originHash" : "26732a64df732b138509a94dc5fb9e9c943ce74bde0c3f513676ce858ec226a4",
   "pins" : [
     {
       "identity" : "base32",
@@ -240,8 +240,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git",
       "state" : {
-        "revision" : "3b5f0bf9d56007a855f241fac7393aa36e5541be",
-        "version" : "0.3.2"
+        "revision" : "8fa38d61d8386dea544eb8eb6a83edfe8c7fcf52",
+        "version" : "0.3.3"
       }
     },
     {
