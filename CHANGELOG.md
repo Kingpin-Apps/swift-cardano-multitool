@@ -1,3 +1,15 @@
+## 0.15.2 (2026-09-24)
+
+### Note
+
+- An absolute `--name` (e.g. `/keys/k`) is now used as given; previously it was created inside the current directory.
+
+### Fix
+
+- resolve key-rotation upload dir and latest-file search next to the name prefix
+- honour absolute paths in protocol-parameters prompt, claim-to-self lookup and config path display
+- resolve absolute --name prefixes as-is instead of under cwd
+
 ## 0.15.1 (2026-09-24)
 
 ### Fix
