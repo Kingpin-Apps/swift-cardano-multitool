@@ -114,7 +114,7 @@ extension CertificateMainCommand {
                     ).trimmingCharacters(in: .whitespacesAndNewlines)
                     
                     let cwd = FilePath(FileManager.default.currentDirectoryPath)
-                    poolJSON = cwd.appending("\(poolName!).pool.json")
+                    poolJSON = FileUtils.absolutePath("\(poolName!).pool.json")
                     
                 case .poolJSON:
                     poolJSON = try await getPoolJSON()
@@ -165,7 +165,7 @@ extension CertificateMainCommand {
             // resolve the pool.json from --pool-json or <poolName>.pool.json.
             if poolOperator == nil {
                 if poolJSON == nil, let poolName {
-                    poolJSON = cwd.appending("\(poolName).pool.json")
+                    poolJSON = FileUtils.absolutePath("\(poolName).pool.json")
                 }
                 if poolName == nil, let poolJSON {
                     poolName = poolJSON.stem?.replacingOccurrences(of: ".pool", with: "")

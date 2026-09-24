@@ -319,27 +319,29 @@ public struct Pool: Codable, Sendable {
         self.delegators = delegators
         
         // Set default file paths based on pool name
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        
         if let name = name {
-            self.coldVkey = coldVkey ?? cwd.appending("\(name).cold.vkey")
-            self.coldSkey = coldSkey ?? cwd.appending("\(name).cold.skey")
-            self.vrfSkey = vrfSkey ?? cwd.appending("\(name).vrf.skey")
-            self.vrfVkey = vrfVkey ?? cwd.appending("\(name).vrf.vkey")
-            self.nodeCounter = nodeCounter ?? cwd.appending("\(name).cold.counter")
-            self.kesCounter = kesCounter ?? cwd.appending("\(name).kes.counter")
-            self.kesCounterNext = kesCounterNext ?? cwd.appending("\(name).kes.counter-next")
-            self.kesExpireJson = kesExpireJson ?? cwd.appending("\(name).kes-expire.json")
-            self.metadataFile = metadataFile ?? cwd.appending("\(name).metadata.json")
-            self.additionalMetadataFile = additionalMetadataFile ?? cwd.appending("\(name).additional-metadata.json")
-            self.extendedMetadataFile = extendedMetadataFile ?? cwd.appending("\(name).extended-metadata.json")
-            self.idHexFile = idHexFile ?? cwd.appending("\(name).pool.id")
-            self.idBechFile = idBechFile ?? cwd.appending("\(name).pool.id-bech")
+            self.coldVkey = coldVkey ?? FileUtils.absolutePath("\(name).cold.vkey")
+            self.coldSkey = coldSkey ?? FileUtils.absolutePath("\(name).cold.skey")
+            self.vrfSkey = vrfSkey ?? FileUtils.absolutePath("\(name).vrf.skey")
+            self.vrfVkey = vrfVkey ?? FileUtils.absolutePath("\(name).vrf.vkey")
+            self.nodeCounter = nodeCounter ?? FileUtils.absolutePath("\(name).cold.counter")
+            self.kesCounter = kesCounter ?? FileUtils.absolutePath("\(name).kes.counter")
+            self.kesCounterNext = kesCounterNext ?? FileUtils.absolutePath("\(name).kes.counter-next")
+            self.kesExpireJson = kesExpireJson ?? FileUtils.absolutePath("\(name).kes-expire.json")
+            self.metadataFile = metadataFile ?? FileUtils.absolutePath("\(name).metadata.json")
+            self.additionalMetadataFile = additionalMetadataFile ?? FileUtils.absolutePath("\(name).additional-metadata.json")
+            self.extendedMetadataFile = extendedMetadataFile ?? FileUtils.absolutePath("\(name).extended-metadata.json")
+            self.idHexFile = idHexFile ?? FileUtils.absolutePath("\(name).pool.id")
+            self.idBechFile = idBechFile ?? FileUtils.absolutePath("\(name).pool.id-bech")
             
-            // Search for latest KES and opcert files
-            self.kesVkey = kesVkey ?? Self.searchLatestFile(name: name, prefix: "kes", suffix: "vkey", in: cwd)
-            self.kesSkey = kesSkey ?? Self.searchLatestFile(name: name, prefix: "kes", suffix: "skey", in: cwd)
-            self.opCert = opCert ?? Self.searchLatestFile(name: name, prefix: "node", suffix: "opcert", in: cwd)
+            // Search for latest KES and opcert files next to the name prefix,
+            // which may itself carry a directory (e.g. /keys/mypool).
+            let base = FileUtils.absolutePath(name)
+            let dir = base.removingLastComponent()
+            let stem = base.lastComponent?.string ?? name
+            self.kesVkey = kesVkey ?? Self.searchLatestFile(name: stem, prefix: "kes", suffix: "vkey", in: dir)
+            self.kesSkey = kesSkey ?? Self.searchLatestFile(name: stem, prefix: "kes", suffix: "skey", in: dir)
+            self.opCert = opCert ?? Self.searchLatestFile(name: stem, prefix: "node", suffix: "opcert", in: dir)
         } else {
             self.coldVkey = coldVkey
             self.coldSkey = coldSkey

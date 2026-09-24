@@ -69,9 +69,8 @@ extension GenerateMainCommand {
 
             try await printToolInfo(config: config, tool: tool!)
             
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
-            let poolVKey = cwd.appending("\(poolName!).cold.vkey")
+            let poolVKey = FileUtils.absolutePath("\(poolName!).cold.vkey")
             do {
                 try FileUtils.checkFileExists(poolVKey)
             } catch SwiftCardanoMultitoolError.fileNotFound {
@@ -92,14 +91,14 @@ extension GenerateMainCommand {
             var opcert: FilePath
             
             do {
-                poolSKey = cwd.appending("\(poolName!).cold.skey")
+                poolSKey = FileUtils.absolutePath("\(poolName!).cold.skey")
                 try FileUtils.checkFileExists(poolSKey)
             } catch SwiftCardanoMultitoolError.fileNotFound {
-                poolSKey = cwd.appending("\(poolName!).cold.hwsfile")
+                poolSKey = FileUtils.absolutePath("\(poolName!).cold.hwsfile")
                 try FileUtils.checkFileExists(poolSKey)
             } catch {
                 noora.error(.alert(
-                    "Pool signing key file not found at expected locations: \(cwd.appending("\(poolName!).cold.skey").string) or \(cwd.appending("\(poolName!).cold.hwsfile").string)",
+                    "Pool signing key file not found at expected locations: \(FileUtils.absolutePath("\(poolName!).cold.skey").string) or \(FileUtils.absolutePath("\(poolName!).cold.hwsfile").string)",
                     takeaways: [
                         "Generate the pool signing key file using the `generate node-keys` command.",
                         "Make sure the pool signing key file exists and is named correctly.",
@@ -109,8 +108,8 @@ extension GenerateMainCommand {
                 throw ExitCode.validationFailure
             }
             
-            let kesCounterFile = cwd.appending("\(poolName!).kes.counter")
-            let kesCounterNextFile = cwd.appending("\(poolName!).kes.counter-next")
+            let kesCounterFile = FileUtils.absolutePath("\(poolName!).kes.counter")
+            let kesCounterNextFile = FileUtils.absolutePath("\(poolName!).kes.counter-next")
             
             let latestKESNumber: String
             var nextKESNumber: String
@@ -120,7 +119,7 @@ extension GenerateMainCommand {
                 try FileUtils.checkFileExists(kesCounterNextFile)
             } catch SwiftCardanoMultitoolError.fileNotFound {
                 noora.error(.alert(
-                    "KES Counter file not found at expected locations: \(cwd.appending("\(poolName!).kes.counter").string) or \(cwd.appending("\(poolName!).kes.counter-next").string)",
+                    "KES Counter file not found at expected locations: \(FileUtils.absolutePath("\(poolName!).kes.counter").string) or \(FileUtils.absolutePath("\(poolName!).kes.counter-next").string)",
                     takeaways: [
                         "Generate the KES counter file using the `generate kes-keys` command.",
                         "Make sure the KES counter file exists and is named correctly.",
@@ -162,13 +161,13 @@ extension GenerateMainCommand {
                 throw ExitCode.validationFailure
             }
             
-            let kesVkeyFile = cwd.appending("\(poolName!).kes-\(latestKESNumber).vkey")
+            let kesVkeyFile = FileUtils.absolutePath("\(poolName!).kes-\(latestKESNumber).vkey")
             
             do {
                 try FileUtils.checkFileExists(kesVkeyFile)
             } catch SwiftCardanoMultitoolError.fileNotFound {
                 noora.error(.alert(
-                    "KES Verification Key file not found at expected locations: \(cwd.appending("\(poolName!).kes-\(latestKESNumber).vkey").string)",
+                    "KES Verification Key file not found at expected locations: \(FileUtils.absolutePath("\(poolName!).kes-\(latestKESNumber).vkey").string)",
                     takeaways: [
                         "Generate the KES counter file using the `generate kes-keys` command.",
                         "Make sure the KES counter file exists and is named correctly.",
@@ -178,7 +177,7 @@ extension GenerateMainCommand {
                 throw ExitCode.validationFailure
             }
             
-            nodeCounter = cwd.appending("\(poolName!).cold.counter")
+            nodeCounter = FileUtils.absolutePath("\(poolName!).cold.counter")
             
             func createNewOpCertCounter(newCounter: Int) async throws {
                 switch tool {
@@ -279,14 +278,14 @@ extension GenerateMainCommand {
                 
                 spacedPrint("Issue a new node operational certificate using KES-vKey \(pathComponent(kesVkeyFile.string)) and Cold-sKey \(pathComponent(poolSKey.string))")
                 
-                kesExpireJson = cwd.appending("\(poolName!).kes-expire.json")
+                kesExpireJson = FileUtils.absolutePath("\(poolName!).kes-expire.json")
                 try await FileUtils
                     .dumpLockedJSONFile(
                         kesExpireJson,
                         data: kesExpire.toDictionary()
                     )
                 
-                opcert = cwd.appending("\(poolName!).node-\(latestKESNumber).opcert")
+                opcert = FileUtils.absolutePath("\(poolName!).node-\(latestKESNumber).opcert")
                 
                 let skey = try await TextEnvelope.load(from: poolSKey)
                 
@@ -422,7 +421,7 @@ extension GenerateMainCommand {
             formatPrint("Updated KES-Next-Counter: \(.primary("\(kesCounterNextFile.string)"))")
             try await FileUtils.displayFile(kesCounterNextFile)
             
-            let kesSKey = cwd.appending(
+            let kesSKey = FileUtils.absolutePath(
                 "\(poolName!).kes-\(latestKESNumber).skey"
             )
             spacedPrint("New \(.primary("\(opcert.string)")) and \(.primary("\(kesSKey.string)")) files ready for upload to the server.")

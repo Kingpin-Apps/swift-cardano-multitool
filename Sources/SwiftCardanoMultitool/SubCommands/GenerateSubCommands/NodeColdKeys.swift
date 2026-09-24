@@ -98,11 +98,10 @@ extension GenerateMainCommand {
 
             try await printToolInfo(config: config, tool: tool!)
             
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
-            let poolCounter = cwd.appending("\(poolName!).cold.counter")
-            let poolVKey = cwd.appending("\(poolName!).cold.vkey")
-            let poolSKey = keyGenMethod!.isHardwareType ? cwd.appending("\(poolName!).cold.hwsfile") : cwd.appending(
+            let poolCounter = FileUtils.absolutePath("\(poolName!).cold.counter")
+            let poolVKey = FileUtils.absolutePath("\(poolName!).cold.vkey")
+            let poolSKey = keyGenMethod!.isHardwareType ? FileUtils.absolutePath("\(poolName!).cold.hwsfile") : FileUtils.absolutePath(
                 "\(poolName!).cold.skey"
             )
             

@@ -84,20 +84,19 @@ extension BuildMainCommand {
                 try await self.wizard()
             }
             
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
             let paymentAddress: FilePath
             if addressName != nil {
                 if stakeVkey == nil {
                     // Check if stakeVkey file exists
-                    stakeVkey = cwd.appending("\(addressName!).stake.vkey")
+                    stakeVkey = FileUtils.absolutePath("\(addressName!).stake.vkey")
                     if !FileManager.default.fileExists(atPath: stakeVkey!.string) {
                         stakeVkey = nil
                     }
                 }
                 
                 if paymentVkey == nil {
-                    paymentVkey = cwd.appending("\(addressName!).payment.vkey")
+                    paymentVkey = FileUtils.absolutePath("\(addressName!).payment.vkey")
                     if !FileManager.default.fileExists(atPath: paymentVkey!.string) {
                         noora.error(
                             .alert(
@@ -140,7 +139,7 @@ extension BuildMainCommand {
                 throw ExitCode.failure
             }
             
-            paymentAddress = cwd.appending("\(addressName!).payment.addr")
+            paymentAddress = FileUtils.absolutePath("\(addressName!).payment.addr")
             
             print(noora.format(
                 "Building payment address: \(.primary(addressName!))")

@@ -34,9 +34,8 @@ public struct Delegator: Codable, Sendable {
         self.name = name
         self.witness = witness
         
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        self.stakeVkey = stakeVkey ?? (name.map { cwd.appending("\($0).staking.vkey") })
-        self.stakeSkey = stakeSkey ?? (name.map { cwd.appending("\($0).staking.skey") })
+        self.stakeVkey = stakeVkey ?? (name.map { FileUtils.absolutePath("\($0).staking.vkey") })
+        self.stakeSkey = stakeSkey ?? (name.map { FileUtils.absolutePath("\($0).staking.skey") })
         self.delegationCertificate = delegationCertificate
     }
 }

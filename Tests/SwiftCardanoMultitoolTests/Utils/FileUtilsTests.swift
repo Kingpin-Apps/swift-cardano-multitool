@@ -22,6 +22,20 @@ struct FileUtilsTests {
         return FilePath(url.path)
     }
 
+    // MARK: - absolutePath
+
+    @Test("absolutePath keeps an absolute path unchanged")
+    func absolutePathKeepsAbsolute() {
+        #expect(FileUtils.absolutePath("/abs/dir/k.skey") == FilePath("/abs/dir/k.skey"))
+    }
+
+    @Test("absolutePath resolves a relative path against the current directory")
+    func absolutePathResolvesRelative() {
+        let cwd = FilePath(FileManager.default.currentDirectoryPath)
+        #expect(FileUtils.absolutePath("k.skey") == cwd.appending("k.skey"))
+        #expect(FileUtils.absolutePath("sub/k.skey") == cwd.appending("sub/k.skey"))
+    }
+
     // MARK: - checkFileExists / checkFileNotExists
 
     @Test("checkFileExists passes for an existing regular file")

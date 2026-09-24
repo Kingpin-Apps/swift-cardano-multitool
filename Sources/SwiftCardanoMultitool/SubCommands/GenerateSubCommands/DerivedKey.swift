@@ -114,10 +114,9 @@ extension GenerateMainCommand {
             if name == nil || path == nil {
                 try await wizard()
             }
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let skey = cwd.appending("\(name!).skey")
-            let vkey = cwd.appending("\(name!).vkey")
-            let mnemonicsFile = cwd.appending("\(name!).mnemonics")
+            let skey = FileUtils.absolutePath("\(name!).skey")
+            let vkey = FileUtils.absolutePath("\(name!).vkey")
+            let mnemonicsFile = FileUtils.absolutePath("\(name!).mnemonics")
             try await FileUtils.checkFile(skey)
             try await FileUtils.checkFile(vkey)
 

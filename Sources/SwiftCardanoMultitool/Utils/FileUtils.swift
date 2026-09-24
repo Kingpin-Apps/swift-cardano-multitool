@@ -352,6 +352,12 @@ public struct FileUtils {
         return FilePath(FileManager.default.currentDirectoryPath).appending(path.string)
     }
 
+    /// Resolve a user-supplied path string (e.g. a `--name` prefix plus extension)
+    /// against the current working directory, keeping absolute paths as-is.
+    public static func absolutePath(_ path: String) -> FilePath {
+        absolutePath(FilePath(path))
+    }
+
     /// Prints a `noora.info` alert summarizing a file's name, path, size, permissions,
     /// and modification time. Best-effort: any attribute that can't be read is skipped.
     /// - Parameter path: The file to describe.

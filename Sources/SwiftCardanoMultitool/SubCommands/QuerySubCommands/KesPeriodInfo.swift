@@ -112,13 +112,12 @@ extension QueryMainCommand {
             
             try await printContextInfo(config: config, context: context)
             
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
             var opCertFile: FilePath?
             
             if poolName != nil {
                 do {
-                    opCertFile = cwd.appending("\(poolName!).node.opcert")
+                    opCertFile = FileUtils.absolutePath("\(poolName!).node.opcert")
                     try FileUtils.checkFileExists(opCertFile!)
                 } catch SwiftCardanoMultitoolError.fileNotFound {
                     do {

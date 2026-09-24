@@ -167,11 +167,10 @@ extension GenerateMainCommand {
 
             try await printToolInfo(config: config, tool: tool!)
             
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
-            let paymentAddress = cwd.appending("\(addressName!).payment.addr")
-            let paymentVKey = cwd.appending("\(addressName!).payment.vkey")
-            let paymentSKey = keyGenMethod!.isHardwareType ? cwd.appending("\(addressName!).payment.hwsfile") : cwd.appending(
+            let paymentAddress = FileUtils.absolutePath("\(addressName!).payment.addr")
+            let paymentVKey = FileUtils.absolutePath("\(addressName!).payment.vkey")
+            let paymentSKey = keyGenMethod!.isHardwareType ? FileUtils.absolutePath("\(addressName!).payment.hwsfile") : FileUtils.absolutePath(
                 "\(addressName!).payment.skey"
             )
             
@@ -248,7 +247,7 @@ extension GenerateMainCommand {
 
             }
             else if keyGenMethod == .mnemonics {
-                let paymentMnemonics = cwd.appending("\(addressName!).payment.mnemonics")
+                let paymentMnemonics = FileUtils.absolutePath("\(addressName!).payment.mnemonics")
                 try await FileUtils.checkFile(paymentMnemonics)
 
                 print(noora.format(

@@ -68,10 +68,9 @@ extension GenerateMainCommand {
 
             try await printToolInfo(config: config, tool: tool!)
             
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
-            let vrfVKey = cwd.appending("\(poolName!).vrf.vkey")
-            let vrfSKey =  cwd.appending("\(poolName!).vrf.skey")
+            let vrfVKey = FileUtils.absolutePath("\(poolName!).vrf.vkey")
+            let vrfSKey =  FileUtils.absolutePath("\(poolName!).vrf.skey")
             
             try await FileUtils.checkFile(vrfVKey)
             try await FileUtils.checkFile(vrfSKey)

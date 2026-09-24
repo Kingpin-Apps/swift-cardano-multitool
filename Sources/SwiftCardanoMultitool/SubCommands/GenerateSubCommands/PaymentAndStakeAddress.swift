@@ -166,17 +166,16 @@ extension GenerateMainCommand {
 
             try await printToolInfo(config: config, tool: tool!)
             
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
-            let paymentAddress = cwd.appending("\(addressName!).payment.addr")
-            let paymentVKey = cwd.appending("\(addressName!).payment.vkey")
-            let paymentSKey = keyGenMethod!.isHardwareType ? cwd.appending("\(addressName!).payment.hwsfile") : cwd.appending("\(addressName!).payment.skey")
+            let paymentAddress = FileUtils.absolutePath("\(addressName!).payment.addr")
+            let paymentVKey = FileUtils.absolutePath("\(addressName!).payment.vkey")
+            let paymentSKey = keyGenMethod!.isHardwareType ? FileUtils.absolutePath("\(addressName!).payment.hwsfile") : FileUtils.absolutePath("\(addressName!).payment.skey")
             
-            let stakeAddress = cwd.appending("\(addressName!).stake.addr")
-            let stakeVKey = cwd.appending("\(addressName!).stake.vkey")
+            let stakeAddress = FileUtils.absolutePath("\(addressName!).stake.addr")
+            let stakeVKey = FileUtils.absolutePath("\(addressName!).stake.vkey")
             let stakeSKey = keyGenMethod!.isHardwareType ?
-            cwd.appending("\(addressName!).stake.hwsfile") :
-            cwd.appending("\(addressName!).stake.skey")
+            FileUtils.absolutePath("\(addressName!).stake.hwsfile") :
+            FileUtils.absolutePath("\(addressName!).stake.skey")
             
             try await FileUtils.checkFile(paymentAddress)
             try await FileUtils.checkFile(paymentVKey)
@@ -286,7 +285,7 @@ extension GenerateMainCommand {
                 
             }
             else if keyGenMethod == .mnemonics {
-                let paymentMnemonics = cwd.appending("\(addressName!).payment.mnemonics")
+                let paymentMnemonics = FileUtils.absolutePath("\(addressName!).payment.mnemonics")
                 
                 try await FileUtils.checkFile(paymentMnemonics)
                 print(noora.format(

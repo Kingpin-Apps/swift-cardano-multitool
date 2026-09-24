@@ -70,10 +70,9 @@ extension GenerateMainCommand {
 
             try await printToolInfo(config: config, tool: tool!)
             
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
-            let kesCounterFile = cwd.appending("\(poolName!).kes.counter")
-            let kesCounterNextFile = cwd.appending("\(poolName!).kes.counter-next")
+            let kesCounterFile = FileUtils.absolutePath("\(poolName!).kes.counter")
+            let kesCounterNextFile = FileUtils.absolutePath("\(poolName!).kes.counter-next")
             
             let currentKESnumber: String
             var nextKESnumber: String
@@ -139,8 +138,8 @@ extension GenerateMainCommand {
                 throw ExitCode.validationFailure
             }
             
-            let kesVKey = cwd.appending("\(poolName!).kes-\(nextKESnumber).vkey")
-            let kesSKey =  cwd.appending("\(poolName!).kes-\(nextKESnumber).skey")
+            let kesVKey = FileUtils.absolutePath("\(poolName!).kes-\(nextKESnumber).vkey")
+            let kesSKey =  FileUtils.absolutePath("\(poolName!).kes-\(nextKESnumber).skey")
             
             try await FileUtils.checkFile(kesVKey)
             try await FileUtils.checkFile(kesSKey)

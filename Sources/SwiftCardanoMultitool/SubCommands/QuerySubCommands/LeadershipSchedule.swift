@@ -188,18 +188,18 @@ extension QueryMainCommand {
             
             if let poolName = poolName {
                 // Use pool name to find files in CWD
-                resolvedVrfSkey = cwd.appending("\(poolName).vrf.skey")
+                resolvedVrfSkey = FileUtils.absolutePath("\(poolName).vrf.skey")
                 
                 try FileUtils.checkFileExists(resolvedVrfSkey)
                 
                 // Try to load pool ID from file
-                let idBechFile = cwd.appending("\(poolName).pool.id-bech")
+                let idBechFile = FileUtils.absolutePath("\(poolName).pool.id-bech")
                 if FileManager.default.fileExists(atPath: idBechFile.string) {
                     let content = try String(contentsOfFile: idBechFile.string, encoding: .utf8)
                     resolvedPoolId = content.trimmingCharacters(in: .whitespacesAndNewlines)
                 } else {
                     // Fall back to loading from pool.json
-                    let poolJsonFile = cwd.appending("\(poolName).pool.json")
+                    let poolJsonFile = FileUtils.absolutePath("\(poolName).pool.json")
                     let pool = try Pool.load(from: poolJsonFile)
                     
                     guard let idBech = pool.idBech else {

@@ -185,14 +185,13 @@ extension GenerateMainCommand {
                 throw ExitCode.failure
             }
 
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
 
-            let policyVKey = cwd.appending("\(policyName!).policy.vkey")
+            let policyVKey = FileUtils.absolutePath("\(policyName!).policy.vkey")
             let policySKey = keyGenMethod!.isHardwareType
-                ? cwd.appending("\(policyName!).policy.hwsfile")
-                : cwd.appending("\(policyName!).policy.skey")
-            let policyScript = cwd.appending("\(policyName!).policy.script")
-            let policyId = cwd.appending("\(policyName!).policy.id")
+                ? FileUtils.absolutePath("\(policyName!).policy.hwsfile")
+                : FileUtils.absolutePath("\(policyName!).policy.skey")
+            let policyScript = FileUtils.absolutePath("\(policyName!).policy.script")
+            let policyId = FileUtils.absolutePath("\(policyName!).policy.id")
 
             try await FileUtils.checkFile(policyVKey)
             try await FileUtils.checkFile(policySKey)
@@ -356,7 +355,7 @@ extension GenerateMainCommand {
                 )
             }
             else if keyGenMethod == .mnemonics {
-                let policyMnemonics = cwd.appending("\(policyName!).policy.mnemonics")
+                let policyMnemonics = FileUtils.absolutePath("\(policyName!).policy.mnemonics")
                 try await FileUtils.checkFile(policyMnemonics)
 
                 let derivationPath = "1855H/1815H/\(subAccount!)H"

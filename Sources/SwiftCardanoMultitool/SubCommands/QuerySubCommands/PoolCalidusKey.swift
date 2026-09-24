@@ -138,16 +138,15 @@ extension QueryMainCommand {
 
             // File or bare-name resolution
             let fileManager = FileManager.default
-            let cwd = FilePath(fileManager.currentDirectoryPath)
 
             if fileManager.fileExists(atPath: input) {
                 return try resolveFromFile(FilePath(input))
             }
 
             let candidates = [
-                cwd.appending("\(input).calidus.id"),
-                cwd.appending("\(input).calidus.vkey"),
-                cwd.appending("\(input).node.vkey"),
+                FileUtils.absolutePath("\(input).calidus.id"),
+                FileUtils.absolutePath("\(input).calidus.vkey"),
+                FileUtils.absolutePath("\(input).node.vkey"),
             ]
             for candidate in candidates where fileManager.fileExists(atPath: candidate.string) {
                 return try resolveFromFile(candidate)

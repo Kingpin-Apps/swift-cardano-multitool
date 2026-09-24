@@ -39,8 +39,7 @@ public struct RewardsOwner: Codable, Sendable {
         self.rewardAccount = rewardAccount
         self.stakeKeyHash = stakeKeyHash
         
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        self.stakeVkey = stakeVkey ?? (name.map { cwd.appending("\($0).stake.vkey") })
-        self.stakeSkey = stakeSkey ?? (name.map { cwd.appending("\($0).stake.skey") })
+        self.stakeVkey = stakeVkey ?? (name.map { FileUtils.absolutePath("\($0).stake.vkey") })
+        self.stakeSkey = stakeSkey ?? (name.map { FileUtils.absolutePath("\($0).stake.skey") })
     }
 }

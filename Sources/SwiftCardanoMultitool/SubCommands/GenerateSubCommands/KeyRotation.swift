@@ -137,7 +137,7 @@ extension GenerateMainCommand {
             try await opcertCmd.run()
 
             // Read the latest KES number from kes.counter
-            let kesCounterFile = cwd.appending("\(name).kes.counter")
+            let kesCounterFile = FileUtils.absolutePath("\(name).kes.counter")
             let counterValue = try FileUtils.loadFile(FilePath(kesCounterFile.string))
 
             guard let counterInt = Int(counterValue.trimmingCharacters(in: .whitespacesAndNewlines)) else {
@@ -150,8 +150,8 @@ extension GenerateMainCommand {
 
             let latestKESNumber = String(format: "%03d", counterInt)
 
-            let kesSKeySource = cwd.appending("\(name).kes-\(latestKESNumber).skey")
-            let opcertSource = cwd.appending("\(name).node-\(latestKESNumber).opcert")
+            let kesSKeySource = FileUtils.absolutePath("\(name).kes-\(latestKESNumber).skey")
+            let opcertSource = FileUtils.absolutePath("\(name).node-\(latestKESNumber).opcert")
 
             let kesSKeyDest = uploadDir.appending("\(name).kes.skey")
             let opcertDest = uploadDir.appending("\(name).node.opcert")

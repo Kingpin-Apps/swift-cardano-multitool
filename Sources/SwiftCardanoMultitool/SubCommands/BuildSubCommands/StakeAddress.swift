@@ -60,13 +60,12 @@ extension BuildMainCommand {
                 try await self.wizard()
             }
             
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
             let stakeAddress: FilePath
             if addressName != nil {
                 if stakeVkey == nil {
                     // Check if stakeVkey file exists
-                    stakeVkey = cwd.appending("\(addressName!).stake.vkey")
+                    stakeVkey = FileUtils.absolutePath("\(addressName!).stake.vkey")
                     if !FileManager.default.fileExists(atPath: stakeVkey!.string) {
                         noora.error(
                             .alert(
@@ -109,7 +108,7 @@ extension BuildMainCommand {
                 throw ExitCode.failure
             }
             
-            stakeAddress = cwd.appending("\(addressName!).stake.addr")
+            stakeAddress = FileUtils.absolutePath("\(addressName!).stake.addr")
             
             print(noora.format(
                 "Building stake address: \(.primary(addressName!))")

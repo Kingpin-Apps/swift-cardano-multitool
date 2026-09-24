@@ -211,7 +211,7 @@ extension CertificateMainCommand {
                     ).trimmingCharacters(in: .whitespacesAndNewlines)
                     
                     let cwd = FilePath(FileManager.default.currentDirectoryPath)
-                    poolJSON = cwd.appending("\(poolName!).pool.json")
+                    poolJSON = FileUtils.absolutePath("\(poolName!).pool.json")
                     
                 case .poolJSON:
                     poolJSON = try await getPoolJSON()
@@ -264,7 +264,7 @@ extension CertificateMainCommand {
 
             let workingDirectory = FilePath(FileManager.default.currentDirectoryPath)
             if poolJSON == nil, let poolName {
-                poolJSON = workingDirectory.appending("\(poolName).pool.json")
+                poolJSON = FileUtils.absolutePath("\(poolName).pool.json")
             }
             if poolName == nil, let poolJSON {
                 poolName = poolJSON.stem?.replacingOccurrences(of: ".pool", with: "")
@@ -490,8 +490,8 @@ extension CertificateMainCommand {
             pool.idBech = poolIdBech
             pool.idHex = poolIdHex
 
-            let idHexFile = pool.idHexFile ?? cwd.appending("\(poolName).pool.id")
-            let idBechFile = pool.idBechFile ?? cwd.appending("\(poolName).pool.id-bech")
+            let idHexFile = pool.idHexFile ?? FileUtils.absolutePath("\(poolName).pool.id")
+            let idBechFile = pool.idBechFile ?? FileUtils.absolutePath("\(poolName).pool.id-bech")
             // Refresh the ID files; they may already exist (e.g. from generate pool-json)
             try poolOperatorId.save(to: idHexFile.string, format: .hex, overwrite: true)
             try poolOperatorId.save(to: idBechFile.string, format: .bech32, overwrite: true)
@@ -621,7 +621,7 @@ extension CertificateMainCommand {
                 if hostedMatches {
                     spacedPrint("The metadata hosted at \(.primary(metaUrl!.absoluteString)) matches the pool JSON; keeping hash \(.primary(pool.metadataHash ?? "")).")
                 } else {
-                    let generatedPath = pool.metadataFile ?? cwd.appending("\(poolName).metadata.json")
+                    let generatedPath = pool.metadataFile ?? FileUtils.absolutePath("\(poolName).metadata.json")
                     pool.metadataFile = generatedPath
 
                     if pool.extendedMetaUrl != nil && !transactionOptions.useCardanoCLI {
@@ -721,7 +721,7 @@ extension CertificateMainCommand {
 
             // Determine output certificate file path
             if certificateOptions.outFile == nil {
-                certificateOptions.outFile = cwd.appending("\(poolName)-\(timestamp).pool-reg.cert")
+                certificateOptions.outFile = FileUtils.absolutePath("\(poolName)-\(timestamp).pool-reg.cert")
             }
 
             guard let outFile = certificateOptions.outFile else {
@@ -1278,7 +1278,7 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
             guard let json = try metadata.toJSON() else {
                 throw SwiftCardanoMultitoolError.valueError("Could not encode the pool metadata.")
             }
-            let path = cwd.appending("\(label).metadata.json")
+            let path = FileUtils.absolutePath("\(label).metadata.json")
             try FileUtils.dumpFile(path, data: json)
             draft.metadataHash = try poolMetadataHash(of: Data(json.utf8))
             metadataFilePath = path
@@ -1308,7 +1308,7 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
 
         // 5. Certificate
         if certificateOptions.outFile == nil {
-            certificateOptions.outFile = cwd.appending("\(label)-\(timestamp).pool-reg.cert")
+            certificateOptions.outFile = FileUtils.absolutePath("\(label)-\(timestamp).pool-reg.cert")
         }
         guard let outFile = certificateOptions.outFile else {
             noora.error("Output file path is invalid.")
@@ -1520,7 +1520,7 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
             name = poolName
         }
 
-        let path = cwd.appending("\(name).pool.json")
+        let path = FileUtils.absolutePath("\(name).pool.json")
         let registered = try Pool.fromOnChain(draft: draft, name: name, keys: keys)
         var pool: Pool
         if FileManager.default.fileExists(atPath: path.string), var existing = try? Pool.load(from: path) {

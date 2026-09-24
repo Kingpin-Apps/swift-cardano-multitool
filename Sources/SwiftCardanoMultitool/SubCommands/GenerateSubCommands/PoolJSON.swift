@@ -294,22 +294,22 @@ extension GenerateMainCommand {
             
             // Cold Keys
             let coldVkey = try resolveFilePath(
-                defaultPath: cwd.appending("\(poolName).cold.vkey"),
+                defaultPath: FileUtils.absolutePath("\(poolName).cold.vkey"),
                 title: "Cold Verification Key",
                 fileExtension: ".cold.vkey",
                 allowSkip: true
             )
             
             let coldSkey = try resolveFilePathWithFallback(
-                primaryPath: cwd.appending("\(poolName).cold.skey"),
-                fallbackPath: cwd.appending("\(poolName).cold.hwsfile"),
+                primaryPath: FileUtils.absolutePath("\(poolName).cold.skey"),
+                fallbackPath: FileUtils.absolutePath("\(poolName).cold.hwsfile"),
                 title: "Cold Signing Key",
                 fileExtension: ".cold.skey",
                 allowSkip: true
             )
             
             let nodeCounter = try resolveFilePath(
-                defaultPath: cwd.appending("\(poolName).cold.counter"),
+                defaultPath: FileUtils.absolutePath("\(poolName).cold.counter"),
                 title: "Node Counter",
                 fileExtension: ".cold.counter",
                 allowSkip: true
@@ -319,14 +319,14 @@ extension GenerateMainCommand {
             print(noora.format("\n\(.primary("── VRF Keys ──"))\n"))
             
             let vrfVkey = try resolveFilePath(
-                defaultPath: cwd.appending("\(poolName).vrf.vkey"),
+                defaultPath: FileUtils.absolutePath("\(poolName).vrf.vkey"),
                 title: "VRF Verification Key",
                 fileExtension: ".vrf.vkey",
                 allowSkip: true
             )
             
             let vrfSkey = try resolveFilePath(
-                defaultPath: cwd.appending("\(poolName).vrf.skey"),
+                defaultPath: FileUtils.absolutePath("\(poolName).vrf.skey"),
                 title: "VRF Signing Key",
                 fileExtension: ".vrf.skey",
                 allowSkip: true
@@ -336,8 +336,8 @@ extension GenerateMainCommand {
             var idHex: String? = nil
             var idBech: String? = nil
             
-            let idHexFile = cwd.appending("\(poolName).pool.id")
-            let idBechFile = cwd.appending("\(poolName).pool.id-bech")
+            let idHexFile = FileUtils.absolutePath("\(poolName).pool.id")
+            let idBechFile = FileUtils.absolutePath("\(poolName).pool.id-bech")
             let fm = FileManager.default
             
             // Try loading existing files first
@@ -532,8 +532,8 @@ extension GenerateMainCommand {
                 )
                 
                 // Check for default stake key files based on owner name
-                let defaultStakeVkey = cwd.appending("\(ownerName).stake.vkey")
-                let defaultStakeSkey = cwd.appending("\(ownerName).stake.skey")
+                let defaultStakeVkey = FileUtils.absolutePath("\(ownerName).stake.vkey")
+                let defaultStakeSkey = FileUtils.absolutePath("\(ownerName).stake.skey")
                 let fm = FileManager.default
                 
                 var stakeVkey: FilePath? = nil
@@ -593,8 +593,8 @@ extension GenerateMainCommand {
             ).trimmingCharacters(in: .whitespacesAndNewlines)
             
             let fm = FileManager.default
-            let defaultStakeVkey = cwd.appending("\(rewardsName).stake.vkey")
-            let defaultStakeSkey = cwd.appending("\(rewardsName).stake.skey")
+            let defaultStakeVkey = FileUtils.absolutePath("\(rewardsName).stake.vkey")
+            let defaultStakeSkey = FileUtils.absolutePath("\(rewardsName).stake.skey")
             
             var stakeVkey: FilePath? = nil
             var stakeSkey: FilePath? = nil
@@ -713,7 +713,7 @@ extension GenerateMainCommand {
             }
 
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let poolFile = cwd.appending("\(poolName).pool.json")
+            let poolFile = FileUtils.absolutePath("\(poolName).pool.json")
 
             if !overwrite && FileManager.default.fileExists(atPath: poolFile.string) {
                 guard isInteractiveSession() else {

@@ -172,13 +172,12 @@ extension GenerateMainCommand {
 
             try await printToolInfo(config: config, tool: tool!)
 
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
 
-            let drepVKey = cwd.appending("\(drepName!).drep.vkey")
+            let drepVKey = FileUtils.absolutePath("\(drepName!).drep.vkey")
             let drepSKey = keyGenMethod!.isHardwareType
-                ? cwd.appending("\(drepName!).drep.hwsfile")
-                : cwd.appending("\(drepName!).drep.skey")
-            let drepId = cwd.appending("\(drepName!).drep.id")
+                ? FileUtils.absolutePath("\(drepName!).drep.hwsfile")
+                : FileUtils.absolutePath("\(drepName!).drep.skey")
+            let drepId = FileUtils.absolutePath("\(drepName!).drep.id")
 
             try await FileUtils.checkFile(drepVKey)
             try await FileUtils.checkFile(drepSKey)
@@ -272,7 +271,7 @@ extension GenerateMainCommand {
                 try await lockAndPrintKeys()
             }
             else if keyGenMethod == .mnemonics {
-                let drepMnemonics = cwd.appending("\(drepName!).drep.mnemonics")
+                let drepMnemonics = FileUtils.absolutePath("\(drepName!).drep.mnemonics")
                 try await FileUtils.checkFile(drepMnemonics)
 
                 let derivationPath = "1852H/1815H/\(subAccount!)H/3/\(index!)"

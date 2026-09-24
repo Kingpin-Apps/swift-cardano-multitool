@@ -86,7 +86,6 @@ extension QueryMainCommand {
                     """
             )
             
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
             
             switch selectedOption {
                     
@@ -99,7 +98,7 @@ extension QueryMainCommand {
                         validationRules: [NonEmptyValidationRule(error: "Pool name cannot be empty.")]
                     ).trimmingCharacters(in: .whitespacesAndNewlines)
                     
-                    let pool = try Pool.load(from: cwd.appending("\(poolName!).pool.json"))
+                    let pool = try Pool.load(from: FileUtils.absolutePath("\(poolName!).pool.json"))
                     
                     poolOperator = pool.toPoolOperator()
                     
