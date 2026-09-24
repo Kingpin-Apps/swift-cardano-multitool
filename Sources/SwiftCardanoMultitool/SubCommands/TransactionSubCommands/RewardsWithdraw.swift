@@ -52,6 +52,14 @@ extension TransactionMainCommand {
         @OptionGroup var transactionOptions: SharedTransactionOptions
         
         
+        /// The `<name>.payment.addr` that pairs with a stake address, looked up next to
+        /// the stake address file (or in the current directory when there is none).
+        static func claimToSelfPaymentFile(for stakeAddress: AddressInfo) -> FilePath? {
+            guard let name = stakeAddress.name else { return nil }
+            let directory = stakeAddress.addressFile?.removingLastComponent() ?? FilePath()
+            return FileUtils.absolutePath(directory).appending("\(name).payment.addr")
+        }
+
         // MARK: - Wizard
         
         mutating func wizard() async throws {
@@ -65,14 +73,11 @@ extension TransactionMainCommand {
             )
             
             if claimToSelf {
-                let cwd = FilePath(FileManager.default.currentDirectoryPath)
-                
-                guard let stakeAddressFileName = stakeAddress?.info.name else {
+                guard let stakeAddressInfo = stakeAddress?.info,
+                      let paymentFile = Self.claimToSelfPaymentFile(for: stakeAddressInfo) else {
                     throw ValidationError("Stake address file name is missing.")
                 }
-                
-                let paymentFileName = "\(stakeAddressFileName).payment.addr"
-                let paymentFile = cwd.appending(paymentFileName)
+                let paymentFileName = paymentFile.lastComponent!.string
                 
                 try FileUtils.checkFileExists(paymentFile)
                 

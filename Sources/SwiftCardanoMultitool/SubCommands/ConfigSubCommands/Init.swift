@@ -229,10 +229,8 @@ extension ConfigMainCommand {
 
                 try config.save(to: configPath, as: fileType, overwrite: overwrite)
                 
-                let absolute = FileManager.default.currentDirectoryPath + "/" + configPath.string
-
                 spacedPrint(
-                    "Configuration file saved to: \(pathComponent("/" + absolute))"
+                    "Configuration file saved to: \(pathComponent(configPath.string))"
                 )
 
                 noora.success(

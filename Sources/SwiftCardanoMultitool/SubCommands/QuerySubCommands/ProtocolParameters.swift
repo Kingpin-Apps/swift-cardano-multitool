@@ -31,8 +31,6 @@ extension QueryMainCommand {
 
             if fileName == nil && save {
 
-                let cwd = FilePath(FileManager.default.currentDirectoryPath)
-
                 let filePathString = Prompts.current.textPrompt(
                     title: "File Name",
                     prompt: "Enter the name of the file to save the protocol parameters to:",
@@ -41,10 +39,10 @@ extension QueryMainCommand {
                 )
                 
                 if filePathString.isEmpty {
-                    fileName = cwd.appending("protocol-parameters.json")
+                    fileName = FileUtils.absolutePath("protocol-parameters.json")
                     return
                 } else {
-                    fileName = cwd.appending(filePathString)
+                    fileName = FileUtils.absolutePath(filePathString)
                 }
                 
             }

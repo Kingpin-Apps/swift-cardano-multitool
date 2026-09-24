@@ -642,11 +642,9 @@ public struct MultitoolConfig: Codable, Sendable {
             throw ExitCode.failure
         }
         
-        let absolute = FileManager.default.currentDirectoryPath + "/" + configPath.string
-
         if !quiet {
             spacedPrint(
-                "\nUsing config from: \(pathComponent("/" + absolute))"
+                "\nUsing config from: \(pathComponent(configPath.string))"
             )
         }
         

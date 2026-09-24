@@ -27,6 +27,17 @@ struct QueryProtocolParametersTests {
             try await cmd.wizard()
             #expect(cmd.save == true)
             #expect(cmd.fileName?.lastComponent?.string == "custom.json")
+            #expect(cmd.fileName == FilePath(FileManager.default.currentDirectoryPath).appending("custom.json"))
+        }
+    }
+
+    @Test("wizard keeps an absolute file name as-is instead of nesting it under cwd")
+    func wizardAbsoluteFilename() async throws {
+        let scripted = ScriptedPromptProvider(texts: ["/abs/dir/pp.json"], yesOrNo: [true])
+        try await Prompts.$current.withValue(scripted) {
+            var cmd = try QueryMainCommand.ProtocolParameters.parse([])
+            try await cmd.wizard()
+            #expect(cmd.fileName == FilePath("/abs/dir/pp.json"))
         }
     }
 
