@@ -1,3 +1,9 @@
+## 0.13.2 (2026-09-23)
+
+### Fix
+
+- pick up reward redeemer support and Plutus Data equality fix from uplc 0.5.0
+
 ## 0.13.1 (2026-09-23)
 
 ### Fix
