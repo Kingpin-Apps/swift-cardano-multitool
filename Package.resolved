@@ -249,8 +249,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-uplc.git",
       "state" : {
-        "revision" : "c3ec7a101a9ffd26423f7a762065848e8b0cdc25",
-        "version" : "0.4.0"
+        "revision" : "2567224681e374689210b2983fec91db5708e438",
+        "version" : "0.5.0"
       }
     },
     {
