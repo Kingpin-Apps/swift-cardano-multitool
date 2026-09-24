@@ -1,3 +1,9 @@
+## 0.15.1 (2026-09-24)
+
+### Fix
+
+- pick up the tag-258 indefinite-array decode fix from core 0.7.1 and txvalidator 0.3.4
+
 ## 0.15.0 (2026-09-24)
 
 ### Feat
