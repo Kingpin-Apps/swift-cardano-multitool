@@ -29,19 +29,18 @@ struct Ed25519KeyTests {
 
     @Test("relative --name writes the keypair under the current directory")
     func relativeNameWritesUnderCwd() async throws {
-        let name = "scm-ed25519-\(UUID().uuidString)"
-        let cwd = FileManager.default.currentDirectoryPath
-        let skey = "\(cwd)/\(name).skey"
-        let vkey = "\(cwd)/\(name).vkey"
-        defer {
-            try? FileManager.default.removeItem(atPath: skey)
-            try? FileManager.default.removeItem(atPath: vkey)
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("scm-ed25519-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try await WorkingDirectory.withCurrent(dir.path) {
+            let cwd = FileManager.default.currentDirectoryPath
+            var cmd = try GenerateMainCommand.Ed25519Key.parse(["--name", "k"])
+            try await cmd.run()
+
+            #expect(FileManager.default.fileExists(atPath: "\(cwd)/k.skey"))
+            #expect(FileManager.default.fileExists(atPath: "\(cwd)/k.vkey"))
         }
-
-        var cmd = try GenerateMainCommand.Ed25519Key.parse(["--name", name])
-        try await cmd.run()
-
-        #expect(FileManager.default.fileExists(atPath: skey))
-        #expect(FileManager.default.fileExists(atPath: vkey))
     }
 }

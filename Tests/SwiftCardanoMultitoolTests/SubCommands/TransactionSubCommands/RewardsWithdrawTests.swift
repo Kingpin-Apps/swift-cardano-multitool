@@ -23,17 +23,31 @@ struct RewardsWithdrawTests {
 
     @Test("claim-to-self payment file resolves under cwd for a relative stake address file")
     func paymentFileUnderCwdForRelativeStakeFile() throws {
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        let info = try stakeInfo(file: FilePath("owner.stake.addr"))
-        let paymentFile = TransactionMainCommand.RewardsWithdraw.claimToSelfPaymentFile(for: info)
-        #expect(paymentFile == cwd.appending("owner.payment.addr"))
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("scm-rewards-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try WorkingDirectory.withCurrent(dir.path) {
+            let cwd = FilePath(FileManager.default.currentDirectoryPath)
+            let info = try stakeInfo(file: FilePath("owner.stake.addr"))
+            let paymentFile = TransactionMainCommand.RewardsWithdraw.claimToSelfPaymentFile(for: info)
+            #expect(paymentFile == cwd.appending("owner.payment.addr"))
+        }
     }
 
     @Test("claim-to-self payment file falls back to cwd when there is no stake address file")
     func paymentFileUnderCwdWithoutStakeFile() throws {
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        let info = try stakeInfo(file: nil)
-        let paymentFile = TransactionMainCommand.RewardsWithdraw.claimToSelfPaymentFile(for: info)
-        #expect(paymentFile == cwd.appending("owner.payment.addr"))
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("scm-rewards-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try WorkingDirectory.withCurrent(dir.path) {
+            let cwd = FilePath(FileManager.default.currentDirectoryPath)
+            let info = try stakeInfo(file: nil)
+            let paymentFile = TransactionMainCommand.RewardsWithdraw.claimToSelfPaymentFile(for: info)
+            #expect(paymentFile == cwd.appending("owner.payment.addr"))
+        }
     }
 }

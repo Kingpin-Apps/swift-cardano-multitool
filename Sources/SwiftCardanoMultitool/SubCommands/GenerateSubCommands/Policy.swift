@@ -74,7 +74,7 @@ extension GenerateMainCommand {
             policyName = noora.textPrompt(
                 title: "Policy Name",
                 prompt: "Enter the name of the policy (without .policy.*):",
-                description: "The corresponding files will be generated in the current working directory.",
+                description: "The corresponding files will be generated in the current working directory, or at the path the name points to (e.g. /keys/mypool).",
                 collapseOnAnswer: true,
                 validationRules: [NonEmptyValidationRule(error: "Policy name cannot be empty.")]
             ).trimmingCharacters(in: .whitespacesAndNewlines)

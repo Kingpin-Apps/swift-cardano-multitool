@@ -417,22 +417,25 @@ public struct FileUtils {
         return result
     }
     
-    /// Searches the current directory for files matching a pattern and returns the lexicographically latest.
+    /// Searches for files matching a pattern and returns the lexicographically latest.
     /// Pattern: `"{startswith}."` prefix, contains `contains`, and suffix `".{endswith}"`.
+    /// `startswith` may carry a directory (e.g. `/keys/mypool`); a bare prefix searches the
+    /// current directory.
     /// - Returns: The latest matching `FilePath`, or `nil` after emitting a warning.
     public static func searchLatestFile(startswith: String, contains: String, endswith: String) throws -> FilePath? {
-        let cwdPathString = FileManager.default.currentDirectoryPath
-        let cwdPath = FilePath(cwdPathString)
+        let base = absolutePath(startswith)
+        let dirPath = base.removingLastComponent()
+        let prefix = base.lastComponent?.string ?? startswith
         
-        guard let items = try? FileManager.default.contentsOfDirectory(atPath: cwdPathString) else {
+        guard let items = try? FileManager.default.contentsOfDirectory(atPath: dirPath.string) else {
             return nil
         }
         
         let candidates = items.compactMap { name -> FilePath? in
-            let filePath = cwdPath.appending(name)
+            let filePath = dirPath.appending(name)
             var isDir: ObjCBool = false
             guard FileManager.default.fileExists(atPath: filePath.string, isDirectory: &isDir), !isDir.boolValue else { return nil }
-            if name.hasPrefix("\(startswith).") && name.contains(contains) && name.hasSuffix(".\(endswith)") {
+            if name.hasPrefix("\(prefix).") && name.contains(contains) && name.hasSuffix(".\(endswith)") {
                 return filePath
             }
             return nil
@@ -441,7 +444,7 @@ public struct FileUtils {
         }
         
         guard let latest = candidates.last else {
-            noora.warning(.alert("Could not find \(startswith).\(contains)-*.\(endswith) in \(cwdPathString)"))
+            noora.warning(.alert("Could not find \(prefix).\(contains)-*.\(endswith) in \(dirPath.string)"))
             return nil
         }
         

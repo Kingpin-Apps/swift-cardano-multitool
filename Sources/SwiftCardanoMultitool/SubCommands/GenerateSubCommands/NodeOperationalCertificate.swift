@@ -27,7 +27,7 @@ extension GenerateMainCommand {
             poolName = noora.textPrompt(
                 title: "Pool Name",
                 prompt: "Enter the name of the pool:",
-                description: "The corresponding opcert files will be generated in the current working directory.",
+                description: "The corresponding opcert files will be generated in the current working directory, or at the path the name points to (e.g. /keys/mypool).",
                 collapseOnAnswer: true,
                 validationRules: [NonEmptyValidationRule(error: "Pool name cannot be empty.")]
             ).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -79,7 +79,7 @@ extension GenerateMainCommand {
                     takeaways: [
                         "Generate the pool verification key file using the \(.command("scm generate node-cold-keys")) command.",
                         "Make sure the pool verification key file exists and is named correctly.",
-                        "The pool verification key file should be named <poolName>.cold.vkey and located in the current working directory."
+                        "The pool verification key file should be named <poolName>.cold.vkey and located where the pool name points (the current working directory for a bare name)."
                     ]
                 ))
                 throw ExitCode.validationFailure
@@ -102,7 +102,7 @@ extension GenerateMainCommand {
                     takeaways: [
                         "Generate the pool signing key file using the `generate node-keys` command.",
                         "Make sure the pool signing key file exists and is named correctly.",
-                        "The pool signing key file should be named <poolName>.cold.skey or <poolName>.cold.hwsfile and located in the current working directory."
+                        "The pool signing key file should be named <poolName>.cold.skey or <poolName>.cold.hwsfile and located where the pool name points (the current working directory for a bare name)."
                     ]
                 ))
                 throw ExitCode.validationFailure
@@ -123,7 +123,7 @@ extension GenerateMainCommand {
                     takeaways: [
                         "Generate the KES counter file using the `generate kes-keys` command.",
                         "Make sure the KES counter file exists and is named correctly.",
-                        "The KES counter file should be named <poolName>.kes.counter or <poolName>.kes.counter-next and located in the current working directory."
+                        "The KES counter file should be named <poolName>.kes.counter or <poolName>.kes.counter-next and located where the pool name points (the current working directory for a bare name)."
                     ]
                 ))
                 throw ExitCode.validationFailure
@@ -171,7 +171,7 @@ extension GenerateMainCommand {
                     takeaways: [
                         "Generate the KES counter file using the `generate kes-keys` command.",
                         "Make sure the KES counter file exists and is named correctly.",
-                        "The KES vkey file should be named <poolName>.kes-\(latestKESNumber).vkey and located in the current working directory."
+                        "The KES vkey file should be named <poolName>.kes-\(latestKESNumber).vkey and located where the pool name points (the current working directory for a bare name)."
                     ]
                 ))
                 throw ExitCode.validationFailure

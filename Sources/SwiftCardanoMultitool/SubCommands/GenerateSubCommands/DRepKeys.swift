@@ -82,7 +82,7 @@ extension GenerateMainCommand {
             drepName = noora.textPrompt(
                 title: "DRep Name",
                 prompt: "Enter the name of the DRep (without .drep.*):",
-                description: "The corresponding key files will be generated in the current working directory.",
+                description: "The corresponding key files will be generated in the current working directory, or at the path the name points to (e.g. /keys/mypool).",
                 collapseOnAnswer: true,
                 validationRules: [NonEmptyValidationRule(error: "DRep name cannot be empty.")]
             ).trimmingCharacters(in: .whitespacesAndNewlines)

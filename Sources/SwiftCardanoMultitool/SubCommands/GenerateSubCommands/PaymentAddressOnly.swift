@@ -81,7 +81,7 @@ extension GenerateMainCommand {
             addressName = noora.textPrompt(
                 title: "Address Name",
                 prompt: "Enter the name of the address (without .payment.addr):",
-                description: "The corresponding key files will be generated in the current working directory.",
+                description: "The corresponding key files will be generated in the current working directory, or at the path the name points to (e.g. /keys/mypool).",
                 collapseOnAnswer: true,
                 validationRules: [NonEmptyValidationRule(error: "Address name cannot be empty.")]
             ).trimmingCharacters(in: .whitespacesAndNewlines)

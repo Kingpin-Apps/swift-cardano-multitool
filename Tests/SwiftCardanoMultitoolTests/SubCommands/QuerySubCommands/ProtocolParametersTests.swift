@@ -22,12 +22,18 @@ struct QueryProtocolParametersTests {
     @Test("wizard with scripted prompts populates fileName when save is true")
     func wizardScripted() async throws {
         let scripted = ScriptedPromptProvider(texts: ["custom.json"], yesOrNo: [true])
-        try await Prompts.$current.withValue(scripted) {
-            var cmd = try QueryMainCommand.ProtocolParameters.parse([])
-            try await cmd.wizard()
-            #expect(cmd.save == true)
-            #expect(cmd.fileName?.lastComponent?.string == "custom.json")
-            #expect(cmd.fileName == FilePath(FileManager.default.currentDirectoryPath).appending("custom.json"))
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("scm-pp-wizard-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try await WorkingDirectory.withCurrent(dir.path) {
+            try await Prompts.$current.withValue(scripted) {
+                var cmd = try QueryMainCommand.ProtocolParameters.parse([])
+                try await cmd.wizard()
+                #expect(cmd.save == true)
+                #expect(cmd.fileName == FilePath(FileManager.default.currentDirectoryPath).appending("custom.json"))
+            }
         }
     }
 

@@ -30,10 +30,14 @@ struct FileUtilsTests {
     }
 
     @Test("absolutePath resolves a relative path against the current directory")
-    func absolutePathResolvesRelative() {
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
-        #expect(FileUtils.absolutePath("k.skey") == cwd.appending("k.skey"))
-        #expect(FileUtils.absolutePath("sub/k.skey") == cwd.appending("sub/k.skey"))
+    func absolutePathResolvesRelative() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        WorkingDirectory.withCurrent(dir.path) {
+            let cwd = FilePath(FileManager.default.currentDirectoryPath)
+            #expect(FileUtils.absolutePath("k.skey") == cwd.appending("k.skey"))
+            #expect(FileUtils.absolutePath("sub/k.skey") == cwd.appending("sub/k.skey"))
+        }
     }
 
     // MARK: - checkFileExists / checkFileNotExists
@@ -366,19 +370,8 @@ struct FileUtilsCleanupTests {
 @Suite("FileUtils.searchLatestFile")
 struct FileUtilsSearchLatestFileTests {
 
-    /// `searchLatestFile` scans the *current working directory*. Tests must chdir
-    /// into a temp dir to exercise it deterministically.
-    private final class Chdir {
-        let original: String
-        init(_ target: String) {
-            self.original = FileManager.default.currentDirectoryPath
-            _ = FileManager.default.changeCurrentDirectoryPath(target)
-        }
-        deinit {
-            _ = FileManager.default.changeCurrentDirectoryPath(original)
-        }
-    }
-
+    /// A bare prefix makes `searchLatestFile` scan the *current working directory*,
+    /// so those tests run inside a temp dir under the shared working-directory lock.
     private func makeTempDir() throws -> URL {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("scm-tests-latest-\(UUID().uuidString)")
@@ -393,12 +386,9 @@ struct FileUtilsSearchLatestFileTests {
         for name in ["pool.a-2026.tx", "pool.b-2025.tx", "pool.c-2027.tx", "other.txt"] {
             try Data("x".utf8).write(to: dir.appendingPathComponent(name))
         }
-        let chdir = Chdir(dir.path)
-        defer { _ = chdir.self }
-
-        let latest = try FileUtils.searchLatestFile(
-            startswith: "pool", contains: "-", endswith: "tx"
-        )
+        let latest = try WorkingDirectory.withCurrent(dir.path) {
+            try FileUtils.searchLatestFile(startswith: "pool", contains: "-", endswith: "tx")
+        }
         #expect(latest?.lastComponent?.string == "pool.c-2027.tx")
     }
 
@@ -407,12 +397,23 @@ struct FileUtilsSearchLatestFileTests {
         let dir = try makeTempDir()
         defer { try? FileManager.default.removeItem(at: dir) }
         try Data("x".utf8).write(to: dir.appendingPathComponent("other.txt"))
-        let chdir = Chdir(dir.path)
-        defer { _ = chdir.self }
+        let latest = try WorkingDirectory.withCurrent(dir.path) {
+            try FileUtils.searchLatestFile(startswith: "pool", contains: "-", endswith: "tx")
+        }
+        #expect(latest == nil)
+    }
+
+    @Test("a prefix with a directory searches that directory, not cwd")
+    func searchesPrefixDirectory() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        for name in ["pool.node-001.opcert", "pool.node-002.opcert"] {
+            try Data("x".utf8).write(to: dir.appendingPathComponent(name))
+        }
 
         let latest = try FileUtils.searchLatestFile(
-            startswith: "pool", contains: "-", endswith: "tx"
+            startswith: dir.appendingPathComponent("pool").path, contains: "node", endswith: "opcert"
         )
-        #expect(latest == nil)
+        #expect(latest == FilePath(dir.appendingPathComponent("pool.node-002.opcert").path))
     }
 }

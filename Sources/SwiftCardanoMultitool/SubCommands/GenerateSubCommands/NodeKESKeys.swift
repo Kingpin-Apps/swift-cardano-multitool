@@ -37,7 +37,7 @@ extension GenerateMainCommand {
             poolName = noora.textPrompt(
                 title: "Pool Name",
                 prompt: "Enter the name of the pool:",
-                description: "The corresponding key files will be generated in the current working directory.",
+                description: "The corresponding key files will be generated in the current working directory, or at the path the name points to (e.g. /keys/mypool).",
                 collapseOnAnswer: true,
                 validationRules: [NonEmptyValidationRule(error: "Pool name cannot be empty.")]
             ).trimmingCharacters(in: .whitespacesAndNewlines)

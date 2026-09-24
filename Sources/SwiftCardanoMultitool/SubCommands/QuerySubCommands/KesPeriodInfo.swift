@@ -131,7 +131,7 @@ extension QueryMainCommand {
                         noora.error(.alert(
                             "No opcert file found for pool name \(poolName!).",
                             takeaways: [
-                                "Make sure there is an opcert file in the current directory that starts with the pool name and contains 'node' and ends with 'opcert'.",
+                                "Make sure there is an opcert file where the pool name points (the current directory for a bare name) that starts with the pool name and contains 'node' and ends with 'opcert'.",
                                 "Create one via \(.command("scm generate node-operational-certificate"))"
                             ]
                         ))

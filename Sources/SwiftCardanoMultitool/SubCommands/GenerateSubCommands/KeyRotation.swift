@@ -37,7 +37,7 @@ extension GenerateMainCommand {
             poolName = noora.textPrompt(
                 title: "Pool Name",
                 prompt: "Enter the base name of the pool:",
-                description: "Key files will be looked up in the current working directory.",
+                description: "Key files are looked up by this prefix; a bare name resolves in the current working directory.",
                 collapseOnAnswer: true,
                 validationRules: [NonEmptyValidationRule(error: "Pool name cannot be empty.")]
             ).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -91,8 +91,7 @@ extension GenerateMainCommand {
             }
 
             let baseName = poolName!
-            let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let uploadDir = cwd.appending("upload_\(baseName)")
+            let uploadDir = Self.uploadDirectory(for: baseName)
 
             if !FileManager.default.fileExists(atPath: uploadDir.string) {
                 try FileManager.default.createDirectory(
@@ -106,16 +105,23 @@ extension GenerateMainCommand {
                 for i in 1...count {
                     try await rotatePool(
                         poolName: "\(baseName)\(i)",
-                        cwd: cwd,
                         uploadDir: uploadDir
                     )
                 }
             } else {
-                try await rotatePool(poolName: baseName, cwd: cwd, uploadDir: uploadDir)
+                try await rotatePool(poolName: baseName, uploadDir: uploadDir)
             }
         }
 
-        mutating func rotatePool(poolName name: String, cwd: FilePath, uploadDir: FilePath) async throws {
+        /// `upload_<pool>` next to the pool's key files, where rotated files are collected.
+        /// A pool name may carry a directory (e.g. /keys/mypool → /keys/upload_mypool).
+        static func uploadDirectory(for baseName: String) -> FilePath {
+            let base = FileUtils.absolutePath(baseName)
+            let stem = base.lastComponent?.string ?? baseName
+            return base.removingLastComponent().appending("upload_\(stem)")
+        }
+
+        mutating func rotatePool(poolName name: String, uploadDir: FilePath) async throws {
             spacedPrint("Generating \(name) KES keys...")
 
             // Build via `parse([])` rather than the bare `init()`: ArgumentParser only
@@ -153,8 +159,9 @@ extension GenerateMainCommand {
             let kesSKeySource = FileUtils.absolutePath("\(name).kes-\(latestKESNumber).skey")
             let opcertSource = FileUtils.absolutePath("\(name).node-\(latestKESNumber).opcert")
 
-            let kesSKeyDest = uploadDir.appending("\(name).kes.skey")
-            let opcertDest = uploadDir.appending("\(name).node.opcert")
+            let stem = FilePath(name).lastComponent?.string ?? name
+            let kesSKeyDest = uploadDir.appending("\(stem).kes.skey")
+            let opcertDest = uploadDir.appending("\(stem).node.opcert")
 
             // Unlock destination files if they already exist (locked from a prior rotation)
             if FileManager.default.fileExists(atPath: kesSKeyDest.string) {
