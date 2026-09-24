@@ -168,17 +168,21 @@ extension TransactionMainCommand {
 
                 if let evalResults = report.redeemerEvalResults, !evalResults.isEmpty {
                     print(noora.format("\n\(.primary("─── Redeemer Evaluation ───"))\n"))
+                    // These are the *remaining* budget, not the units consumed —
+                    // labelling them "CPU Steps" read as usage and made a full
+                    // budget look like an enormous script.
                     let headers: [TableCellStyle] = [
-                        .primary("Index"), .primary("CPU Steps"), .primary("Mem Units"), .primary("Status")
+                        .primary("Index"), .primary("CPU Remaining"), .primary("Mem Remaining"), .primary("Status")
                     ]
                     let rows: [StyledTableRow] = evalResults.map { r in
                         let status: TableCellStyle = r.passed ? .success("✓ Pass") : .danger("✗ Fail")
-                        return [
-                            .plain("\(r.index)"),
-                            .muted("\(r.remainingBudget.steps)"),
-                            .muted("\(r.remainingBudget.memory)"),
-                            status
-                        ]
+                        // The evaluator runs on a placeholder cost model, so
+                        // printing a number here would be inventing one.
+                        let cpu: TableCellStyle = r.budgetMeasured
+                            ? .muted("\(r.remainingBudget.steps)") : .muted("not measured")
+                        let mem: TableCellStyle = r.budgetMeasured
+                            ? .muted("\(r.remainingBudget.memory)") : .muted("not measured")
+                        return [.plain("\(r.index)"), cpu, mem, status]
                     }
                     noora.table(headers: headers, rows: rows)
                 }

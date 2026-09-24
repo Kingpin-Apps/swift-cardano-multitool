@@ -266,6 +266,17 @@ scm transaction validate --tx-file tx.signed --json
 ```
 
 Reports validation errors — fee shortfalls, missing witnesses, script failures, etc.
+Phase-1 ledger rules run first, then Plutus scripts are executed if a chain context is
+available.
+
+The `Redeemer Evaluation` table reports the budget **remaining** after each script ran,
+not the units it consumed. When the evaluator has no real cost model the columns read
+`not measured`, since a placeholder model's budget means nothing.
+
+Validating a transaction that is already on chain needs a backend with historical UTxO
+lookup — BlockFrost or Koios. `cardano-cli`, Ogmios and a node socket only report
+unspent outputs, so the spent inputs cannot be resolved and both the script data hash
+and Plutus evaluation are reported against an incomplete picture.
 
 ## Typical workflow
 
