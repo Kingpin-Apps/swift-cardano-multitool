@@ -150,6 +150,25 @@ scm --version
 scm --help
 ```
 
+### Shell completion
+
+Tab completes subcommands, flags, file and directory paths, fixed values such as
+`--method`, and key names such as `--address-name` from the key files in the folder.
+
+Homebrew and the `.deb` install completion for zsh, bash and fish. For other
+installs, write the script for your shell:
+
+```bash
+# zsh — any folder on $fpath, e.g. ~/.zfunc (then: fpath=(~/.zfunc $fpath); autoload -U compinit && compinit)
+scm --generate-completion-script zsh > ~/.zfunc/_scm
+
+# bash (needs the bash-completion package)
+scm --generate-completion-script bash > ~/.local/share/bash-completion/completions/scm
+
+# fish
+scm --generate-completion-script fish > ~/.config/fish/completions/scm.fish
+```
+
 ---
 
 ## Quick Start

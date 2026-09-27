@@ -136,6 +136,13 @@ package-linux version arch:
     trap 'rm -rf "$ROOT"' EXIT
     install -Dm755 .build/linux/scm "$ROOT/usr/bin/scm"
     install -Dm644 LICENSE "$ROOT/usr/share/doc/{{ DEB_PACKAGE }}/copyright"
+    # Completion scripts where each shell looks for system-wide ones.
+    install -d "$ROOT/usr/share/bash-completion/completions" \
+        "$ROOT/usr/share/zsh/vendor-completions" \
+        "$ROOT/usr/share/fish/vendor_completions.d"
+    .build/linux/scm --generate-completion-script bash > "$ROOT/usr/share/bash-completion/completions/scm"
+    .build/linux/scm --generate-completion-script zsh > "$ROOT/usr/share/zsh/vendor-completions/_scm"
+    .build/linux/scm --generate-completion-script fish > "$ROOT/usr/share/fish/vendor_completions.d/scm.fish"
     mkdir -p "$ROOT/DEBIAN"
     cat > "$ROOT/DEBIAN/control" <<EOF
     Package: {{ DEB_PACKAGE }}

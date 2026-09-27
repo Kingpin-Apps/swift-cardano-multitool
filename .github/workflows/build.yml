@@ -148,7 +148,8 @@ jobs:
               export DEBIAN_FRONTEND=noninteractive
               apt-get update -qq
               apt-get install -y -qq /dist/*.deb
-              scm --version'
+              scm --version
+              test -s /usr/share/bash-completion/completions/scm'
             echo "::endgroup::"
           done
 
