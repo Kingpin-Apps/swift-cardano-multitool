@@ -1,3 +1,26 @@
+## 0.16.0 (2026-09-27)
+
+### Note
+
+- Tab completion for zsh, bash and fish: Homebrew and the `.deb` install it; for other installs run `scm install completions`.
+- With an `[ogmios]` backend, `scm` now reads addresses and outputs from Kupo when the `[kupo]` server answers its health check, and uses Ogmios alone otherwise.
+- `--tool` now lists `swift-cardano` and `cardano-cli` in help; the old spellings still work.
+- Picks up the stack fixes from swift-cardano-core 0.8, txvalidator 0.4 and txbuilder 1.1: transaction IDs and re-encoding keep the original CBOR bytes, and fees are sized as the ledger does.
+
+### Feat
+
+- add scm install completions
+- complete paths, install methods and key names in shell completions
+- read outputs from Kupo when it is running alongside Ogmios
+
+### Fix
+
+- offer only parseable values for tool, network, period and language
+
+### Refactor
+
+- parse install --method and cip129 --prefix as enums
+
 ## 0.15.2 (2026-09-24)
 
 ### Note
