@@ -13,6 +13,7 @@ enum InstallCommands: String, Subcommandable, AlignedChoiceDescribable {
     case kupo
     case mithril
     case ogmios
+    case completions
     case back
     case exit
 
@@ -28,6 +29,7 @@ enum InstallCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .kupo: return "Kupo"
             case .mithril: return "Mithril"
             case .ogmios: return "Ogmios"
+            case .completions: return "Shell Completions"
             case .back: return "Back"
             case .exit: return "Exit"
         }
@@ -45,6 +47,7 @@ enum InstallCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .kupo: return "A lightweight Cardano chain indexer."
             case .mithril: return "For fast Cardano node bootstrapping via certified snapshots."
             case .ogmios: return "A lightweight bridge interface for the Cardano node."
+            case .completions: return "Tab completion for scm in zsh, bash or fish."
             case .back: return "Go back to the main menu."
             case .exit: return "Leave the program."
         }
@@ -73,6 +76,7 @@ enum InstallCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .kupo: return InstallMainCommand.Kupo.self
             case .mithril: return InstallMainCommand.Mithril.self
             case .ogmios: return InstallMainCommand.Ogmios.self
+            case .completions: return InstallMainCommand.Completions.self
             case .back: return MainMenuCommand.self
             case .exit: return ExitCommand.self
         }
@@ -90,8 +94,8 @@ struct InstallMainCommand: AsyncParsableCommand, MainCommandable {
         discussion: """
         Install various components of the Cardano ecosystem, including the 
         Cardano Node, Cardano CLI, Cardano Wallet, Kupo, Mithril, Ogmios, and 
-        more. Select the tool you would like to install from the options 
-        provided.
+        more, plus tab completion for scm itself. Select the tool you would 
+        like to install from the options provided.
         """,
         subcommands: InstallCommands.subcommands
     )

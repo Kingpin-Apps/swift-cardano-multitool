@@ -156,18 +156,17 @@ Tab completes subcommands, flags, file and directory paths, fixed values such as
 `--method`, and key names such as `--address-name` from the key files in the folder.
 
 Homebrew and the `.deb` install completion for zsh, bash and fish. For other
-installs, write the script for your shell:
+installs, let `scm` put the script where your shell (from `$SHELL`) loads it:
 
 ```bash
-# zsh — any folder on $fpath, e.g. ~/.zfunc (then: fpath=(~/.zfunc $fpath); autoload -U compinit && compinit)
-scm --generate-completion-script zsh > ~/.zfunc/_scm
-
-# bash (needs the bash-completion package)
-scm --generate-completion-script bash > ~/.local/share/bash-completion/completions/scm
-
-# fish
-scm --generate-completion-script fish > ~/.config/fish/completions/scm.fish
+scm install completions                # or: --shell zsh|bash|fish
 ```
+
+It writes `~/.zfunc/_scm` (zsh), `~/.local/share/bash-completion/completions/scm`
+(bash) or `~/.config/fish/completions/scm.fish` (fish) and says what, if anything,
+your shell config still needs. Run it again after upgrading `scm`. To write the
+script somewhere else, use `--output <path>`, or print it with
+`scm --generate-completion-script <shell>`.
 
 ---
 
@@ -554,6 +553,7 @@ scm install cardano-submit-api # Transaction submission API
 scm install kupo               # Lightweight chain indexer
 scm install ogmios             # WebSocket bridge for cardano-node
 scm install mithril            # Fast bootstrap via certified snapshots
+scm install completions        # Tab completion for scm in your shell
 ```
 
 ---
