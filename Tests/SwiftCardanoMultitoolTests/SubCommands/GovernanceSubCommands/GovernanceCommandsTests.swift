@@ -89,7 +89,7 @@ struct CIP129EncodeDecodeTests {
             "--prefix", "drep",
             "--key-hash", String(repeating: "a", count: 56)
         ])
-        #expect(cmd.prefix == "drep")
+        #expect(cmd.prefix == .drep)
         #expect(cmd.keyHash == String(repeating: "a", count: 56))
     }
 

@@ -24,8 +24,8 @@ extension GovernanceMainCommand {
                 """
             )
 
-            @Option(name: .long, help: "Bech32 prefix: drep, ccCold, ccHot, calidus.", completion: .list(["drep", "ccCold", "ccHot", "calidus"]))
-            var prefix: String? = nil
+            @Option(name: .long, help: "Bech32 prefix.")
+            var prefix: Signer.CIP129.Prefix? = nil
 
             @Option(name: .customLong("key-hash"), help: "28-byte Blake2b-224 key hash as hex.")
             var keyHash: String? = nil
@@ -34,12 +34,12 @@ extension GovernanceMainCommand {
             var script: Bool = false
 
             mutating func wizard() async throws {
-                prefix = noora.singleChoicePrompt(
+                prefix = Signer.CIP129.Prefix(rawValue: noora.singleChoicePrompt(
                     title: "Prefix",
                     question: "Which CIP-129 prefix?",
                     options: Signer.CIP129.Prefix.allCases.map(\.rawValue),
                     description: "drep / ccCold / ccHot / calidus."
-                )
+                ))
                 keyHash = noora.textPrompt(
                     title: "Key Hash",
                     prompt: "Enter the 28-byte (56-hex-char) Blake2b-224 hash:",
@@ -56,11 +56,8 @@ extension GovernanceMainCommand {
                 if prefix == nil || keyHash == nil, isInteractiveSession() {
                     try await wizard()
                 }
-                guard prefix != nil, keyHash != nil else {
+                guard let prefixValue = prefix, keyHash != nil else {
                     throw ValidationError("--prefix and --key-hash are required when not running interactively.")
-                }
-                guard let prefixValue = Signer.CIP129.Prefix(rawValue: prefix!) else {
-                    throw ValidationError("Unknown prefix '\(prefix!)'. Use one of: \(Signer.CIP129.Prefix.allCases.map(\.rawValue).joined(separator: ", ")).")
                 }
                 guard let bytes = Data(hexString: keyHash!), bytes.count == 28 else {
                     throw ValidationError("--key-hash must be 28 bytes (56 hex chars).")

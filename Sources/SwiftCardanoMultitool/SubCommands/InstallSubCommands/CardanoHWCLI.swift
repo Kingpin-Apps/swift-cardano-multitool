@@ -19,10 +19,9 @@ extension InstallMainCommand {
 
         @Option(
             name: .shortAndLong,
-            help: "Install method: binary, docker, or apple-container.",
-            completion: .list(InstallMethod.allCases.map(\.rawValue))
+            help: "Install method."
         )
-        var method: String?
+        var method: InstallMethod?
 
         @Option(
             name: [.customShort("i"), .customLong("image")],
@@ -38,10 +37,10 @@ extension InstallMainCommand {
                     options: InstallMethod.available,
                     description: "Choose an installation method."
                 )
-                method = selected.rawValue
+                method = selected
             }
 
-            if method == InstallMethod.binary.rawValue && installDir == nil {
+            if method == .binary && installDir == nil {
                 let defaultDir = defaultInstallDirectory().path
                 let useDefault = noora.yesOrNoChoicePrompt(
                     title: "Install Directory",
@@ -59,7 +58,7 @@ extension InstallMainCommand {
                 }
             }
 
-            let isContainerMethod = method == InstallMethod.docker.rawValue || method == InstallMethod.appleContainer.rawValue
+            let isContainerMethod = method == .docker || method == .appleContainer
             if isContainerMethod && image == nil {
                 image = noora.textPrompt(
                     title: "Container Image",
@@ -69,16 +68,12 @@ extension InstallMainCommand {
         }
 
         mutating func run() async throws {
-            let isContainerMethod = method == InstallMethod.docker.rawValue || method == InstallMethod.appleContainer.rawValue
+            let isContainerMethod = method == .docker || method == .appleContainer
             if method == nil || (isContainerMethod && image == nil) {
                 try await wizard()
             }
 
-            guard let installMethod = method.flatMap({ InstallMethod(rawValue: $0) }) else {
-                noora.error(.alert(
-                    "Invalid install method: '\(method ?? "")'.",
-                    takeaways: ["Valid options are: binary, docker, apple-container."]
-                ))
+            guard let installMethod = method else {
                 throw ExitCode.failure
             }
 

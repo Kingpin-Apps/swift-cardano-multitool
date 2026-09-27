@@ -1,6 +1,7 @@
 import Foundation
 import ArgumentParser
 import SwiftCardanoCore
+import SwiftCardanoCIPs
 import SwiftMnemonic
 import SystemPackage
 
@@ -75,3 +76,6 @@ extension Network: @retroactive ExpressibleByArgument {
         ["mainnet", "preprod", "preview", "guildnet", "sanchonet"]
     }
 }
+
+extension SwiftCardanoCIPs.CIP129.Prefix: @retroactive _SendableMetatype {}
+extension SwiftCardanoCIPs.CIP129.Prefix: @retroactive ExpressibleByArgument {}

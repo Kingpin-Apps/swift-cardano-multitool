@@ -12,7 +12,14 @@ struct InstallCommandsOptionTests {
             "--method", "binary"
         ])
         #expect(cmd.installDir == "/opt/bin")
-        #expect(cmd.method == "binary")
+        #expect(cmd.method == .binary)
+    }
+
+    @Test("rejects an unknown --method at parse time")
+    func rejectsUnknownMethod() {
+        #expect(throws: (any Error).self) {
+            _ = try InstallMainCommand.CardanoNode.parse(["--method", "brew"])
+        }
     }
 
     @Test("CardanoCLI parses --image option")

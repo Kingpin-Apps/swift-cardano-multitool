@@ -165,7 +165,7 @@ struct DocumentationExamplesTests {
             "--prefix", "drep",
             "--key-hash", String(repeating: "a", count: 56),
         ])
-        #expect(cmd.prefix == "drep")
+        #expect(cmd.prefix == .drep)
         #expect(cmd.script == false)
     }
 

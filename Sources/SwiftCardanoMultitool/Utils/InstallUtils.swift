@@ -9,7 +9,7 @@ import Noora
 
 // MARK: - Install Method
 
-enum InstallMethod: String, CaseIterable, AlignedChoiceDescribable {
+enum InstallMethod: String, CaseIterable, AlignedChoiceDescribable, ExpressibleByArgument {
     case binary
     case docker
     case appleContainer = "apple-container"
@@ -37,6 +37,11 @@ enum InstallMethod: String, CaseIterable, AlignedChoiceDescribable {
         #else
         return [.binary, .docker]
         #endif
+    }
+
+    /// Only the methods this platform can use appear in help and shell completion.
+    static var allValueStrings: [String] {
+        available.map(\.rawValue)
     }
 }
 
