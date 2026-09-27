@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import SwiftCardanoChain
 import SwiftCardanoCIPs
 import SwiftCardanoUtils
@@ -116,10 +119,16 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
                 return try await fallbackToLiteMode(config: config, syncProgress: syncProgress)
             }
         } else if let ogmiosConfig = config.ogmios {
-            return try await OgmiosChainContext(
+            let ogmiosContext = try await OgmiosChainContext(
                 host: ogmiosConfig.host,
                 port: ogmiosConfig.port
             )
+
+            // Kupo answers address and output lookups; everything else still goes to Ogmios.
+            if let kupoURL = await healthyKupoURL(config: config.kupo, logger: logger) {
+                return try KupoChainContext(url: kupoURL, wrapping: ogmiosContext)
+            }
+            return ogmiosContext
         } else {
             return try await fallbackToLiteMode(config: config)
         }
@@ -931,6 +940,36 @@ public func checkTransactionSize(
         spacedPrint(
             "\nTransaction size: \(.primary("\(txSize) bytes")) (within the limit of \(maxTxSize) bytes)"
         )
+    }
+}
+
+/// The URL of the Kupo server in `[kupo]`, if it answers its health check.
+///
+/// Generated configs always carry a `[kupo]` block, so a configured host is no sign
+/// that Kupo is running. Anything short of a 200 from `/health` (unreachable, or
+/// still syncing) returns `nil` and the caller keeps its context without Kupo.
+func healthyKupoURL(config: KupoConfig?, logger: Logger) async -> URL? {
+    guard let config, let port = config.port else { return nil }
+
+    // `0.0.0.0` is where Kupo listens, not an address to connect to.
+    let host = (config.host == nil || config.host == "0.0.0.0") ? "localhost" : config.host!
+    guard let url = URL(string: "http://\(host):\(port)") else { return nil }
+
+    var request = URLRequest(url: url.appendingPathComponent("health"))
+    request.timeoutInterval = 2
+    request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+    do {
+        let (_, response) = try await URLSession.shared.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode
+        guard status == 200 else {
+            logger.info("Kupo at \(url) answered /health with \(status.map(String.init) ?? "no status"); not using it.")
+            return nil
+        }
+        return url
+    } catch {
+        logger.info("Kupo at \(url) is unreachable (\(error.localizedDescription)); not using it.")
+        return nil
     }
 }
 
