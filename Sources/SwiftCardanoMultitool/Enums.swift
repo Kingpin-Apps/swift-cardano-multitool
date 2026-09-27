@@ -385,6 +385,9 @@ public enum Tool: CaseIterable, CustomStringConvertible, ExpressibleByArgument, 
                 return nil
         }
     }
+    
+    /// The spellings offered in help and shell completion; `description` is for display.
+    public static var allValueStrings: [String] { ["swift-cardano", "cardano-cli"] }
 }
 
 
@@ -413,6 +416,9 @@ public enum WhichPeriod: CaseIterable, CustomStringConvertible, ExpressibleByArg
                 return nil
         }
     }
+    
+    /// The spellings offered in help and shell completion; `description` is for display.
+    public static var allValueStrings: [String] { ["current", "next"] }
 }
 
 /// Enum for transaction types

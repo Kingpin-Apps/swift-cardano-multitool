@@ -33,6 +33,11 @@ extension Language: @retroactive ExpressibleByArgument, @retroactive CustomStrin
     public init?(argument: String) {
         self.init(rawValue: argument.lowercased())
     }
+    
+    /// Every wordlist except the `unsupported` placeholder.
+    public static var allValueStrings: [String] {
+        allCases.filter { $0 != .unsupported }.map(\.rawValue)
+    }
 }
 
 extension WordCount: @retroactive _SendableMetatype {}
@@ -63,5 +68,10 @@ extension Network: @retroactive ExpressibleByArgument {
             default:
                 return nil
         }
+    }
+    
+    /// The networks `init(argument:)` accepts; `CaseIterable` also lists `custom(_)`.
+    public static var allValueStrings: [String] {
+        ["mainnet", "preprod", "preview", "guildnet", "sanchonet"]
     }
 }
