@@ -43,6 +43,9 @@ WORKDIR /home/scm
 ENTRYPOINT ["/usr/local/bin/scm"]
 
 LABEL org.opencontainers.image.title="scm" \
-      org.opencontainers.image.description="TUI for Cardano blockchain interactions" \
+      org.opencontainers.image.description="Interactive TUI & CLI for Cardano: keys, transactions, stake pools, governance" \
+      org.opencontainers.image.url="https://hub.docker.com/r/kingpinapps/scm" \
+      org.opencontainers.image.documentation="https://github.com/Kingpin-Apps/swift-cardano-multitool#readme" \
       org.opencontainers.image.source="https://github.com/Kingpin-Apps/swift-cardano-multitool" \
+      org.opencontainers.image.vendor="Kingpin Apps" \
       org.opencontainers.image.licenses="MIT"

@@ -52,7 +52,8 @@ docker run -it --rm ghcr.io/kingpin-apps/scm
 ```
 
 Images are published for `linux/amd64` and `linux/arm64` on every release,
-tagged with the version and `latest`.
+tagged with the version and `latest`, to both GHCR and
+[Docker Hub](https://hub.docker.com/r/kingpinapps/scm) (`kingpinapps/scm`).
 
 `scm` is an interactive TUI, so **`-it` is required** for the menus — without a
 terminal the prompts have nothing to draw to. Individual subcommands still work

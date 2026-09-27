@@ -340,3 +340,15 @@ jobs:
             [ "$got" = "$VERSION" ] || { echo "::error::expected $VERSION, got $got"; exit 1; }
             echo "::endgroup::"
           done
+
+      # Docker Hub does not read the repository README, so push the Hub-specific
+      # one (absolute links, Hub image name) alongside every release.
+      - name: Update Docker Hub description
+        if: env.DOCKERHUB_TOKEN != ''
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: kingpinapps/scm
+          short-description: "Interactive TUI & CLI for Cardano: keys, transactions, stake pools, governance"
+          readme-filepath: docker/README.md
