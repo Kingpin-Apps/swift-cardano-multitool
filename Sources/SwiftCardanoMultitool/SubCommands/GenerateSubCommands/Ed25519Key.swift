@@ -15,7 +15,7 @@ extension GenerateMainCommand {
             """
         )
 
-        @Option(name: [.short, .long], help: "Output file prefix — produces <name>.skey and <name>.vkey.")
+        @Option(name: [.short, .long], help: "Output file prefix — produces <name>.skey and <name>.vkey.", completion: .fileStems)
         var name: String? = nil
 
         mutating func wizard() async throws {

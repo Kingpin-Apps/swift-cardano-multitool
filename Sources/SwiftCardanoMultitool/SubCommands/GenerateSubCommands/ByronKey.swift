@@ -21,7 +21,7 @@ extension GenerateMainCommand {
             """
         )
 
-        @Option(name: [.short, .long], help: "Output file prefix — produces <name>.byron.skey, <name>.byron.vkey, <name>.byron.mnemonics.")
+        @Option(name: [.short, .long], help: "Output file prefix — produces <name>.byron.skey, <name>.byron.vkey, <name>.byron.mnemonics.", completion: .fileStems)
         var name: String? = nil
 
         @Option(name: .long, help: "Existing BIP-39 mnemonic. If omitted, a new one is generated.")

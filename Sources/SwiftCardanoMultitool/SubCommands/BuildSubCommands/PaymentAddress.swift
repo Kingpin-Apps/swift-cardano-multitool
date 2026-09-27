@@ -26,7 +26,8 @@ extension BuildMainCommand {
         
         @Option(
             name: .shortAndLong,
-            help: "The name of the address. Address key files must exist in the current working directory and are in the format 'name.stake.vkey' and 'name.payment.vkey'."
+            help: "The name of the address. Address key files must exist in the current working directory and are in the format 'name.stake.vkey' and 'name.payment.vkey'.",
+            completion: .fileStems
         )
         var addressName: String? = nil
         

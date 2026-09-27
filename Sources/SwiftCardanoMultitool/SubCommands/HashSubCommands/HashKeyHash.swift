@@ -32,7 +32,7 @@ extension HashMainCommand {
         @Option(name: [.customShort("f"), .customLong("payment-verification-key-file")], help: "Filepath of the payment verification key.")
         var verificationKeyFile: FilePath? = nil
 
-        @Option(name: .shortAndLong, help: "Address name; hashes '<name>.payment.vkey' in the current directory.")
+        @Option(name: .shortAndLong, help: "Address name; hashes '<name>.payment.vkey' in the current directory.", completion: .fileStems)
         var addressName: String? = nil
 
         @Option(name: .customLong("address"), help: "Payment address to read the payment credential from: Bech32 (addr1…), an address file, or an address name.")
@@ -104,7 +104,7 @@ extension HashMainCommand {
         @Option(name: [.customShort("f"), .customLong("stake-verification-key-file")], help: "Filepath of the stake verification key.")
         var verificationKeyFile: FilePath? = nil
 
-        @Option(name: .shortAndLong, help: "Address name; hashes '<name>.stake.vkey' in the current directory.")
+        @Option(name: .shortAndLong, help: "Address name; hashes '<name>.stake.vkey' in the current directory.", completion: .fileStems)
         var addressName: String? = nil
 
         @Option(name: .customLong("stake-address"), help: "Stake address (stake1…) or base payment address (addr1…) to read the stake credential from; also an address file or name.")
@@ -189,7 +189,7 @@ extension HashMainCommand {
         @Option(name: .customLong("drep-key-hash"), help: "DRep key hash (hex) or DRep ID (CIP-105 or CIP-129 drep1…).")
         var drepKeyHash: String? = nil
 
-        @Option(name: .shortAndLong, help: "DRep name; hashes '<name>.drep.vkey' in the current directory.")
+        @Option(name: .shortAndLong, help: "DRep name; hashes '<name>.drep.vkey' in the current directory.", completion: .fileStems)
         var drepName: String? = nil
 
         @Flag var output: OutputFormat = .outputHex
@@ -355,7 +355,7 @@ extension HashMainCommand {
         @Option(name: [.customShort("f"), .customLong("verification-key-file")], help: "Filepath of the VRF verification key.")
         var verificationKeyFile: FilePath? = nil
 
-        @Option(name: .shortAndLong, help: "Pool name; hashes '<name>.vrf.vkey' in the current directory.")
+        @Option(name: .shortAndLong, help: "Pool name; hashes '<name>.vrf.vkey' in the current directory.", completion: .fileStems)
         var poolName: String? = nil
 
         @Option(name: .shortAndLong, help: "Optional output file. Default is to write to stdout.")
@@ -430,7 +430,7 @@ extension HashMainCommand {
         @Option(name: [.customShort("f"), .customLong("cold-verification-key-file")], help: "Filepath of the stake pool cold verification key.")
         var verificationKeyFile: FilePath? = nil
 
-        @Option(name: .shortAndLong, help: "Pool name; hashes '<name>.node.vkey' in the current directory.")
+        @Option(name: .shortAndLong, help: "Pool name; hashes '<name>.node.vkey' in the current directory.", completion: .fileStems)
         var poolName: String? = nil
 
         @Flag var output: OutputFormat = .outputBech32

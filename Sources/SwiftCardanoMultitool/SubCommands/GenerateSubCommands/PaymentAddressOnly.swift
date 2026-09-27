@@ -14,7 +14,7 @@ extension GenerateMainCommand {
             abstract: "Generate a payment address only."
         )
         
-        @Option(name: .shortAndLong, help: "The name of the address. The payment verification key and address will be saved as <name>.payment.vkey and <name>.payment.addr respectively.")
+        @Option(name: .shortAndLong, help: "The name of the address. The payment verification key and address will be saved as <name>.payment.vkey and <name>.payment.addr respectively.", completion: .fileStems)
         var addressName: String? = nil
         
         @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli, enc, hw, hw_multi, mnemonics.")

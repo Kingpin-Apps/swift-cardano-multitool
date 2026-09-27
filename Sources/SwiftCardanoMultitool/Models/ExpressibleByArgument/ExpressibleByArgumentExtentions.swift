@@ -8,7 +8,7 @@ import SystemPackage
 extension URL: @retroactive _SendableMetatype {}
 extension URL: @retroactive ExpressibleByArgument {
     public init?(argument: String) {
-        self.init(string: argument)!
+        self.init(string: argument)
     }
 }
 
@@ -16,6 +16,11 @@ extension FilePath: @retroactive _SendableMetatype {}
 extension FilePath: @retroactive ExpressibleByArgument {
     public init?(argument: String) {
         self.init(argument)
+    }
+
+    /// Every `FilePath` option completes paths unless it names something narrower.
+    public static var defaultCompletionKind: CompletionKind {
+        .file()
     }
 }
 

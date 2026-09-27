@@ -12,13 +12,15 @@ extension InstallMainCommand {
 
         @Option(
             name: [.customShort("d"), .customLong("install-dir")],
-            help: "Directory to install the binary into. Defaults to ~/.local/bin."
+            help: "Directory to install the binary into. Defaults to ~/.local/bin.",
+            completion: .directory
         )
         var installDir: String?
 
         @Option(
             name: .shortAndLong,
-            help: "Install method: binary, docker, or apple-container."
+            help: "Install method: binary, docker, or apple-container.",
+            completion: .list(InstallMethod.allCases.map(\.rawValue))
         )
         var method: String?
 

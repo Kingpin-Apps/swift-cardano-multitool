@@ -34,7 +34,7 @@ extension QueryMainCommand {
         
         // MARK: - Options
         
-        @Option(name: .shortAndLong, help: "The pool name. Searches for <poolName>.vrf.skey and <poolName>.pool.id-bech in the current directory.")
+        @Option(name: .shortAndLong, help: "The pool name. Searches for <poolName>.vrf.skey and <poolName>.pool.id-bech in the current directory.", completion: .fileStems)
         var poolName: String?
         
         @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")

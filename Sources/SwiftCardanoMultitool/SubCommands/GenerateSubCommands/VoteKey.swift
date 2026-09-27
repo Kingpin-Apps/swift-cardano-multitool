@@ -18,7 +18,7 @@ extension GenerateMainCommand {
             """
         )
 
-        @Option(name: [.short, .long], help: "Output file prefix — produces <name>.vote.skey, <name>.vote.vkey, <name>.vote.mnemonics.")
+        @Option(name: [.short, .long], help: "Output file prefix — produces <name>.vote.skey, <name>.vote.vkey, <name>.vote.mnemonics.", completion: .fileStems)
         var name: String? = nil
 
         @Option(name: .long, help: "Account index (default 0).")

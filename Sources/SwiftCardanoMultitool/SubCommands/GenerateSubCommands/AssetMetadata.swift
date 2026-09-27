@@ -27,7 +27,7 @@ extension GenerateMainCommand {
             aliases: ["assetmeta"]
         )
 
-        @Option(name: .shortAndLong, help: "Stem of the policy on disk. Loads <name>.policy.{id,script,skey}.")
+        @Option(name: .shortAndLong, help: "Stem of the policy on disk. Loads <name>.policy.{id,script,skey}.", completion: .fileStems)
         var policyName: String? = nil
 
         @Option(name: .shortAndLong, help: "Asset name. Plain ASCII (e.g. 'MyToken') or {hex} for raw bytes (e.g. '{4d79546f6b656e}'). Max 32 bytes.")
@@ -48,10 +48,10 @@ extension GenerateMainCommand {
         @Option(name: .long, help: "Decimal places of the asset (0-255).")
         var metaDecimals: Int? = nil
 
-        @Option(name: .long, help: "Path to a PNG logo file (max 64 KiB).")
+        @Option(name: .long, help: "Path to a PNG logo file (max 64 KiB).", completion: .file(extensions: ["png"]))
         var metaLogoPath: String? = nil
 
-        @Option(name: .long, help: "Output directory. Defaults to the current working directory.")
+        @Option(name: .long, help: "Output directory. Defaults to the current working directory.", completion: .directory)
         var outputDir: String? = nil
 
         mutating func validate() throws {

@@ -35,7 +35,7 @@ extension CertificateMainCommand {
             aliases: ["pool-dereg"]
         )
         
-        @Option(name: .shortAndLong, help: "The name of the pool. Will look for a file named <poolName>.pool.json in current working directory.")
+        @Option(name: .shortAndLong, help: "The name of the pool. Will look for a file named <poolName>.pool.json in current working directory.", completion: .fileStems)
         var poolName: String? = nil
 
         @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")

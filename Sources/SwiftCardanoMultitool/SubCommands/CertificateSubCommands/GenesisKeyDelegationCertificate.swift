@@ -29,13 +29,13 @@ extension CertificateMainCommand {
 
         // MARK: - Optional CLI Arguments (native Swift path uses interactive prompts)
 
-        @Option(name: .long, help: "Path to the genesis verification key file.")
+        @Option(name: .long, help: "Path to the genesis verification key file.", completion: .file())
         var genesisVerificationKeyFile: String?
 
-        @Option(name: .long, help: "Path to the genesis delegate verification key file.")
+        @Option(name: .long, help: "Path to the genesis delegate verification key file.", completion: .file())
         var genesisDelegateVerificationKeyFile: String?
 
-        @Option(name: .long, help: "Path to the VRF verification key file (.vrf.vkey).")
+        @Option(name: .long, help: "Path to the VRF verification key file (.vrf.vkey).", completion: .file())
         var vrfVerificationKeyFile: String?
 
         // MARK: - CertificateCommandable Arguments

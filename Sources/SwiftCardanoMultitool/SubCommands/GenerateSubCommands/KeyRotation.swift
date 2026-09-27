@@ -12,7 +12,7 @@ extension GenerateMainCommand {
             abstract: "Rotate KES Keys and Node Operational Certificate."
         )
 
-        @Option(name: .shortAndLong, help: "The base name of the pool. Key files are looked up as <poolName>.kes-XXX.skey etc.")
+        @Option(name: .shortAndLong, help: "The base name of the pool. Key files are looked up as <poolName>.kes-XXX.skey etc.", completion: .fileStems)
         var poolName: String? = nil
 
         @Option(name: .shortAndLong, help: "Number of pools to rotate (multi-pool setup). Pools are named <poolName>1, <poolName>2, ...")

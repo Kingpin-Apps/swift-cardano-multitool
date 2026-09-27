@@ -12,25 +12,29 @@ extension RunMainCommand {
 
         @Option(
             name: [.customShort("c"), .customLong("config")],
-            help: "Path to the cardano-db-sync config JSON file."
+            help: "Path to the cardano-db-sync config JSON file.",
+            completion: .file(extensions: ["json"])
         )
         var dbSyncConfig: String?
 
         @Option(
             name: [.customShort("s"), .customLong("socket-path")],
-            help: "Path to the cardano-node socket file."
+            help: "Path to the cardano-node socket file.",
+            completion: .file()
         )
         var socketPath: String?
 
         @Option(
             name: [.customShort("S"), .customLong("state-dir")],
-            help: "Directory for cardano-db-sync state."
+            help: "Directory for cardano-db-sync state.",
+            completion: .directory
         )
         var stateDir: String?
 
         @Option(
             name: [.customLong("schema-dir")],
-            help: "Path to the SQL schema directory. If omitted, the bundled schema is used."
+            help: "Path to the SQL schema directory. If omitted, the bundled schema is used.",
+            completion: .directory
         )
         var schemaDir: String?
 

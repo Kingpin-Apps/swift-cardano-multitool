@@ -12,7 +12,7 @@ extension GenerateMainCommand {
             abstract: "Generate the node cold keys."
         )
         
-        @Option(name: .shortAndLong, help: "The name of the pool. The node cold keys will be saved as <name>.cold.vkey, <name>.cold.skey and <name>.cold.counter.")
+        @Option(name: .shortAndLong, help: "The name of the pool. The node cold keys will be saved as <name>.cold.vkey, <name>.cold.skey and <name>.cold.counter.", completion: .fileStems)
         var poolName: String? = nil
         
         @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli, enc, hw.")

@@ -52,7 +52,7 @@ extension GenerateMainCommand {
             """
         )
 
-        @Option(name: [.short, .long], help: "Output file prefix — produces <name>.skey, <name>.vkey, and <name>.mnemonics.")
+        @Option(name: [.short, .long], help: "Output file prefix — produces <name>.skey, <name>.vkey, and <name>.mnemonics.", completion: .fileStems)
         var name: String? = nil
 
         @Option(name: [.short, .long], help: "Derivation path shortcut.")

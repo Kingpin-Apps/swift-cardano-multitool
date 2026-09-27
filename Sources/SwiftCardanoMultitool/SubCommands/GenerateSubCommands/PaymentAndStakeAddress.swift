@@ -14,7 +14,7 @@ extension GenerateMainCommand {
             abstract: "Generate a payment and stake address."
         )
         
-        @Option(name: .shortAndLong, help: "The name of the address. The keys and addresses will be saved as <name>.payment.vkey, <name>.payment.skey, <name>.stake.vkey, <name>.stake.skey, <name>.payment.addr and <name>.stake.addr.")
+        @Option(name: .shortAndLong, help: "The name of the address. The keys and addresses will be saved as <name>.payment.vkey, <name>.payment.skey, <name>.stake.vkey, <name>.stake.skey, <name>.payment.addr and <name>.stake.addr.", completion: .fileStems)
         var addressName: String? = nil
         
         @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli, enc, hw, hw_multi, hybrid, hybrid_multi, hybrid_enc, hybrid_multi_enc, mnemonics.")

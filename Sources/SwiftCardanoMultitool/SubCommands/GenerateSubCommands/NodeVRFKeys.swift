@@ -12,7 +12,7 @@ extension GenerateMainCommand {
             abstract: "Generate the node VRF keys."
         )
         
-        @Option(name: .shortAndLong, help: "The name of the pool. The node VRF keys will be saved as <name>.vrf.vkey and <name>.vrf.skey.")
+        @Option(name: .shortAndLong, help: "The name of the pool. The node VRF keys will be saved as <name>.vrf.vkey and <name>.vrf.skey.", completion: .fileStems)
         var poolName: String? = nil
         
         @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli or enc")

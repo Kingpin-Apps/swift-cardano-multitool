@@ -16,7 +16,7 @@ extension GenerateMainCommand {
             abstract: "Generate a Cardano native-script minting policy."
         )
 
-        @Option(name: .shortAndLong, help: "The name of the policy. Files will be saved as <name>.policy.vkey, <name>.policy.skey (or <name>.policy.hwsfile), <name>.policy.script and <name>.policy.id.")
+        @Option(name: .shortAndLong, help: "The name of the policy. Files will be saved as <name>.policy.vkey, <name>.policy.skey (or <name>.policy.hwsfile), <name>.policy.script and <name>.policy.id.", completion: .fileStems)
         var policyName: String? = nil
 
         @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli, enc, hw, mnemonics.")

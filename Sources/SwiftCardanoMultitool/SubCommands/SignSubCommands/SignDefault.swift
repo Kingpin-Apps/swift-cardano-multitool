@@ -28,7 +28,7 @@ extension SignMainCommand {
         @Option(name: .customLong("data-file"), help: "File whose contents will be signed.")
         var dataFile: FilePath? = nil
 
-        @Option(name: [.customShort("s"), .customLong("secret-key")], help: "Signing key — path to a .skey file or raw hex.")
+        @Option(name: [.customShort("s"), .customLong("secret-key")], help: "Signing key — path to a .skey file or raw hex.", completion: .file())
         var secretKey: String? = nil
 
         @Flag(name: .customLong("calidus"), help: "Treat the signing key as a Calidus key and also emit the CIP-151 calidus_id (bech32).")

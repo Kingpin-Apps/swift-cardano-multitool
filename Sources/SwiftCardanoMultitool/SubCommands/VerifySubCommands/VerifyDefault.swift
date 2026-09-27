@@ -25,7 +25,7 @@ extension VerifyMainCommand {
         @Option(name: .customLong("data-file"), help: "File whose contents were signed.")
         var dataFile: FilePath? = nil
 
-        @Option(name: [.customShort("p"), .customLong("public-key")], help: "Verification key — path to a .vkey file or raw hex.")
+        @Option(name: [.customShort("p"), .customLong("public-key")], help: "Verification key — path to a .vkey file or raw hex.", completion: .file())
         var publicKey: String? = nil
 
         @Option(name: .long, help: "64-byte Ed25519 signature as hex.")

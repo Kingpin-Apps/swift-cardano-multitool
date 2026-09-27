@@ -35,7 +35,7 @@ extension AssetMainCommand {
         @Argument(help: "Combined identifier: <PolicyName>.<AssetName>. Alternative to --policy-name + --asset-name.")
         var policyAsset: String?
 
-        @Option(name: .long, help: "Stem of the policy on disk. Loads <name>.policy.{id,script,vkey,skey|hwsfile}.")
+        @Option(name: .long, help: "Stem of the policy on disk. Loads <name>.policy.{id,script,vkey,skey|hwsfile}.", completion: .fileStems)
         var policyName: String?
 
         @Option(name: .long, help: "Asset name. Plain ASCII (e.g. 'MYTOK') or {hex}. Max 32 bytes.")

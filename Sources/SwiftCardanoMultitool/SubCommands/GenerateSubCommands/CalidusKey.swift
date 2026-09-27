@@ -17,7 +17,7 @@ extension GenerateMainCommand {
             """
         )
 
-        @Option(name: [.short, .long], help: "Output file prefix — produces <name>.calidus.skey, <name>.calidus.vkey, <name>.calidus.mnemonics.")
+        @Option(name: [.short, .long], help: "Output file prefix — produces <name>.calidus.skey, <name>.calidus.vkey, <name>.calidus.mnemonics.", completion: .fileStems)
         var name: String? = nil
 
         @Option(name: .long, help: "Account index (default 0).")

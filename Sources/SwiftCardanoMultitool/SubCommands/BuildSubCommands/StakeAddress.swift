@@ -22,7 +22,7 @@ extension BuildMainCommand {
             aliases: ["stake"]
         )
         
-        @Option(name: .shortAndLong, help: "The name of the address. Address stake verification key file must exist in the current working directory and are in the format 'name.stake.vkey'.")
+        @Option(name: .shortAndLong, help: "The name of the address. Address stake verification key file must exist in the current working directory and are in the format 'name.stake.vkey'.", completion: .fileStems)
         var addressName: String? = nil
         
         @Option(name: .shortAndLong, help: "The path to the staking verification key file.")

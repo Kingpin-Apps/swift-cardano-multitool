@@ -26,7 +26,7 @@ extension SignMainCommand {
         @Option(name: .customLong("data-file"), help: "File whose contents will be signed.")
         var dataFile: FilePath? = nil
 
-        @Option(name: [.customShort("s"), .customLong("secret-key")], help: "Signing key — path to a .skey file or raw hex.")
+        @Option(name: [.customShort("s"), .customLong("secret-key")], help: "Signing key — path to a .skey file or raw hex.", completion: .file())
         var secretKey: String? = nil
 
         @Flag(name: .long, help: "Use testnet network ID when deriving the signing address.")

@@ -13,7 +13,7 @@ extension GenerateMainCommand {
             abstract: "Generate the node operational certificate."
         )
         
-        @Option(name: .shortAndLong, help: "The name of the pool. The node opcert will be saved as <poolName>.node-XXX.opcert.")
+        @Option(name: .shortAndLong, help: "The name of the pool. The node opcert will be saved as <poolName>.node-XXX.opcert.", completion: .fileStems)
         var poolName: String? = nil
         
         @Option(name: .shortAndLong, help: "Use this counter to generate a different node opcert for the same pool. The node operational certificate counter will be saved as <poolName>.node-<counter>.opcert.")

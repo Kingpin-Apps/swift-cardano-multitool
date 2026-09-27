@@ -14,7 +14,7 @@ extension GenerateMainCommand {
             abstract: "Generate the node KES keys."
         )
         
-        @Option(name: .shortAndLong, help: "The name of the pool. The node KES keys will be saved as <name>.kes-XXX.vkey and <name>.kes-XXX.skey.")
+        @Option(name: .shortAndLong, help: "The name of the pool. The node KES keys will be saved as <name>.kes-XXX.vkey and <name>.kes-XXX.skey.", completion: .fileStems)
         var poolName: String? = nil
         
         @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli or enc")

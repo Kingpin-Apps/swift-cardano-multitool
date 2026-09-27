@@ -12,13 +12,15 @@ extension RunMainCommand {
 
         @Option(
             name: [.customShort("c"), .customLong("config")],
-            help: "Path to the cardano-node config JSON file."
+            help: "Path to the cardano-node config JSON file.",
+            completion: .file(extensions: ["json"])
         )
         var nodeConfig: String?
 
         @Option(
             name: [.customShort("s"), .customLong("socket-path")],
-            help: "Path to the cardano-node socket file."
+            help: "Path to the cardano-node socket file.",
+            completion: .file()
         )
         var socketPath: String?
 

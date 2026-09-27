@@ -34,7 +34,7 @@ extension GenerateMainCommand {
             aliases: ["pool"]
         )
         
-        @Option(name: .shortAndLong, help: "The name of the pool. The pool file will be saved as <poolName>.pool.json.")
+        @Option(name: .shortAndLong, help: "The name of the pool. The pool file will be saved as <poolName>.pool.json.", completion: .fileStems)
         var poolName: String? = nil
         
         @Option(name: .long, help: "A registered pool to fetch parameters from. Supports: pool ID (pool1... or hex), cold verification key (pool_vk1... or hex), .pool.id file, or cold .vkey file.")

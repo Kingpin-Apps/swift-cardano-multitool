@@ -16,7 +16,7 @@ extension GenerateMainCommand {
             abstract: "Generate Cardano governance DRep (Delegated Representative) keys."
         )
 
-        @Option(name: .shortAndLong, help: "The name of the DRep. The key files will be saved as <name>.drep.vkey, <name>.drep.skey (or <name>.drep.hwsfile) and <name>.drep.id.")
+        @Option(name: .shortAndLong, help: "The name of the DRep. The key files will be saved as <name>.drep.vkey, <name>.drep.skey (or <name>.drep.hwsfile) and <name>.drep.id.", completion: .fileStems)
         var drepName: String? = nil
 
         @Option(name: .shortAndLong, help: "The method to use for key generation. Options are: cli, enc, hw, mnemonics.")

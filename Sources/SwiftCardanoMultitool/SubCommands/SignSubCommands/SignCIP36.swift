@@ -21,16 +21,16 @@ extension SignMainCommand {
             """
         )
 
-        @Option(name: .customLong("payment-address"), help: "Rewards address (bech32 or path to .addr file). Required for registration.")
+        @Option(name: .customLong("payment-address"), help: "Rewards address (bech32 or path to .addr file). Required for registration.", completion: .file())
         var paymentAddress: String? = nil
 
-        @Option(name: .customLong("vote-public-key"), parsing: .singleValue, help: "Voting public key — repeat for multi-delegation. Accepts a .vkey path or hex.")
+        @Option(name: .customLong("vote-public-key"), parsing: .singleValue, help: "Voting public key — repeat for multi-delegation. Accepts a .vkey path or hex.", completion: .file())
         var votePublicKeys: [String] = []
 
         @Option(name: .customLong("vote-weight"), parsing: .singleValue, help: "Voting weight per --vote-public-key (must match the count of --vote-public-key when more than one).")
         var voteWeights: [UInt32] = []
 
-        @Option(name: [.customShort("s"), .customLong("secret-key")], help: "Stake signing key — path to a .skey file or raw hex.")
+        @Option(name: [.customShort("s"), .customLong("secret-key")], help: "Stake signing key — path to a .skey file or raw hex.", completion: .file())
         var secretKey: String? = nil
 
         @Option(name: .long, help: "Monotonic nonce. Defaults to the current mainnet slot height if omitted.")

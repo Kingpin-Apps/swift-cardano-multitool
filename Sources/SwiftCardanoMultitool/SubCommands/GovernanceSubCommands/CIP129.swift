@@ -24,7 +24,7 @@ extension GovernanceMainCommand {
                 """
             )
 
-            @Option(name: .long, help: "Bech32 prefix: drep, ccCold, ccHot, calidus.")
+            @Option(name: .long, help: "Bech32 prefix: drep, ccCold, ccHot, calidus.", completion: .list(["drep", "ccCold", "ccHot", "calidus"]))
             var prefix: String? = nil
 
             @Option(name: .customLong("key-hash"), help: "28-byte Blake2b-224 key hash as hex.")

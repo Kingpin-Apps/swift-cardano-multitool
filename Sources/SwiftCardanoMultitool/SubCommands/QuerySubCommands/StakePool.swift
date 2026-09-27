@@ -35,7 +35,7 @@ extension QueryMainCommand {
         @Argument(help: "The stake pool to query: pool ID (pool1… or hex), cold verification key (pool_vk1… or hex), a key/pool-id/pool.json file, or a pool name to look up in the current directory.")
         var pool: PoolOperator? = nil
 
-        @Option(name: .shortAndLong, help: "The pool name. Searches for <poolName>.vrf.skey and <poolName>.pool.id-bech in the current directory.")
+        @Option(name: .shortAndLong, help: "The pool name. Searches for <poolName>.vrf.skey and <poolName>.pool.id-bech in the current directory.", completion: .fileStems)
         var poolName: String?
         
         @Option(name: [.customShort("o"), .long], help: "The pool operator (PoolOperator) to delegate to. Supports: pool ID (pool1... or hex), cold verification key (pool_vk1... or hex), .pool.id file, or cold .vkey file.")

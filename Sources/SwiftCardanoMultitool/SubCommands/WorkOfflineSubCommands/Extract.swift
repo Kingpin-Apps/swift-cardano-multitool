@@ -20,7 +20,7 @@ extension WorkOfflineMainCommand {
         @Option(name: [.short, .long], help: "Path to the offline transfer file.")
         var inFile: FilePath?
 
-        @Option(name: [.short, .long], help: "Directory to extract files into (defaults to current directory).")
+        @Option(name: [.short, .long], help: "Directory to extract files into (defaults to current directory).", completion: .directory)
         var outDir: FilePath?
 
         mutating func run() async throws {

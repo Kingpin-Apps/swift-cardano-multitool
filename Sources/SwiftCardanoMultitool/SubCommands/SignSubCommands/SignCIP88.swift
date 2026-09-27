@@ -18,10 +18,10 @@ extension SignMainCommand {
             """
         )
 
-        @Option(name: .customLong("calidus-public-key"), help: "Calidus public key (path to .vkey or raw hex).")
+        @Option(name: .customLong("calidus-public-key"), help: "Calidus public key (path to .vkey or raw hex).", completion: .file())
         var calidusPublicKey: String? = nil
 
-        @Option(name: [.customShort("s"), .customLong("secret-key")], help: "Pool cold signing key — path to a .skey file or raw hex.")
+        @Option(name: [.customShort("s"), .customLong("secret-key")], help: "Pool cold signing key — path to a .skey file or raw hex.", completion: .file())
         var secretKey: String? = nil
 
         @Option(name: .long, help: "Monotonic nonce. Defaults to the current mainnet slot height if omitted.")

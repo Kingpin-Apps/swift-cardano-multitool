@@ -22,7 +22,7 @@ extension SignMainCommand {
         @Option(name: .customLong("data-file"), help: "Path to the JSON-LD document to sign.")
         var dataFile: FilePath? = nil
 
-        @Option(name: [.customShort("s"), .customLong("secret-key")], help: "Author signing key — path to a .skey file or raw hex.")
+        @Option(name: [.customShort("s"), .customLong("secret-key")], help: "Author signing key — path to a .skey file or raw hex.", completion: .file())
         var secretKey: String? = nil
 
         @Option(name: .customLong("author-name"), help: "Display name to attach to the author entry.")

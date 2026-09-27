@@ -12,13 +12,15 @@ extension RunMainCommand {
 
         @Option(
             name: [.customShort("s"), .customLong("node-socket")],
-            help: "Path to the cardano-node socket file."
+            help: "Path to the cardano-node socket file.",
+            completion: .file()
         )
         var nodeSocket: String?
 
         @Option(
             name: [.customShort("d"), .customLong("database")],
-            help: "Directory for cardano-wallet's database."
+            help: "Directory for cardano-wallet's database.",
+            completion: .directory
         )
         var database: String?
 
@@ -30,7 +32,8 @@ extension RunMainCommand {
 
         @Option(
             name: [.customLong("testnet")],
-            help: "Path to the Byron genesis JSON file (for testnet). Mutually exclusive with --mainnet."
+            help: "Path to the Byron genesis JSON file (for testnet). Mutually exclusive with --mainnet.",
+            completion: .file(extensions: ["json"])
         )
         var testnet: String?
 

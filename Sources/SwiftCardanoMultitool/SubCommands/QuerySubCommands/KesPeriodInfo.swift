@@ -9,7 +9,7 @@ extension QueryMainCommand {
     struct KesPeriodInfo: AsyncParsableCommand {
         static let configuration = CommandConfiguration(abstract: "Query KES period.")
         
-        @Option(name: .shortAndLong, help: "The name of the pool. Searches for the latest <poolName>.node-XXX.opcert.")
+        @Option(name: .shortAndLong, help: "The name of the pool. Searches for the latest <poolName>.node-XXX.opcert.", completion: .fileStems)
         var poolName: String? = nil
         
         @Option(name: [.customShort("j"), .long], help: "The path to the pool.json file.")

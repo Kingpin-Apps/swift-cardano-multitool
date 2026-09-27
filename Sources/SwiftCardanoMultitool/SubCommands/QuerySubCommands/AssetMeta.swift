@@ -10,7 +10,7 @@ extension QueryMainCommand {
             aliases: ["assetmeta"]
         )
 
-        @Argument(help: "Asset subject (56-120 hex chars) OR path to a .asset JSON file.")
+        @Argument(help: "Asset subject (56-120 hex chars) OR path to a .asset JSON file.", completion: .file())
         var asset: String? = nil
 
         mutating func wizard() async throws {
