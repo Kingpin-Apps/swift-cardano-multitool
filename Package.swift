@@ -33,7 +33,7 @@ let package = Package(
             traits: [.defaults, "CLIBackends"]
         ),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-cips.git", from: "0.3.8"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-explorers.git", from: "0.1.0"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-explorers.git", from: "0.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-token-registry.git", from: "0.2.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "1.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.4.1"),
