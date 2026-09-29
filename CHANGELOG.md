@@ -1,10 +1,23 @@
 ## 0.17.0 (2026-09-29)
 
+### Note
+
+- Explorer links now come from [swift-cardano-explorers](https://github.com/Kingpin-Apps/swift-cardano-explorers). `blockchain_explorer` also takes `dreptalk` and `poolpm`.
+- Links were checked against the live sites and several were corrected: Cardanoscan blocks use `/block/`, Cexplorer governance actions use `txhash#index` and committee members `/gov/cc/`, and DReps are written as CIP-129 ids everywhere.
+- Where the chosen explorer has no page for something, or no site on the network, the link is left out.
+
 ### Feat
 
 - explorer links from swift-cardano-explorers, adding DRepTalk and Pool PM
 
 ## 0.16.0 (2026-09-27)
+
+### Note
+
+- Tab completion for zsh, bash and fish: Homebrew and the `.deb` install it; for other installs run `scm install completions`.
+- With an `[ogmios]` backend, `scm` now reads addresses and outputs from Kupo when the `[kupo]` server answers its health check, and uses Ogmios alone otherwise.
+- `--tool` now lists `swift-cardano` and `cardano-cli` in help; the old spellings still work.
+- Picks up the stack fixes from swift-cardano-core 0.8, txvalidator 0.4 and txbuilder 1.1: transaction IDs and re-encoding keep the original CBOR bytes, and fees are sized as the ledger does.
 
 ### Feat
 
@@ -21,6 +34,10 @@
 - parse install --method and cip129 --prefix as enums
 
 ## 0.15.2 (2026-09-24)
+
+### Note
+
+- An absolute `--name` (e.g. `/keys/k`) is now used as given; previously it was created inside the current directory.
 
 ### Fix
 
