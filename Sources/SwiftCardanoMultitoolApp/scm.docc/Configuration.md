@@ -125,7 +125,7 @@ log_level = "info"
 | `koios_api_key` | String | — | Koios API key |
 | `mode` | String | `"auto"` | Operation mode: `auto`, `online`, `offline`, `lite`, or `devkit` |
 | `offline_file` | String | `./offline-transfer.json` | Path to the offline transfer file used by `work-offline` |
-| `blockchain_explorer` | String | `"cexplorer"` | Explorer for transaction links: `cexplorer`, `cardanoscan`, `pooltool`, `eutxo`, `adastat` |
+| `blockchain_explorer` | String | `"cexplorer"` | Explorer for links to transactions, addresses, pools and governance: `cexplorer`, `cardanoscan`, `adastat`, `dreptalk`, `eutxo`, `poolpm`, `pooltool` (see [swift-cardano-explorers](https://github.com/Kingpin-Apps/swift-cardano-explorers) for what each covers) |
 | `log_level` | String | `"info"` | Logging verbosity: `trace`, `debug`, `info`, `notice`, `warning`, `error`, `critical` |
 | `show_version_info` | Bool | `true` | Display version alongside tool output |
 | `query_token_registry` | Bool | `true` | Fetch token metadata from the token registry |

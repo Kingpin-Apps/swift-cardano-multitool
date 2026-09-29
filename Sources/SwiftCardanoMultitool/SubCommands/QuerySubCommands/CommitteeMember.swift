@@ -4,6 +4,7 @@ import Noora
 import SystemPackage
 import SwiftCardanoChain
 import SwiftCardanoCore
+import SwiftCardanoExplorers
 
 extension QueryMainCommand {
     struct CommitteeMember: AsyncParsableCommand {

@@ -741,15 +741,20 @@ scm --version
 
 `scm` integrates with multiple Cardano blockchain explorers for enriched output. Configure your preferred explorer in the config file or via interactive prompts:
 
-- [Cexplorer](https://cexplorer.io) (default)
-- [Cardanoscan](https://cardanoscan.io)
-- [Pool Tool](https://pooltool.io)
-- [Eutxo](https://eutxo.org)
-- [AdaStat](https://adastat.net)
+| Explorer | `blockchain_explorer` | Networks |
+|---|---|---|
+| [Cexplorer](https://cexplorer.io) (default) | `cexplorer` | mainnet, preprod, preview |
+| [Cardanoscan](https://cardanoscan.io) | `cardanoscan` | mainnet, preprod, preview |
+| [DRepTalk](https://dreptalk.com) | `dreptalk` | mainnet, preprod (DReps and governance actions only) |
+| [AdaStat](https://adastat.net) | `adastat` | mainnet |
+| [eUTxO](https://eutxo.org) | `eutxo` | mainnet (transactions and blocks only) |
+| [Pool PM](https://pool.pm) | `poolpm` | mainnet |
+| [PoolTool](https://pooltool.io) | `pooltool` | mainnet (pools and stake accounts only) |
 
-These explorers cover mainnet, preprod and preview. On a network without a public
-explorer — a Yaci DevKit devnet, guildnet or sanchonet — the links are simply left
-out; the query results themselves are unaffected.
+The links come from [swift-cardano-explorers](https://github.com/Kingpin-Apps/swift-cardano-explorers).
+Where the chosen explorer has no page for something, or no site for the network — a
+Yaci DevKit devnet, guildnet or sanchonet, or a mainnet-only explorer on a testnet —
+the link is simply left out; the query results themselves are unaffected.
 
 ---
 

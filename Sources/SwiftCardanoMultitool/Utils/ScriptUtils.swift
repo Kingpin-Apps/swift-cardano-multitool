@@ -6,6 +6,7 @@ import SwiftCardanoChain
 import SwiftCardanoCIPs
 import SwiftCardanoUtils
 import SwiftCardanoCore
+import SwiftCardanoExplorers
 import Logging
 import Noora
 import ArgumentParser

@@ -187,17 +187,6 @@ struct MultitoolConfigByronToShelleyEpochTests {
 @Suite("NetworkDependable.forNetwork")
 struct NetworkDependableForNetworkTests {
 
-    @Test("NetworkURLs returns the matching url for each network")
-    func networkURLsMapping() throws {
-        let main = URL(string: "https://main.example.com")!
-        let pre = URL(string: "https://preprod.example.com")!
-        let urls = NetworkURLs(mainnet: main, preprod: pre, preview: nil, guildnet: nil)
-        #expect(urls.forNetwork(.mainnet) == main)
-        #expect(urls.forNetwork(.preprod) == pre)
-        #expect(urls.forNetwork(.preview) == nil)
-        #expect(urls.forNetwork(.guildnet) == nil)
-    }
-
     @Test("TokenMetaServerURLs uses the documented IOG defaults")
     func tokenMetaServerDefaults() {
         let urls = TokenMetaServerURLs()

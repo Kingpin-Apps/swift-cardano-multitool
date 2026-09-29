@@ -3,6 +3,7 @@ import ArgumentParser
 import Noora
 import SystemPackage
 import SwiftCardanoCore
+import SwiftCardanoExplorers
 import SwiftCardanoChain
 import SwiftCardanoUtils
 

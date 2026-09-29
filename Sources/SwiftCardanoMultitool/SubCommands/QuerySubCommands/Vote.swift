@@ -4,6 +4,7 @@ import Noora
 import SystemPackage
 import SwiftCardanoChain
 import SwiftCardanoCore
+import SwiftCardanoExplorers
 import SwiftCardanoNetwork
 
 extension QueryMainCommand {

@@ -8,6 +8,7 @@ import Yams
 import SystemPackage
 import SwiftCardanoUtils
 import SwiftCardanoCore
+import SwiftCardanoExplorers
 import SwiftCardanoChain
 import Logging
 
@@ -686,27 +687,6 @@ public struct MultitoolConfig: Codable, Sendable {
             ogmios: self.ogmios,
             kupo: self.kupo
         )
-    }
-}
-
-public struct NetworkURLs: NetworkDependable {
-    public typealias T = URL
-    
-    public var mainnet: URL
-    public var preprod: URL?
-    public var preview: URL?
-    public var guildnet: URL?
-    
-    init(
-        mainnet: URL,
-        preprod: URL? = nil,
-        preview: URL? = nil,
-        guildnet: URL? = nil
-    ) {
-        self.mainnet = mainnet
-        self.preprod = preprod
-        self.preview = preview
-        self.guildnet = guildnet
     }
 }
 
