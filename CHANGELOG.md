@@ -1,3 +1,22 @@
+## 0.18.0 (2026-10-06)
+
+### Note
+
+- Every command that builds a transaction now asks **Sign the transaction?** before **Submit?**, and only asks to submit when you sign. `--no-sign` builds without reading any signing key, so keys can stay offline; the unsigned transaction is kept for `scm transaction sign`. Pool registration and retirement, votes and mint/burn no longer need the cold, owner, voter or policy signing keys unless you sign.
+- Unsigned transactions are saved as `<name>.unwitnessed.tx`; `sign` and `assemble` name their output `<name>.signed.tx`.
+- `transaction witness` saves each witness where you choose (`--out-file`, one per signing key, or the wizard), defaulting to `<transaction-name>.<key-role>.witness`, e.g. `qwe1.node.witness`. It no longer crashes with `--use-cardano-cli`, and `--submit` now submits.
+- New `scm generate pool-id` writes `<name>.pool.id` and `<name>.pool.id-bech` from a pool ID, cold key or pool file.
+- Picks up swift-cardano-core 0.8.5, swift-cardano-chain 0.12.0, txvalidator 0.4.3, txbuilder 1.1.2 and swift-cardano-explorers 0.1.2.
+
+### Feat
+
+- ask whether to sign before submitting and save unsigned txs as .unwitnessed.tx
+- add generate pool-id
+
+### Fix
+
+- save witnesses where chosen, named <tx>.<role>.witness
+
 ## 0.17.0 (2026-09-29)
 
 ### Note
