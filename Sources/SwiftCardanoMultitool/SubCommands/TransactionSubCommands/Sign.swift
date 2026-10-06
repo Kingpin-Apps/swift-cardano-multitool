@@ -53,17 +53,23 @@ extension TransactionMainCommand {
         // MARK: - Wizard
         
         mutating func wizard() async throws {
-            let enterTransactionBy = try await getTransactionBy()
-            
-            switch enterTransactionBy {
-                case .cborHex:
-                    cborHex = noora.textPrompt(
-                        title: "Transaction CBOR Hex",
-                        prompt: "Enter the raw CBOR hex string of the transaction:",
-                        validationRules: [NonEmptyValidationRule(error: "CBOR hex cannot be empty.")]
-                    ).trimmingCharacters(in: .whitespacesAndNewlines)
-                case .path:
-                    txFile = try await getTransactionFilePath(title: "Select a transaction file to sign.")
+            // Called with a transaction (e.g. after `transaction build`): the caller has already
+            // decided on the build method, saving and submitting, so only ask for the keys.
+            let standalone = txFile == nil && cborHex == nil
+
+            if standalone {
+                let enterTransactionBy = try await getTransactionBy()
+
+                switch enterTransactionBy {
+                    case .cborHex:
+                        cborHex = noora.textPrompt(
+                            title: "Transaction CBOR Hex",
+                            prompt: "Enter the raw CBOR hex string of the transaction:",
+                            validationRules: [NonEmptyValidationRule(error: "CBOR hex cannot be empty.")]
+                        ).trimmingCharacters(in: .whitespacesAndNewlines)
+                    case .path:
+                        txFile = try await getTransactionFilePath(title: "Select a transaction file to sign.")
+                }
             }
             
             var addMore = true
@@ -85,10 +91,12 @@ extension TransactionMainCommand {
             )
             // Left empty, run() picks the default name (from the tx file, or the tx ID for CBOR hex).
             outFile = outputFile
-            
+
+            guard standalone else { return }
+
             useCardanoCLI = noora.yesOrNoChoicePrompt(
-                title: "Build Method",
-                question: "Use cardano-cli to build transaction?",
+                title: "Sign Method",
+                question: "Use cardano-cli to sign the transaction?",
                 defaultAnswer: false,
                 description: "Default: SwiftCardano. Alternative: cardano-cli"
             )
@@ -169,19 +177,20 @@ extension TransactionMainCommand {
             ))
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let witnessFiles = signingMethods.map { method -> FilePath in
-                switch method {
-                    case .hardwareWallet(let filePath), .softwareKey(let filePath):
-                        return cwd.appending("\(filePath.stem!).witness")
-                }
-            }
+            // Hardware wallets sign through witness files, named like `transaction witness` does.
+            let witnessFiles = TransactionMainCommand.Witness.witnessFiles(
+                for: signingKeys,
+                outFiles: [],
+                transactionName: txFile.map(transactionBaseName) ?? txId,
+                cwd: cwd
+            )
 
             if outFile == nil && txFile != nil {
                 guard let txFile = txFile else {
                     noora.error("Transaction file path is required to determine default output file name.")
                     throw ExitCode.validationFailure
                 }
-                outFile = cwd.appending("\(txFile.stem!).signed.tx")
+                outFile = cwd.appending("\(transactionBaseName(txFile)).signed.tx")
             } else if outFile == nil && cborHex != nil {
                 let timestamp = DateUtils.getCurrentTimestamp()
                 outFile = cwd.appending("\(txId)-\(timestamp).signed.tx")

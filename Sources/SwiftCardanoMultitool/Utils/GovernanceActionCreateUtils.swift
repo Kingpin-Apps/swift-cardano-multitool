@@ -532,7 +532,7 @@ extension TransactionSendable {
 
         // 8. Build via shared pipeline. One witness: payment signer covers the proposer.
         let txRawFile = cwd.appending("\(payerName)-\(timestamp).proposal.raw.tx")
-        let txFile = cwd.appending("\(payerName)-\(timestamp).proposal.tx")
+        let txFile = cwd.appending("\(payerName)-\(timestamp).proposal.unwitnessed.tx")
         let txSignedFile = outFile ?? cwd.appending("\(payerName)-\(timestamp).proposal.signed.tx")
         outFile = txSignedFile
 
@@ -549,35 +549,30 @@ extension TransactionSendable {
         )
 
         // 9. Sign + optionally submit.
-        var signArgs: [String] = []
-        if transactionOptions.useCardanoCLI { signArgs.append("--use-cardano-cli") }
-        if transactionOptions.save          { signArgs.append("--save") }
-        if transactionOptions.submit        { signArgs.append("--submit") }
-
-        let paymentSigningPath = try feePaymentAddress.info.getSigningMethod().path.string
-
-        await TransactionMainCommand.Sign.main([
-            "--tx-file", txFile.string,
-            "--out-file", txSignedFile.string
-        ] + signArgs + [
-            "--signing-keys", paymentSigningPath
-        ])
+        try await signBuiltTransaction(
+            txRawFile: txRawFile,
+            txFile: txFile,
+            txSignedFile: txSignedFile
+        ) {
+            [try feePaymentAddress.info.getSigningMethod().path.string]
+        }
 
         noora.success(.alert(
             "\(.primary(inputs.payload.type.name)) proposal prepared.",
             takeaways: [
-                "Action file: \(actionFile.string)",
+                "Action file: \(actionFile.string)"
+            ] + (transactionOptions.sign ? [
                 "Signed tx: \(txSignedFile.string)",
                 transactionOptions.submit
                     ? "Submitted to the chain — the proposal ID is the tx hash + index 0."
                     : "Not submitted — pass --submit to broadcast."
-            ]
+            ] : [
+                "Unsigned tx: \(txFile.string)"
+            ])
         ))
 
-        if !transactionOptions.save {
-            try? FileManager.default.removeItem(atPath: txRawFile.string)
-            try? FileManager.default.removeItem(atPath: txFile.string)
-            try? FileManager.default.removeItem(atPath: txSignedFile.string)
+        // signBuiltTransaction already cleaned up the transaction files.
+        if !transactionOptions.save && transactionOptions.sign {
             try? FileManager.default.removeItem(atPath: actionFile.string)
         }
     }
@@ -677,7 +672,7 @@ extension TransactionSendable {
         let timestamp = DateUtils.getCurrentTimestamp()
         let payerName = feePaymentAddress.info.name ?? "proposer"
         let txRawFile = cwd.appending("\(payerName)-\(timestamp).submit.raw.tx")
-        let txFile = cwd.appending("\(payerName)-\(timestamp).submit.tx")
+        let txFile = cwd.appending("\(payerName)-\(timestamp).submit.unwitnessed.tx")
         let txSignedFile = outFile ?? cwd.appending("\(payerName)-\(timestamp).submit.signed.tx")
         outFile = txSignedFile
 
@@ -693,35 +688,25 @@ extension TransactionSendable {
             txSignedFile: txSignedFile
         )
 
-        var signArgs: [String] = []
-        if transactionOptions.useCardanoCLI { signArgs.append("--use-cardano-cli") }
-        if transactionOptions.save          { signArgs.append("--save") }
-        if transactionOptions.submit        { signArgs.append("--submit") }
-
-        let paymentSigningPath = try feePaymentAddress.info.getSigningMethod().path.string
-
-        await TransactionMainCommand.Sign.main([
-            "--tx-file", txFile.string,
-            "--out-file", txSignedFile.string
-        ] + signArgs + [
-            "--signing-keys", paymentSigningPath
-        ])
+        try await signBuiltTransaction(
+            txRawFile: txRawFile,
+            txFile: txFile,
+            txSignedFile: txSignedFile
+        ) {
+            [try feePaymentAddress.info.getSigningMethod().path.string]
+        }
 
         noora.success(.alert(
             "Governance action transaction prepared.",
-            takeaways: [
+            takeaways: transactionOptions.sign ? [
                 "Signed tx: \(txSignedFile.string)",
                 transactionOptions.submit
                     ? "Submitted to the chain."
                     : "Not submitted — pass --submit to broadcast."
+            ] : [
+                "Unsigned tx: \(txFile.string)"
             ]
         ))
-
-        if !transactionOptions.save {
-            try? FileManager.default.removeItem(atPath: txRawFile.string)
-            try? FileManager.default.removeItem(atPath: txFile.string)
-            try? FileManager.default.removeItem(atPath: txSignedFile.string)
-        }
     }
 }
 

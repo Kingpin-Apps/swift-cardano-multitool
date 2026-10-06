@@ -149,9 +149,10 @@ extension TransactionMainCommand {
                 takeaways: [
                     "Stake: \(stakeAddress.info.description)",
                     "Destination: \(toAddress.info.description)",
-                    "Fee Payer: \(String(describing: feePaymentAddress.info.description))",
+                    "Fee Payer: \(String(describing: feePaymentAddress.info.description))"
+                ] + (transactionOptions.sign ? [
                     "Signing: Payment via \((try feePaymentAddress.info.getSigningMethod().isHardware) ? "Hardware" : "Software"), Stake via \((try stakeAddress.info.getSigningMethod().isHardware) ? "Hardware" : "Software")"
-                ]
+                ] : ["Signing: skipped (--no-sign)"])
             ))
             
             let protocolParamsFile = cwd.appending(
@@ -236,7 +237,7 @@ extension TransactionMainCommand {
             // Transaction file paths
             let timestamp = DateUtils.getCurrentTimestamp()
             let txRawFile = cwd.appending("\(feePaymentAddress.info.name!)-\(timestamp).raw.tx")
-            let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(timestamp).tx")
+            let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(timestamp).unwitnessed.tx")
             let txSignedFile = cwd.appending("\(feePaymentAddress.info.name!)-\(timestamp).signed.tx")
             
             try await buildTransaction(
@@ -249,29 +250,15 @@ extension TransactionMainCommand {
                 txSignedFile: txSignedFile
             )
             
-            var args: [String] = []
-            if transactionOptions.useCardanoCLI {
-                args.append("--use-cardano-cli")
-            }
-            if transactionOptions.save {
-                args.append("--save")
-            }
-            if transactionOptions.submit {
-                args.append("--submit")
-            }
-            let signingKeys: [String] = [
-                "--signing-keys", try stakeAddress.info.getSigningMethod().path.string,
-                "--signing-keys", try feePaymentAddress.info.getSigningMethod().path.string
-            ]
-            await TransactionMainCommand.Sign.main([
-                "--tx-file", txFile.string,
-                "--out-file", txSignedFile.string,
-            ] + args + signingKeys)
-            
-            if !transactionOptions.save {
-                try FileManager.default.removeItem(atPath: txRawFile.string)
-                try FileManager.default.removeItem(atPath: txFile.string)
-                try FileManager.default.removeItem(atPath: txSignedFile.string)
+            try await signBuiltTransaction(
+                txRawFile: txRawFile,
+                txFile: txFile,
+                txSignedFile: txSignedFile
+            ) {
+                [
+                    try stakeAddress.info.getSigningMethod().path.string,
+                    try feePaymentAddress.info.getSigningMethod().path.string
+                ]
             }
             
         }

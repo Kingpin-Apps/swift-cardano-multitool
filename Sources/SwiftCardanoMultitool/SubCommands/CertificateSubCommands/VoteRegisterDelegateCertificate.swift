@@ -188,41 +188,30 @@ extension CertificateMainCommand {
                     throw ExitCode.validationFailure
                 }
 
-                let signingKeys: [String] = [
-                    try stakeAddress.info.getSigningMethod().path.string,
-                    try feePaymentAddress.info.getSigningMethod().path.string
-                ]
-
                 let txTimestamp = DateUtils.getCurrentTimestamp()
                 let txRawFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).raw.tx")
-                let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).tx")
+                let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).unwitnessed.tx")
                 let txSignedFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).signed.tx")
 
                 try await buildTransaction(
                     txBuilder: txBuilder,
                     config: config,
-                    witnessOverride: signingKeys.count,
+                    witnessOverride: 2,
                     protocolParamsFile: protocolParamsFile,
                     txRawFile: txRawFile,
                     txFile: txFile,
                     txSignedFile: txSignedFile
                 )
 
-                var args: [String] = []
-                if transactionOptions.useCardanoCLI { args.append("--use-cardano-cli") }
-                if transactionOptions.save { args.append("--save") }
-                if transactionOptions.submit { args.append("--submit") }
-
-                let signingKeysArgs = signingKeys.flatMap { ["--signing-keys", $0] }
-                await TransactionMainCommand.Sign.main([
-                    "--tx-file", txFile.string,
-                    "--out-file", txSignedFile.string
-                ] + args + signingKeysArgs)
-
-                if !transactionOptions.save {
-                    try FileManager.default.removeItem(atPath: txRawFile.string)
-                    try FileManager.default.removeItem(atPath: txFile.string)
-                    try FileManager.default.removeItem(atPath: txSignedFile.string)
+                try await signBuiltTransaction(
+                    txRawFile: txRawFile,
+                    txFile: txFile,
+                    txSignedFile: txSignedFile
+                ) {
+                    [
+                        try stakeAddress.info.getSigningMethod().path.string,
+                        try feePaymentAddress.info.getSigningMethod().path.string
+                    ]
                 }
             }
         }

@@ -13,7 +13,7 @@ scm send --help
 
 A valid configuration with a running node (or configured API provider) is required to query UTxOs and submit the transaction.
 
-All `send` subcommands compose with `SharedTransactionOptions`, so flags like `--message`, `--metadata-json`, `--utxo-filter`, `--use-cardano-cli`, `--no-save`, and `--submit` are available on every one.
+All `send` subcommands compose with `SharedTransactionOptions`, so flags like `--message`, `--metadata-json`, `--utxo-filter`, `--use-cardano-cli`, `--no-save`, `--no-sign`, and `--submit` are available on every one. `--no-sign` builds the transaction without signing it, for keys kept offline.
 
 ### Address files
 
@@ -46,6 +46,7 @@ scm send ada \
 | `--to-address`, `-t` | Recipient address (bech32, file stem like `recipient.payment` or `recipient` resolving to `.payment.addr` then `.addr`, key hash, or `$adahandle`). |
 | `--fee-payment-address`, `-f` | Sender's address — used to find UTxOs and pay fees. Same input forms as `--to-address`. |
 | `--message`, `-m` | Optional transaction message (CIP-20). Repeatable. |
+| `--no-sign` | Build without signing, e.g. when the keys are offline. The unsigned transaction is kept for `scm transaction sign`. |
 | `--submit` | Broadcast the signed transaction to the chain. |
 
 Native assets at the source are not affected — only ADA is sent. Change (remaining ADA and any assets) is returned to the source address.
@@ -75,6 +76,7 @@ scm send lovelaces \
 | `--to-address`, `-t` | Recipient address (bech32, file stem like `recipient.payment` or `recipient` resolving to `.payment.addr` then `.addr`, key hash, or `$adahandle`). |
 | `--fee-payment-address`, `-f` | Sender's address — used to find UTxOs and pay fees. Same input forms as `--to-address`. |
 | `--message`, `-m` | Optional transaction message (CIP-20). Repeatable. |
+| `--no-sign` | Build without signing, e.g. when the keys are offline. The unsigned transaction is kept for `scm transaction sign`. |
 | `--submit` | Broadcast the signed transaction to the chain. |
 
 Native assets at the source are not affected — only lovelace is sent. Change (remaining lovelace and any assets) is returned to the source address.

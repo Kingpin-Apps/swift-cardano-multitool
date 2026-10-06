@@ -399,48 +399,48 @@ extension CertificateMainCommand {
                     throw ExitCode.validationFailure
                 }
 
-                var signingKeys: [String] = [
-                    try feePaymentAddress.info.getSigningMethod().path.string
-                ]
-
-                // Pool cold signing key: --cold-signing-key, else the pool JSON's cold_skey
-                if coldSigningKey == nil && pool == nil && isInteractiveSession() {
-                    coldSigningKey = try promptColdSigningKey()
-                }
-                if let coldSkeyPath = coldSigningKey ?? pool?.coldSkey {
-                    do {
-                        try FileUtils.checkFileExists(coldSkeyPath)
-                        signingKeys += [coldSkeyPath.string]
-                    } catch {
-                        noora.error(.alert(
-                            "Cold signing key not found: \(coldSkeyPath.string)",
-                            takeaways: ["Ensure the file exists or run 'scm generate node-cold-keys' first."]
-                        ))
-                        throw ExitCode.validationFailure
+                // Pool cold signing key: --cold-signing-key, else the pool JSON's cold_skey.
+                // Only needed when signing; with --no-sign it may be offline.
+                var resolvedColdSkey: FilePath? = nil
+                if transactionOptions.sign {
+                    if coldSigningKey == nil && pool == nil && isInteractiveSession() {
+                        coldSigningKey = try promptColdSigningKey()
                     }
-
-                    // Catch a key for a different pool before paying fees. Encrypted
-                    // keys can't be loaded here; the Sign step will decrypt them.
-                    if let coldSKey = try? StakePoolSigningKey.load(from: coldSkeyPath.string) {
-                        let coldVKey: StakePoolVerificationKey = try coldSKey.toVerificationKey()
-                        guard try coldVKey.poolKeyHash() == poolKeyHash else {
+                    if let coldSkeyPath = coldSigningKey ?? pool?.coldSkey {
+                        do {
+                            try FileUtils.checkFileExists(coldSkeyPath)
+                            resolvedColdSkey = coldSkeyPath
+                        } catch {
                             noora.error(.alert(
-                                "Cold signing key does not belong to pool \(poolIdBech).",
-                                takeaways: ["Check that \(coldSkeyPath.string) is the cold key for the pool being retired."]
+                                "Cold signing key not found: \(coldSkeyPath.string)",
+                                takeaways: ["Ensure the file exists or run 'scm generate node-cold-keys' first."]
                             ))
                             throw ExitCode.validationFailure
                         }
+
+                        // Catch a key for a different pool before paying fees. Encrypted
+                        // keys can't be loaded here; the Sign step will decrypt them.
+                        if let coldSKey = try? StakePoolSigningKey.load(from: coldSkeyPath.string) {
+                            let coldVKey: StakePoolVerificationKey = try coldSKey.toVerificationKey()
+                            guard try coldVKey.poolKeyHash() == poolKeyHash else {
+                                noora.error(.alert(
+                                    "Cold signing key does not belong to pool \(poolIdBech).",
+                                    takeaways: ["Check that \(coldSkeyPath.string) is the cold key for the pool being retired."]
+                                ))
+                                throw ExitCode.validationFailure
+                            }
+                        }
+                    } else {
+                        noora.error(.alert(
+                            pool == nil
+                                ? "A pool cold signing key is required to sign the retirement transaction."
+                                : "Cold signing key path is not set in the pool JSON.",
+                            takeaways: [pool == nil
+                                ? "Provide --cold-signing-key <name>.node.skey."
+                                : "Ensure the pool JSON contains a valid cold_skey path, or pass --cold-signing-key."]
+                        ))
+                        throw ExitCode.validationFailure
                     }
-                } else {
-                    noora.error(.alert(
-                        pool == nil
-                            ? "A pool cold signing key is required to sign the retirement transaction."
-                            : "Cold signing key path is not set in the pool JSON.",
-                        takeaways: [pool == nil
-                            ? "Provide --cold-signing-key <name>.node.skey."
-                            : "Ensure the pool JSON contains a valid cold_skey path, or pass --cold-signing-key."]
-                    ))
-                    throw ExitCode.validationFailure
                 }
 
                 spacedPrint(
@@ -454,43 +454,25 @@ extension CertificateMainCommand {
                 // Transaction file paths
                 let txTimestamp = DateUtils.getCurrentTimestamp()
                 let txRawFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).raw.tx")
-                let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).tx")
+                let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).unwitnessed.tx")
                 let txSignedFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).signed.tx")
 
                 try await buildTransaction(
                     txBuilder: txBuilder,
                     config: config,
-                    witnessOverride: signingKeys.count,
+                    witnessOverride: witnessCount,
                     protocolParamsFile: protocolParamsFile,
                     txRawFile: txRawFile,
                     txFile: txFile,
                     txSignedFile: txSignedFile
                 )
 
-                var args: [String] = []
-                if transactionOptions.useCardanoCLI {
-                    args.append("--use-cardano-cli")
-                }
-                if transactionOptions.save {
-                    args.append("--save")
-                }
-                if transactionOptions.submit {
-                    args.append("--submit")
-                }
-
-                let signingKeysArgs: [String] = signingKeys.flatMap {
-                    ["--signing-keys", $0]
-                }
-
-                await TransactionMainCommand.Sign.main([
-                    "--tx-file", txFile.string,
-                    "--out-file", txSignedFile.string,
-                ] + args + signingKeysArgs)
-
-                if !transactionOptions.save {
-                    try FileManager.default.removeItem(atPath: txRawFile.string)
-                    try FileManager.default.removeItem(atPath: txFile.string)
-                    try FileManager.default.removeItem(atPath: txSignedFile.string)
+                try await signBuiltTransaction(
+                    txRawFile: txRawFile,
+                    txFile: txFile,
+                    txSignedFile: txSignedFile
+                ) {
+                    [try feePaymentAddress.info.getSigningMethod().path.string] + (resolvedColdSkey.map { [$0.string] } ?? [])
                 }
             }
         }

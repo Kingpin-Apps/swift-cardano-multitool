@@ -168,6 +168,9 @@ extension TransactionMainCommand {
         @Flag(inversion: .prefixedNo, help: "Save built transaction body to file.")
         var save = true
 
+        @Flag(help: "Sign the transaction after building.")
+        var sign = false
+
         @Flag(help: "Sign and submit the transaction after building.")
         var submit = false
 
@@ -737,10 +740,19 @@ extension TransactionMainCommand {
                 defaultAnswer: true
             )
 
-            submit = noora.yesOrNoChoicePrompt(
-                title: "Sign and Submit",
-                question: "Sign and submit the transaction after building?",
-                defaultAnswer: false
+            sign = noora.yesOrNoChoicePrompt(
+                title: "Sign Transaction",
+                question: "Sign the transaction after building?",
+                defaultAnswer: false,
+                description: "Choose no to keep the transaction unsigned, e.g. when the keys are offline."
+            )
+
+            // Submitting needs a signed transaction, so only ask when signing.
+            submit = sign && noora.yesOrNoChoicePrompt(
+                title: "Submit Transaction",
+                question: "Submit the transaction to the blockchain?",
+                defaultAnswer: false,
+                description: "Requires network connectivity and sufficient funds."
             )
 
             try self.validate()
@@ -820,11 +832,10 @@ extension TransactionMainCommand {
                 )
             }
 
-            if submit {
+            if sign || submit {
                 await TransactionMainCommand.Sign.main([
-                    "--tx-file", resolvedOutFile.string,
-                    "--submit"
-                ])
+                    "--tx-file", resolvedOutFile.string
+                ] + (submit ? ["--submit"] : []))
             } else if !save {
                 try? FileManager.default.removeItem(atPath: resolvedOutFile.string)
             }

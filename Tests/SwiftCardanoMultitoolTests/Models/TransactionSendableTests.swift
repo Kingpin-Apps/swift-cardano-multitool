@@ -33,6 +33,22 @@ struct TransactionSendableValidateTests {
         try sender.validateForTransaction()
     }
 
+    // MARK: - Sign / Submit
+
+    @Test("--no-sign without --submit passes validation")
+    func noSignPasses() throws {
+        var sender = try TestSender.parse(["--no-sign"])
+        try sender.validateForTransaction()
+    }
+
+    @Test("--submit with --no-sign is rejected")
+    func submitRequiresSign() throws {
+        var sender = try TestSender.parse(["--no-sign", "--submit"])
+        #expect(throws: ValidationError.self) {
+            try sender.validateForTransaction()
+        }
+    }
+
     // MARK: - Messages
 
     @Test("accepts a message at exactly 64 UTF-8 bytes")

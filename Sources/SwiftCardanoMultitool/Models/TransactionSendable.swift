@@ -20,6 +20,10 @@ extension TransactionSendable {
     // MARK: - Validation
     
     mutating func validateForTransaction() throws {
+        guard transactionOptions.sign || !transactionOptions.submit else {
+            throw ValidationError("--submit requires signing. Remove --no-sign or --submit.")
+        }
+
         // Validate messages length (64 bytes max)
         for msg in transactionOptions.messages {
             guard msg.utf8.count <= 64 else {
@@ -408,16 +412,28 @@ extension TransactionSendable {
             description: "You can submit it later if desired."
         )
         
-        transactionOptions.submit = noora.yesOrNoChoicePrompt(
-            title: "Submit Transaction",
-            question: "Submit the transaction to the blockchain?",
-            defaultAnswer: false,
-            description: "Requires network connectivity and sufficient funds."
+        transactionOptions.sign = noora.yesOrNoChoicePrompt(
+            title: "Sign Transaction",
+            question: "Sign the transaction after building?",
+            defaultAnswer: true,
+            description: "Choose no to keep the transaction unsigned, e.g. when the keys are offline."
         )
 
-        // Submitting signs with the fee payment address keys, so make sure they exist now
+        // Submitting needs a signed transaction, so only ask when signing.
+        if transactionOptions.sign {
+            transactionOptions.submit = noora.yesOrNoChoicePrompt(
+                title: "Submit Transaction",
+                question: "Submit the transaction to the blockchain?",
+                defaultAnswer: false,
+                description: "Requires network connectivity and sufficient funds."
+            )
+        } else {
+            transactionOptions.submit = false
+        }
+
+        // Signing uses the fee payment address keys, so make sure they exist now
         // rather than failing after the transaction has been built.
-        if transactionOptions.submit, let feePaymentAddress = transactionOptions.feePaymentAddress {
+        if transactionOptions.sign, let feePaymentAddress = transactionOptions.feePaymentAddress {
             try ensureSigningKeys(for: feePaymentAddress.info)
         }
         
@@ -579,6 +595,51 @@ extension TransactionSendable {
         return filteredUtxos
     }
     
+    // MARK: - Transaction Signing
+
+    /// Signs (and, with `--submit`, submits) a transaction built by `buildTransaction`.
+    ///
+    /// With `--no-sign` the unsigned `txFile` is kept for offline signing and `signingKeys`
+    /// is never evaluated, so the signing keys don't need to be present.
+    func signBuiltTransaction(
+        txRawFile: FilePath,
+        txFile: FilePath,
+        txSignedFile: FilePath,
+        signingKeys: () throws -> [String]
+    ) async throws {
+        guard transactionOptions.sign else {
+            if !transactionOptions.save {
+                try? FileManager.default.removeItem(atPath: txRawFile.string)
+            }
+            noora.info(.alert(
+                "Transaction built but not signed.",
+                takeaways: [
+                    "Unsigned tx: \(txFile.string)",
+                    "Sign it with: scm transaction sign --tx-file \(txFile.string) --signing-keys <key>",
+                    "Then submit it with: scm transaction submit"
+                ]
+            ))
+            return
+        }
+
+        var args: [String] = []
+        if transactionOptions.useCardanoCLI { args.append("--use-cardano-cli") }
+        if transactionOptions.save          { args.append("--save") }
+        if transactionOptions.submit        { args.append("--submit") }
+
+        let signingKeysArgs = try signingKeys().flatMap { ["--signing-keys", $0] }
+        await TransactionMainCommand.Sign.main([
+            "--tx-file", txFile.string,
+            "--out-file", txSignedFile.string
+        ] + args + signingKeysArgs)
+
+        if !transactionOptions.save {
+            try? FileManager.default.removeItem(atPath: txRawFile.string)
+            try? FileManager.default.removeItem(atPath: txFile.string)
+            try? FileManager.default.removeItem(atPath: txSignedFile.string)
+        }
+    }
+
     // MARK: - Transaction Building
     
     public func buildTransaction(

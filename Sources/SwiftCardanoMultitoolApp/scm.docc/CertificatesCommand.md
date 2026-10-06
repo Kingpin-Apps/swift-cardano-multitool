@@ -27,7 +27,8 @@ Every certificate subcommand accepts the same core flags plus the full set of sh
 | `--utxo-filter` / `--utxo-limit` / `--skip-utxo-with-asset` / `--only-utxo-with-asset` | UTxO selection controls. |
 | `--use-cardano-cli` | Build the transaction with cardano-cli instead of SwiftCardano. |
 | `--save` / `--no-save` | Whether to write the built transaction to disk (default: `--save`). |
-| `--submit` | Broadcast the transaction to the configured network. |
+| `--sign` / `--no-sign` | Whether to sign the built transaction (default: `--sign`). Use `--no-sign` when the keys are offline; the unsigned transaction is kept for `scm transaction sign`. |
+| `--submit` | Broadcast the transaction to the configured network. Requires signing. |
 
 Stake addresses are passed as a file base name — e.g. `--stake-address owner` resolves `owner.stake.addr` (or `owner.stake` / `owner.addr`) in the current directory.
 
@@ -244,6 +245,7 @@ Create a Move Instantaneous Rewards certificate (`mir`) — deprecated in the Co
 
 - Pass `--generate-transaction --submit` to create the certificate, wrap it in a balanced transaction, sign, and broadcast in one step. Without those flags only the `.cert` file is written — include it later with `scm transaction build --certificate-file`.
 - Most certificate operations require the corresponding signing key to be available on disk next to the verification key when building the transaction witness.
+- Keys kept offline? Pass `--generate-transaction --no-sign` (or answer **no** to *Sign the transaction?* in the wizard). The transaction is built without touching any signing key and the unsigned `.tx` file is kept; sign it on the offline machine with `scm transaction sign` and broadcast it with `scm transaction submit`. This includes the pool cold key and owner keys for `pool-registration` / `pool-deregistration`.
 - Conway-era certificates (`vote-delegation`, `register-drep`, etc.) are only valid on networks running in the Conway era or later.
 - Check a certificate before submitting it with `scm text-view <file>.cert`, which shows its fields (pool parameters, credentials, deposits, anchors) in readable form. See <doc:TextViewCommand>.
-- Pool IDs, VRF key hashes and metadata hashes can be computed separately with `scm hash pool-id`, `scm hash vrf-key` and `scm hash pool-metadata`. See <doc:HashCommand>.
+- Pool IDs, VRF key hashes and metadata hashes can be computed separately with `scm hash pool-id`, `scm hash vrf-key` and `scm hash pool-metadata`. See <doc:HashCommand>. To save a pool ID as `<name>.pool.id` / `<name>.pool.id-bech` files, use `scm generate pool-id`.

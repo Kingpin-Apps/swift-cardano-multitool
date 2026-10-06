@@ -49,7 +49,7 @@ struct LoadedMintBurnPolicy {
 
 /// Load `<name>.policy.{id,script,vkey}` plus either `.policy.skey` or `.policy.hwsfile`
 /// from `dir`. Used by both `transaction mint-asset` and `transaction burn-asset`.
-func loadPolicyForMintBurn(name: String, in dir: FilePath) throws -> LoadedMintBurnPolicy {
+func loadPolicyForMintBurn(name: String, in dir: FilePath, requireSigningKey: Bool = true) throws -> LoadedMintBurnPolicy {
     let idFile = dir.appending("\(name).policy.id")
     let scriptFile = dir.appending("\(name).policy.script")
     let vkeyFile = dir.appending("\(name).policy.vkey")
@@ -82,6 +82,10 @@ func loadPolicyForMintBurn(name: String, in dir: FilePath) throws -> LoadedMintB
     } else if hasHws {
         signingKeyPath = hwsFile
         isHardware = true
+    } else if !requireSigningKey {
+        // Not signing (e.g. offline keys): the signing key isn't needed here.
+        signingKeyPath = skeyFile
+        isHardware = false
     } else {
         noora.error(.alert(
             "Missing signing key for policy '\(.primary(name))'.",
@@ -409,7 +413,7 @@ extension TransactionSendable {
         }
 
         // 1. Load policy + parse asset name
-        let policy = try loadPolicyForMintBurn(name: inputs.policyName, in: cwd)
+        let policy = try loadPolicyForMintBurn(name: inputs.policyName, in: cwd, requireSigningKey: transactionOptions.sign)
         let (assetDisplay, assetNameHex) = try parseAssetName(inputs.assetName)
 
         // 2. Context, params, chain state
@@ -493,7 +497,7 @@ extension TransactionSendable {
         let timestamp = DateUtils.getCurrentTimestamp()
         let baseName = "\(feePaymentAddress.info.name!)-\(timestamp).\(inputs.action.fileSuffix)"
         let txRawFile = cwd.appending("\(baseName).raw.tx")
-        let txFile = cwd.appending("\(baseName).tx")
+        let txFile = cwd.appending("\(baseName).unwitnessed.tx")
         let txSignedFile = outFile ?? cwd.appending("\(baseName).signed.tx")
         outFile = txSignedFile
 
@@ -510,20 +514,13 @@ extension TransactionSendable {
         )
 
         // 9. Sign with both keys, optionally submit. Sign auto-detects .skey vs .hwsfile.
-        var args: [String] = []
-        if transactionOptions.useCardanoCLI { args.append("--use-cardano-cli") }
-        if transactionOptions.save          { args.append("--save") }
-        if transactionOptions.submit        { args.append("--submit") }
-
-        let paymentSigningPath = try feePaymentAddress.info.getSigningMethod().path.string
-
-        await TransactionMainCommand.Sign.main([
-            "--tx-file", txFile.string,
-            "--out-file", txSignedFile.string
-        ] + args + [
-            "--signing-keys", paymentSigningPath,
-            "--signing-keys", policy.signingKeyPath.string
-        ])
+        try await signBuiltTransaction(
+            txRawFile: txRawFile,
+            txFile: txFile,
+            txSignedFile: txSignedFile
+        ) {
+            [try feePaymentAddress.info.getSigningMethod().path.string, policy.signingKeyPath.string]
+        }
 
         // 10. Sidecar audit entry
         let sidecarBaseName = assetDisplay.isEmpty
@@ -551,12 +548,6 @@ extension TransactionSendable {
                 "Could not update sidecar at \(sidecarPath.string).",
                 takeaway: "\(error.localizedDescription)"
             ))
-        }
-
-        if !transactionOptions.save {
-            try? FileManager.default.removeItem(atPath: txRawFile.string)
-            try? FileManager.default.removeItem(atPath: txFile.string)
-            try? FileManager.default.removeItem(atPath: txSignedFile.string)
         }
     }
 }

@@ -42,7 +42,14 @@ struct SharedTransactionOptionsTests {
         #expect(opts.onlyUtxoWithAsset.isEmpty)
         #expect(opts.useCardanoCLI == false)
         #expect(opts.save == true)
+        #expect(opts.sign == true)
         #expect(opts.submit == false)
+    }
+
+    @Test("--no-sign inverts the sign flag")
+    func noSignInversion() throws {
+        let opts = try SharedTransactionOptions.parse(["--no-sign"])
+        #expect(opts.sign == false)
     }
 
     @Test("--no-save inverts the save flag")

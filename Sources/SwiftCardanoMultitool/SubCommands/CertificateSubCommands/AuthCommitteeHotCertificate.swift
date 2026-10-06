@@ -174,12 +174,7 @@ extension CertificateMainCommand {
                 }
 
                 // Signing requires the committee cold key as well as the fee payer.
-                var signingKeys: [String] = [
-                    try feePaymentAddress.info.getSigningMethod().path.string
-                ]
-                if let coldSigningKey {
-                    signingKeys.append(coldSigningKey.string)
-                } else {
+                if transactionOptions.sign, coldSigningKey == nil {
                     noora.warning(.alert(
                         "No committee cold signing key provided; the submitted transaction will be missing its witness.",
                         takeaway: "Pass --cold-signing-key <name>.cc-cold.skey so the certificate can be signed."
@@ -191,34 +186,25 @@ extension CertificateMainCommand {
 
                 let txTimestamp = DateUtils.getCurrentTimestamp()
                 let txRawFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).raw.tx")
-                let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).tx")
+                let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).unwitnessed.tx")
                 let txSignedFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).signed.tx")
 
                 try await buildTransaction(
                     txBuilder: txBuilder,
                     config: config,
-                    witnessOverride: signingKeys.count + 1,
+                    witnessOverride: (coldSigningKey == nil ? 1 : 2) + 1,
                     protocolParamsFile: protocolParamsFile,
                     txRawFile: txRawFile,
                     txFile: txFile,
                     txSignedFile: txSignedFile
                 )
 
-                var args: [String] = []
-                if transactionOptions.useCardanoCLI { args.append("--use-cardano-cli") }
-                if transactionOptions.save { args.append("--save") }
-                if transactionOptions.submit { args.append("--submit") }
-
-                let signingKeysArgs = signingKeys.flatMap { ["--signing-keys", $0] }
-                await TransactionMainCommand.Sign.main([
-                    "--tx-file", txFile.string,
-                    "--out-file", txSignedFile.string
-                ] + args + signingKeysArgs)
-
-                if !transactionOptions.save {
-                    try FileManager.default.removeItem(atPath: txRawFile.string)
-                    try FileManager.default.removeItem(atPath: txFile.string)
-                    try FileManager.default.removeItem(atPath: txSignedFile.string)
+                try await signBuiltTransaction(
+                    txRawFile: txRawFile,
+                    txFile: txFile,
+                    txSignedFile: txSignedFile
+                ) {
+                    [try feePaymentAddress.info.getSigningMethod().path.string] + (coldSigningKey.map { [$0.string] } ?? [])
                 }
             }
         }

@@ -57,7 +57,7 @@ func inferVoterRole(from vkeyPath: FilePath) throws -> VoterRole {
 
 /// Load the voter's vkey + matching skey (or hwsfile), derive the on-chain `Voter`, and
 /// return everything bundled. Parallels `loadPolicyForMintBurn` in `MintBurnUtils.swift`.
-func loadVoterKey(vkeyPath: FilePath, roleOverride: VoterRole?) throws -> LoadedVoterKey {
+func loadVoterKey(vkeyPath: FilePath, roleOverride: VoterRole?, requireSigningKey: Bool = true) throws -> LoadedVoterKey {
     let role = try roleOverride ?? inferVoterRole(from: vkeyPath)
     let expectedSuffix = ".\(role.keyFileSuffix).vkey"
     let lower = vkeyPath.string.lowercased()
@@ -94,6 +94,10 @@ func loadVoterKey(vkeyPath: FilePath, roleOverride: VoterRole?) throws -> Loaded
     } else if hasHws {
         signingKeyPath = hwsFile
         isHardware = true
+    } else if !requireSigningKey {
+        // Not signing (e.g. offline keys): the signing key isn't needed here.
+        signingKeyPath = skeyFile
+        isHardware = false
     } else {
         noora.error(.alert(
             "Missing signing key for voter '\(.primary(name))'.",
@@ -353,7 +357,7 @@ extension TransactionSendable {
         let timestamp = DateUtils.getCurrentTimestamp()
         let baseName = "\(inputs.voter.name)-\(timestamp).vote"
         let txRawFile = cwd.appending("\(baseName).raw.tx")
-        let txFile = cwd.appending("\(baseName).tx")
+        let txFile = cwd.appending("\(baseName).unwitnessed.tx")
         let txSignedFile = outFile ?? cwd.appending("\(baseName).signed.tx")
         outFile = txSignedFile
 
@@ -370,36 +374,26 @@ extension TransactionSendable {
         )
 
         // 7. Sign with payment + voter keys; optionally submit. Sign auto-detects .skey vs .hwsfile.
-        var signArgs: [String] = []
-        if transactionOptions.useCardanoCLI { signArgs.append("--use-cardano-cli") }
-        if transactionOptions.save          { signArgs.append("--save") }
-        if transactionOptions.submit        { signArgs.append("--submit") }
-
-        let paymentSigningPath = try feePaymentAddress.info.getSigningMethod().path.string
-
-        await TransactionMainCommand.Sign.main([
-            "--tx-file", txFile.string,
-            "--out-file", txSignedFile.string
-        ] + signArgs + [
-            "--signing-keys", paymentSigningPath,
-            "--signing-keys", inputs.voter.signingKeyPath.string
-        ])
+        try await signBuiltTransaction(
+            txRawFile: txRawFile,
+            txFile: txFile,
+            txSignedFile: txSignedFile
+        ) {
+            [try feePaymentAddress.info.getSigningMethod().path.string, inputs.voter.signingKeyPath.string]
+        }
 
         noora.success(.alert(
             "Vote \(.primary(choiceLabel)) prepared for \(.primary(govActionLabel)).",
-            takeaways: [
+            takeaways: transactionOptions.sign ? [
                 "Signed tx: \(txSignedFile.string)",
                 transactionOptions.submit
                     ? "Submitted to the chain."
                     : "Not submitted — pass --submit to broadcast."
+            ] : [
+                "Unsigned tx: \(txFile.string)"
             ]
         ))
 
-        if !transactionOptions.save {
-            try? FileManager.default.removeItem(atPath: txRawFile.string)
-            try? FileManager.default.removeItem(atPath: txFile.string)
-            try? FileManager.default.removeItem(atPath: txSignedFile.string)
-        }
         if let generatedVoteFile {
             try? FileManager.default.removeItem(atPath: generatedVoteFile.string)
         }

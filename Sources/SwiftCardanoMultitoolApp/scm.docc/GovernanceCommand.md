@@ -43,6 +43,8 @@ scm governance vote gov_action1xyz... yes \
 | `--anchor-hash` | 64-hex anchor blake2b-256 hash (required if `--anchor-url` is set). Compute it with `scm hash anchor-data`. |
 | `--skip-anchor-verify` | Skip download + blake2b + CIP-100 verification of the anchor. |
 | `--ttl-extra` / `--ttl-override` | TTL controls (default: tip + 500 slots). |
+| `--no-sign` | Build without signing, e.g. when the voter key is offline. The unsigned transaction is kept for `scm transaction sign`. |
+| `--submit` | Broadcast the signed vote. Requires signing. |
 
 ## Governance actions
 
@@ -159,6 +161,7 @@ scm governance cip129 decode --id drep1ygx...
 
 ## Notes
 
+- Every subcommand that builds a transaction accepts `--no-sign` (the wizard asks *Sign the transaction?* first and only offers to submit when you sign). The unsigned transaction is kept so it can be signed offline with `scm transaction sign` and broadcast with `scm transaction submit`. For `vote`, the voter's signing key does not need to be present.
 - A `.action` file produced with `--generate-only` is portable: it can be reviewed offline, signed under a separate identity, and submitted later with `submit-action`.
 - Compute an anchor hash with `scm hash anchor-data --file-text rationale.jsonld` (or `--url`), and check a hosted document against a hash with `--expected-hash`. See <doc:HashCommand>.
 - `scm text-view` shows a `.vote` or `.action` file field by field, including voters, governance action IDs and anchors. See <doc:TextViewCommand>.

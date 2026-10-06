@@ -181,7 +181,7 @@ extension GovernanceMainCommand {
                 throw ExitCode.validationFailure
             }
 
-            let voter = try loadVoterKey(vkeyPath: voterVkeyFile, roleOverride: voterRole)
+            let voter = try loadVoterKey(vkeyPath: voterVkeyFile, roleOverride: voterRole, requireSigningKey: transactionOptions.sign)
             let anchor = try parseAnchorArguments(url: anchorUrl, hash: anchorHash)
 
             let inputs = VoteCastInputs(

@@ -890,64 +890,67 @@ extension CertificateMainCommand {
                     throw ExitCode.validationFailure
                 }
 
-                // Signing keys: the paths in the pool JSON when the files exist, otherwise
-                // local signing keys that match the pool's hashes
-                let keys = PoolKeyFileMatcher()
-
-                // Pool cold signing key: cold_skey when set (it must exist), else a local
-                // cold signing key matching the pool
-                let coldSkeyPath: FilePath
-                if let path = pool.coldSkey {
-                    do {
-                        try FileUtils.checkFileExists(path)
-                        coldSkeyPath = path
-                    } catch {
-                        noora.error(.alert(
-                            "Cold signing key not found: \(path.string)",
-                            takeaways: ["Ensure the file exists or run 'scm generate node-cold-keys' first."]
-                        ))
-                        throw ExitCode.validationFailure
-                    }
-                } else if let found = keys.coldSkey(for: poolKeyHash) {
-                    spacedPrint("Using cold signing key \(.primary(found.lastComponent?.string ?? found.string)) (matches the pool).")
-                    coldSkeyPath = found
-                } else {
-                    noora.error(.alert(
-                        "Cold signing key path is not set in the pool JSON.",
-                        takeaways: ["Ensure the pool JSON contains a valid cold_skey path, or put the pool's cold signing key in the current directory."]
-                    ))
-                    throw ExitCode.validationFailure
-                }
-
-                // Each pool owner must witness the registration with their stake
-                // signing key — otherwise the ledger rejects the tx with
-                // MissingVKeyWitnessesUTXOW for the owner's key hash.
-                let registeredParams = try pool.toPoolParams(network: config.cardano?.network.networkId ?? .mainnet)
-                let ownerHashes = registeredParams.poolOwners.asArray
+                // Signing keys are only needed when signing; with --no-sign they may be offline.
+                var coldSkeyPath: FilePath? = nil
                 var ownerSkeys: [FilePath] = []
-                for (index, owner) in pool.owners.enumerated() {
-                    let ownerLabel = owner.name ?? owner.stakeKeyHash ?? "#\(index + 1)"
-                    if let path = owner.stakeSkey {
-                        // stake_skey set: it must exist, as before
+                if transactionOptions.sign {
+                    // Signing keys: the paths in the pool JSON when the files exist, otherwise
+                    // local signing keys that match the pool's hashes
+                    let keys = PoolKeyFileMatcher()
+
+                    // Pool cold signing key: cold_skey when set (it must exist), else a local
+                    // cold signing key matching the pool
+                    if let path = pool.coldSkey {
                         do {
                             try FileUtils.checkFileExists(path)
+                            coldSkeyPath = path
                         } catch {
                             noora.error(.alert(
-                                "Owner stake signing key not found: \(path.string)",
-                                takeaways: ["Ensure the file exists for owner '\(ownerLabel)'."]
+                                "Cold signing key not found: \(path.string)",
+                                takeaways: ["Ensure the file exists or run 'scm generate node-cold-keys' first."]
                             ))
                             throw ExitCode.validationFailure
                         }
-                        ownerSkeys.append(path)
-                    } else if index < ownerHashes.count, let found = keys.stakeSkey(for: ownerHashes[index]) {
-                        spacedPrint("Using stake signing key \(.primary(found.lastComponent?.string ?? found.string)) for owner \(.primary(ownerLabel)) (matches the owner).")
-                        ownerSkeys.append(found)
+                    } else if let found = keys.coldSkey(for: poolKeyHash) {
+                        spacedPrint("Using cold signing key \(.primary(found.lastComponent?.string ?? found.string)) (matches the pool).")
+                        coldSkeyPath = found
                     } else {
                         noora.error(.alert(
-                            "Owner '\(ownerLabel)' is missing a stake signing key (stake_skey).",
-                            takeaways: ["Every pool owner must sign the registration; set stake_skey for each owner in the pool JSON, or put their stake signing key in the current directory."]
+                            "Cold signing key path is not set in the pool JSON.",
+                            takeaways: ["Ensure the pool JSON contains a valid cold_skey path, or put the pool's cold signing key in the current directory."]
                         ))
                         throw ExitCode.validationFailure
+                    }
+
+                    // Each pool owner must witness the registration with their stake
+                    // signing key — otherwise the ledger rejects the tx with
+                    // MissingVKeyWitnessesUTXOW for the owner's key hash.
+                    let registeredParams = try pool.toPoolParams(network: config.cardano?.network.networkId ?? .mainnet)
+                    let ownerHashes = registeredParams.poolOwners.asArray
+                    for (index, owner) in pool.owners.enumerated() {
+                        let ownerLabel = owner.name ?? owner.stakeKeyHash ?? "#\(index + 1)"
+                        if let path = owner.stakeSkey {
+                            // stake_skey set: it must exist, as before
+                            do {
+                                try FileUtils.checkFileExists(path)
+                            } catch {
+                                noora.error(.alert(
+                                    "Owner stake signing key not found: \(path.string)",
+                                    takeaways: ["Ensure the file exists for owner '\(ownerLabel)'."]
+                                ))
+                                throw ExitCode.validationFailure
+                            }
+                            ownerSkeys.append(path)
+                        } else if index < ownerHashes.count, let found = keys.stakeSkey(for: ownerHashes[index]) {
+                            spacedPrint("Using stake signing key \(.primary(found.lastComponent?.string ?? found.string)) for owner \(.primary(ownerLabel)) (matches the owner).")
+                            ownerSkeys.append(found)
+                        } else {
+                            noora.error(.alert(
+                                "Owner '\(ownerLabel)' is missing a stake signing key (stake_skey).",
+                                takeaways: ["Every pool owner must sign the registration; set stake_skey for each owner in the pool JSON, or put their stake signing key in the current directory."]
+                            ))
+                            throw ExitCode.validationFailure
+                        }
                     }
                 }
 
@@ -961,6 +964,7 @@ extension CertificateMainCommand {
                     feePaymentAddress: feePaymentAddress,
                     coldSigningKey: coldSkeyPath,
                     ownerSigningKeys: ownerSkeys,
+                    ownerCount: pool.owners.count,
                     protocolParamsFile: protocolParamsFile
                 )
             }
@@ -1059,24 +1063,33 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
         isInitialRegistration: Bool,
         stakePoolDeposit: Int,
         feePaymentAddress: PaymentAddressInfo,
-        coldSigningKey: FilePath,
+        coldSigningKey: FilePath?,
         ownerSigningKeys: [FilePath],
+        ownerCount: Int,
         protocolParamsFile: FilePath
     ) async throws {
         let cwd = FilePath(FileManager.default.currentDirectoryPath)
         txBuilder.certificates = certificates
         txBuilder.initialStakePoolRegistration = isInitialRegistration
 
-        var signingKeys: [String] = [
-            try feePaymentAddress.info.getSigningMethod().path.string,
-            coldSigningKey.string
-        ]
-        for ownerKey in ownerSigningKeys where !signingKeys.contains(ownerKey.string) {
-            signingKeys.append(ownerKey.string)
+        // Signing keys: pool node skey + fee payment skey + each distinct owner stake skey.
+        // Resolved lazily so offline keys aren't needed when the transaction isn't signed.
+        func signingKeys() throws -> [String] {
+            guard let coldSigningKey else {
+                throw ValidationError("A pool cold signing key is required to sign the registration.")
+            }
+            var keys: [String] = [
+                try feePaymentAddress.info.getSigningMethod().path.string,
+                coldSigningKey.string
+            ]
+            for ownerKey in ownerSigningKeys where !keys.contains(ownerKey.string) {
+                keys.append(ownerKey.string)
+            }
+            return keys
         }
 
         // Witness count: pool node skey + fee payment skey + each owner stake skey
-        let witnessCount = signingKeys.count
+        let witnessCount = 2 + ownerCount
         txBuilder.witnessOverride = witnessCount
 
         spacedPrint(
@@ -1092,50 +1105,31 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
         )
 
         spacedPrint(
-            "Witnesses needed: \(.primary("\(witnessCount)")) (pool node + payment + \(ownerSigningKeys.count) owner(s))"
+            "Witnesses needed: \(.primary("\(witnessCount)")) (pool node + payment + \(ownerCount) owner(s))"
         )
 
         // Transaction file paths
         let txTimestamp = DateUtils.getCurrentTimestamp()
         let txRawFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).raw.tx")
-        let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).tx")
+        let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).unwitnessed.tx")
         let txSignedFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).signed.tx")
 
         try await buildTransaction(
             txBuilder: txBuilder,
             config: config,
-            witnessOverride: signingKeys.count,
+            witnessOverride: witnessCount,
             protocolParamsFile: protocolParamsFile,
             txRawFile: txRawFile,
             txFile: txFile,
             txSignedFile: txSignedFile
         )
 
-        var args: [String] = []
-        if transactionOptions.useCardanoCLI {
-            args.append("--use-cardano-cli")
-        }
-        if transactionOptions.save {
-            args.append("--save")
-        }
-        if transactionOptions.submit {
-            args.append("--submit")
-        }
-
-        let signingKeysArgs: [String] = signingKeys.flatMap {
-            ["--signing-keys", $0]
-        }
-
-        await TransactionMainCommand.Sign.main([
-            "--tx-file", txFile.string,
-            "--out-file", txSignedFile.string,
-        ] + args + signingKeysArgs)
-
-        if !transactionOptions.save {
-            try FileManager.default.removeItem(atPath: txRawFile.string)
-            try FileManager.default.removeItem(atPath: txFile.string)
-            try FileManager.default.removeItem(atPath: txSignedFile.string)
-        }
+        try await signBuiltTransaction(
+            txRawFile: txRawFile,
+            txFile: txFile,
+            txSignedFile: txSignedFile,
+            signingKeys: signingKeys
+        )
     }
 }
 
@@ -1409,66 +1403,71 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
             throw ExitCode.validationFailure
         }
 
-        // Cold signing key: --cold-signing-key, a matching local key, or ask
-        var coldSkey = coldSigningKey ?? keys.coldSkey(for: draft.poolKeyHash)
-        if coldSkey == nil && interactive {
-            coldSkey = try promptSigningKeyFile(
-                title: "Pool Cold Signing Key",
-                question: "Select the pool cold signing key:",
-                suffixes: [".skey", ".hwsfile", ".json"]
-            )
-        }
-        guard let coldSkey else {
-            noora.error(.alert(
-                "No cold signing key found for \(poolIdBech).",
-                takeaways: ["Provide --cold-signing-key <pool>.cold.skey."]
-            ))
-            throw ExitCode.validationFailure
-        }
-        if let type = PoolKeyFileMatcher.envelopeType(of: coldSkey), !type.hasPrefix("StakePoolSigningKey") {
-            noora.error(.alert(
-                "\(coldSkey.string) is not a pool cold signing key (it is \(type)).",
-                takeaways: ["Provide the pool's cold signing key, e.g. <pool>.cold.skey."]
-            ))
-            throw ExitCode.validationFailure
-        }
-        if let hash = PoolKeyFileMatcher.poolKeyHash(ofColdSkeyFile: coldSkey), hash.payload != draft.poolKeyHash.payload {
-            noora.error(.alert(
-                "The cold signing key \(coldSkey.string) does not belong to pool \(poolIdBech).",
-                takeaways: ["Check that you selected the pool's cold key."]
-            ))
-            throw ExitCode.validationFailure
-        }
-
-        // Owner signing keys: every owner must witness the registration
+        // Signing keys are only needed when signing; with --no-sign they may be offline.
+        var coldSkey: FilePath? = nil
         var ownerSkeys: [FilePath] = []
-        for owner in draft.owners {
-            let label = keys.stakeVkey(for: owner).flatMap(PoolKeyFileMatcher.keyName) ?? owner.payload.toHex
-            var skey = ownerSigningKeys.first { PoolKeyFileMatcher.stakeKeyHash(ofSkeyFile: $0)?.payload == owner.payload }
-                ?? keys.stakeSkey(for: owner)
-            if skey == nil && interactive {
-                skey = try promptSigningKeyFile(
-                    title: "Owner Stake Signing Key",
-                    question: "Select the stake signing key for owner \(label):",
+        if transactionOptions.sign {
+            // Cold signing key: --cold-signing-key, a matching local key, or ask
+            coldSkey = coldSigningKey ?? keys.coldSkey(for: draft.poolKeyHash)
+            if coldSkey == nil && interactive {
+                coldSkey = try promptSigningKeyFile(
+                    title: "Pool Cold Signing Key",
+                    question: "Select the pool cold signing key:",
                     suffixes: [".skey", ".hwsfile", ".json"]
                 )
-                if let chosen = skey, PoolKeyFileMatcher.envelopeType(of: chosen) != nil,
-                   PoolKeyFileMatcher.stakeKeyHash(ofSkeyFile: chosen)?.payload != owner.payload {
-                    noora.error(.alert(
-                        "\(chosen.string) is not the stake signing key for owner \(label).",
-                        takeaways: ["Every owner must sign with their own stake signing key."]
-                    ))
-                    throw ExitCode.validationFailure
-                }
             }
-            guard let skey else {
+            guard let resolvedColdSkey = coldSkey else {
                 noora.error(.alert(
-                    "No stake signing key found for owner \(label).",
-                    takeaways: ["Every pool owner must sign the registration. Provide --owner-signing-key for each owner."]
+                    "No cold signing key found for \(poolIdBech).",
+                    takeaways: ["Provide --cold-signing-key <pool>.cold.skey."]
                 ))
                 throw ExitCode.validationFailure
             }
-            ownerSkeys.append(skey)
+            coldSkey = resolvedColdSkey
+            if let type = PoolKeyFileMatcher.envelopeType(of: resolvedColdSkey), !type.hasPrefix("StakePoolSigningKey") {
+                noora.error(.alert(
+                    "\(resolvedColdSkey.string) is not a pool cold signing key (it is \(type)).",
+                    takeaways: ["Provide the pool's cold signing key, e.g. <pool>.cold.skey."]
+                ))
+                throw ExitCode.validationFailure
+            }
+            if let hash = PoolKeyFileMatcher.poolKeyHash(ofColdSkeyFile: resolvedColdSkey), hash.payload != draft.poolKeyHash.payload {
+                noora.error(.alert(
+                    "The cold signing key \(resolvedColdSkey.string) does not belong to pool \(poolIdBech).",
+                    takeaways: ["Check that you selected the pool's cold key."]
+                ))
+                throw ExitCode.validationFailure
+            }
+
+            // Owner signing keys: every owner must witness the registration
+            for owner in draft.owners {
+                let label = keys.stakeVkey(for: owner).flatMap(PoolKeyFileMatcher.keyName) ?? owner.payload.toHex
+                var skey = ownerSigningKeys.first { PoolKeyFileMatcher.stakeKeyHash(ofSkeyFile: $0)?.payload == owner.payload }
+                    ?? keys.stakeSkey(for: owner)
+                if skey == nil && interactive {
+                    skey = try promptSigningKeyFile(
+                        title: "Owner Stake Signing Key",
+                        question: "Select the stake signing key for owner \(label):",
+                        suffixes: [".skey", ".hwsfile", ".json"]
+                    )
+                    if let chosen = skey, PoolKeyFileMatcher.envelopeType(of: chosen) != nil,
+                       PoolKeyFileMatcher.stakeKeyHash(ofSkeyFile: chosen)?.payload != owner.payload {
+                        noora.error(.alert(
+                            "\(chosen.string) is not the stake signing key for owner \(label).",
+                            takeaways: ["Every owner must sign with their own stake signing key."]
+                        ))
+                        throw ExitCode.validationFailure
+                    }
+                }
+                guard let skey else {
+                    noora.error(.alert(
+                        "No stake signing key found for owner \(label).",
+                        takeaways: ["Every pool owner must sign the registration. Provide --owner-signing-key for each owner."]
+                    ))
+                    throw ExitCode.validationFailure
+                }
+                ownerSkeys.append(skey)
+            }
         }
 
         let logger = getLogger(config: config)
@@ -1485,6 +1484,7 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
             feePaymentAddress: feePaymentAddress,
             coldSigningKey: coldSkey,
             ownerSigningKeys: ownerSkeys,
+            ownerCount: draft.owners.count,
             protocolParamsFile: protocolParamsFile
         )
     }

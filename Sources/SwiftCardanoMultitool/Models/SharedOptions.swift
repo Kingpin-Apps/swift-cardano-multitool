@@ -61,6 +61,9 @@ struct SharedTransactionOptions: ParsableArguments {
     @Flag(inversion: .prefixedNo, help: "Save built transaction to file")
     var save = true
     
-    @Flag(help: "Submit the transaction to the blockchain")
+    @Flag(inversion: .prefixedNo, help: "Sign the transaction after building. Use --no-sign to leave it unsigned (e.g. for offline signing).")
+    var sign = true
+
+    @Flag(help: "Submit the transaction to the blockchain (requires signing)")
     var submit = false
 }

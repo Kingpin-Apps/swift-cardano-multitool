@@ -301,6 +301,8 @@ scm generate pool-json --pool-name mypool
 
 This writes `mypool.pool.json` to the current directory, auto-discovering key files that follow the standard naming scheme (`mypool.cold.vkey`, `mypool.vrf.skey`, `mypool.kes-001.skey`, etc.). For a pool that is already registered, add `--pool-operator pool1...` and the parameters are fetched from the chain instead of prompted for.
 
+To save just the pool ID files (`mypool.pool.id` in hex and `mypool.pool.id-bech` in bech32), run `scm generate pool-id --pool-name mypool --pool-operator <pool ID, cold vkey or file>`. Other commands then find the pool by name.
+
 To change a registered pool's parameters without a pool.json, run `scm certificate pool-registration --pool-operator pool1...` and pick the fields to edit (or pass `--pledge`, `--cost`, `--margin`, `--relay`, `--owner`, `--reward-account`, `--vrf-vkey`, `--metadata-url`).
 
 Commands that require (or fall back to) a pool.json file:
@@ -464,6 +466,7 @@ scm generate payment-and-stake-address
 
 # Pool metadata & maintenance
 scm generate pool-json
+scm generate pool-id       # <name>.pool.id + <name>.pool.id-bech from any pool ID, cold key or file
 scm generate key-rotation
 
 # Governance & minting
@@ -692,6 +695,19 @@ scm transaction view
 scm transaction inspect
 scm transaction validate
 ```
+
+#### Signing with offline keys
+
+Every command that builds a transaction (`send`, `certificate … --generate-transaction`, `governance`, `asset`, `transaction rewards-withdraw`) asks **Sign the transaction?** first, and only asks **Submit?** when you sign. Answer no, or pass `--no-sign`, and the transaction is built without reading any signing key. The unsigned `.tx` file is kept so you can sign it where the keys live and broadcast it from an online machine:
+
+```bash
+scm certificate stake-register-delegation --stake-address owner --pool-operator pool1... \
+  --generate-transaction --fee-payment-address owner.payment --no-sign
+scm transaction sign --tx-file owner-<timestamp>.unwitnessed.tx --signing-keys owner.stake.skey --signing-keys owner.payment.skey
+scm transaction submit --tx-file owner-<timestamp>.signed.tx
+```
+
+`--submit` requires signing, so `--no-sign --submit` is rejected.
 
 ---
 

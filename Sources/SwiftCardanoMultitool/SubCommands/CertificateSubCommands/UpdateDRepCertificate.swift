@@ -168,14 +168,7 @@ extension CertificateMainCommand {
                     throw ExitCode.validationFailure
                 }
 
-                var signingKeys: [String] = [
-                    try feePaymentAddress.info.getSigningMethod().path.string
-                ]
-                if let drepSigningKey {
-                    signingKeys.append(drepSigningKey.string)
-                }
-
-                if drepSigningKey == nil { noora.warning(.alert(
+                if transactionOptions.sign, drepSigningKey == nil { noora.warning(.alert(
                     "No DRep signing key provided; the submitted transaction will be missing the DRep witness.",
                     takeaway: "Pass --drep-signing-key <name>.drep.skey so the update can be signed."
                 )) }
@@ -185,34 +178,25 @@ extension CertificateMainCommand {
 
                 let txTimestamp = DateUtils.getCurrentTimestamp()
                 let txRawFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).raw.tx")
-                let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).tx")
+                let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).unwitnessed.tx")
                 let txSignedFile = cwd.appending("\(feePaymentAddress.info.name!)-\(txTimestamp).signed.tx")
 
                 try await buildTransaction(
                     txBuilder: txBuilder,
                     config: config,
-                    witnessOverride: signingKeys.count + 1,
+                    witnessOverride: (drepSigningKey == nil ? 1 : 2) + 1,
                     protocolParamsFile: protocolParamsFile,
                     txRawFile: txRawFile,
                     txFile: txFile,
                     txSignedFile: txSignedFile
                 )
 
-                var args: [String] = []
-                if transactionOptions.useCardanoCLI { args.append("--use-cardano-cli") }
-                if transactionOptions.save { args.append("--save") }
-                if transactionOptions.submit { args.append("--submit") }
-
-                let signingKeysArgs = signingKeys.flatMap { ["--signing-keys", $0] }
-                await TransactionMainCommand.Sign.main([
-                    "--tx-file", txFile.string,
-                    "--out-file", txSignedFile.string
-                ] + args + signingKeysArgs)
-
-                if !transactionOptions.save {
-                    try FileManager.default.removeItem(atPath: txRawFile.string)
-                    try FileManager.default.removeItem(atPath: txFile.string)
-                    try FileManager.default.removeItem(atPath: txSignedFile.string)
+                try await signBuiltTransaction(
+                    txRawFile: txRawFile,
+                    txFile: txFile,
+                    txSignedFile: txSignedFile
+                ) {
+                    [try feePaymentAddress.info.getSigningMethod().path.string] + (drepSigningKey.map { [$0.string] } ?? [])
                 }
             }
         }

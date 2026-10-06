@@ -190,7 +190,7 @@ extension SendMainCommand {
 
             let timestamp = DateUtils.getCurrentTimestamp()
             let txRawFile = cwd.appending("\(feePaymentAddress.info.name!)-\(timestamp).raw.tx")
-            let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(timestamp).tx")
+            let txFile = cwd.appending("\(feePaymentAddress.info.name!)-\(timestamp).unwitnessed.tx")
             let txSignedFile = cwd.appending("\(feePaymentAddress.info.name!)-\(timestamp).signed.tx")
 
             try await buildTransaction(
@@ -203,20 +203,12 @@ extension SendMainCommand {
                 txSignedFile: txSignedFile
             )
 
-            var args: [String] = []
-            if transactionOptions.useCardanoCLI { args.append("--use-cardano-cli") }
-            if transactionOptions.save         { args.append("--save") }
-            if transactionOptions.submit       { args.append("--submit") }
-
-            await TransactionMainCommand.Sign.main([
-                "--tx-file", txFile.string,
-                "--out-file", txSignedFile.string,
-            ] + args + ["--signing-keys", try feePaymentAddress.info.getSigningMethod().path.string])
-
-            if !transactionOptions.save {
-                try? FileManager.default.removeItem(atPath: txRawFile.string)
-                try? FileManager.default.removeItem(atPath: txFile.string)
-                try? FileManager.default.removeItem(atPath: txSignedFile.string)
+            try await signBuiltTransaction(
+                txRawFile: txRawFile,
+                txFile: txFile,
+                txSignedFile: txSignedFile
+            ) {
+                [try feePaymentAddress.info.getSigningMethod().path.string]
             }
         }
     }

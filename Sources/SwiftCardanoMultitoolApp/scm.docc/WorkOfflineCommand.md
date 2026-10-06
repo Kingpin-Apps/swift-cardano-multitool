@@ -189,6 +189,27 @@ scm work-offline info
 scm work-offline execute
 ```
 
+## Alternative: build online, sign offline
+
+When the online machine has chain access but the signing keys live only on the offline machine, build the transaction online without signing it, then carry just the unsigned transaction across:
+
+```bash
+# Online: build without touching the signing keys
+scm certificate stake-register-delegation \
+  --stake-address owner --pool-operator pool1... \
+  --generate-transaction --fee-payment-address owner.payment \
+  --no-sign
+
+# Offline: sign the unsigned transaction
+scm transaction sign --tx-file owner-<timestamp>.unwitnessed.tx \
+  --signing-keys owner.stake.skey --signing-keys owner.payment.skey
+
+# Online: broadcast it
+scm transaction submit --tx-file owner-<timestamp>.signed.tx
+```
+
+`--no-sign` is available on every command that builds a transaction (`send`, `certificate … --generate-transaction`, `governance`, `asset`, `transaction rewards-withdraw`). In the wizards, answer **no** to *Sign the transaction?*.
+
 ## Notes
 
 - The offline machine should never have network access. Its sole purpose is to hold keys and produce signatures.

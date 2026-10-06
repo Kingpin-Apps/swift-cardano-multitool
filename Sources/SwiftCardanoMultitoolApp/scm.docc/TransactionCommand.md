@@ -51,6 +51,10 @@ scm transaction build \
 | `--invalid-before` / `--invalid-hereafter` | Validity slot window. |
 | `--witness-override` | Override the witness count used in fee estimation. |
 | `--out-file`, `-o` | Output filepath of the JSON transaction body. |
+| `--sign` | Sign the transaction after building (prompts for the signing keys). |
+| `--submit` | Sign and submit the transaction after building. |
+
+The wizard asks whether to sign the transaction, and only asks whether to submit it when you sign. When signing, it then prompts for the signing keys.
 
 For advanced Plutus script options (`--spending-tx-in-reference`, `--tx-in-script-file`, etc.), pass `--use-cardano-cli` (from `SharedTransactionOptions`) and any extra cardano-cli arguments through `--extra-args`.
 
@@ -85,7 +89,34 @@ scm transaction witness \
   --tx-file tx.body \
   --signing-keys payment.skey \
   --out-file payment.witness
+
+# Several keys: one witness file each, --out-file in the same order as --signing-keys
+scm transaction witness \
+  --tx-file tx.body \
+  --signing-keys payment.skey --signing-keys stake.skey \
+  --out-file payment.witness --out-file stake.witness
 ```
+
+| Option | Description |
+|--------|-------------|
+| `--tx-file`, `-t` / `--cbor-hex` | The transaction to witness. |
+| `--signing-keys`, `-s` | Signing key (`.skey` or `.hwsfile`). Repeat for several witnesses. |
+| `--out-file`, `-o` | Witness file for the matching signing key. Repeat once per key, or leave out to write `<transaction-name>.<key-role>.witness` in the current directory. |
+| `--use-cardano-cli` | Create the witnesses with cardano-cli instead of SwiftCardano. |
+| `--no-save` | Print the witnesses instead of saving them. |
+| `--submit` | Assemble the transaction with these witnesses and submit it (only when they are all the witnesses it needs). |
+
+The wizard asks where to save each witness, with the default name below, and prints the `scm transaction assemble` command to finish the transaction.
+
+Default witness names combine the transaction name (without `.unwitnessed.tx`, `.signed.tx` or `.tx`) with the key's role, the last part of the signing key name. For example, witnessing `qwe1-stake-reg-deleg.unwitnessed.tx` with `owner.payment.skey`, `owner.stake.skey` and `pool.node.skey` writes:
+
+```
+qwe1-stake-reg-deleg.payment.witness
+qwe1-stake-reg-deleg.stake.witness
+qwe1-stake-reg-deleg.node.witness
+```
+
+If two keys share a role (two payment keys), their full key names are used instead, e.g. `qwe1-stake-reg-deleg.alice.payment.witness`. With `--cbor-hex`, the transaction ID takes the place of the transaction name.
 
 ### assemble
 
@@ -221,6 +252,7 @@ scm transaction rewards-withdraw \
 | `--to-address`, `-t` | Where to send the withdrawn rewards. |
 | `--fee-payment-address`, `-f` | Address that pays the transaction fee. Defaults to the rewards destination. |
 | `--message`, `-m` | CIP-20 transaction message. Repeatable. |
+| `--no-sign` | Build without signing, e.g. when the keys are offline. |
 | `--submit` | Broadcast the signed transaction. |
 
 The full available rewards balance is withdrawn automatically. The wizard shows the current rewards balance before proceeding.
@@ -306,6 +338,7 @@ scm transaction submit --tx-file tx.signed
 
 ## Notes
 
+- Transactions built by `scm` are saved unsigned as `<name>.unwitnessed.tx`, and signed as `<name>.signed.tx`. `sign` and `assemble` name their output after the input, so `qwe1.unwitnessed.tx` becomes `qwe1.signed.tx`.
 - For air-gapped (offline) signing workflows, use <doc:WorkOfflineCommand> instead of running `sign` and `submit` individually.
 - `build` requires chain access (via node socket or API) to query UTxOs and protocol parameters. `sign`, `witness`, `assemble`, `id`, `view`, and `inspect` can run fully offline.
 - All amounts are in **lovelace** (1 ADA = 1,000,000 lovelace).
