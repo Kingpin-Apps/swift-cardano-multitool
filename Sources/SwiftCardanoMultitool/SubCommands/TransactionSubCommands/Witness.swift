@@ -19,13 +19,17 @@ extension TransactionMainCommand {
                 --tx-file test.tx \\
                 --signing-keys test.payment.skey \\
                 --signing-keys test.stake.skey \\
-                --out-file test.signed.tx \\
+                --out-file test.payment.witness \\
+                --out-file test.stake.witness
             """,
             discussion: """
-            Witnesses a transaction by signing it with the provided signing 
-            keys. The transaction can be provided as a file or as a raw CBOR hex 
-            string. The signed transaction can be saved to a file and optionally 
-            submitted to the blockchain.
+            Creates one witness file per signing key. The transaction can be
+            provided as a file or as a raw CBOR hex string. Each witness is saved
+            to the matching --out-file (given in the same order as
+            --signing-keys), or to <transaction-name>.<key-role>.witness in the
+            current directory (e.g. qwe1.unwitnessed.tx and qwe1.node.skey give
+            qwe1.node.witness). Combine the witnesses with `scm transaction assemble`, or
+            pass --submit to assemble and submit straight away.
             """
         )
         
@@ -41,18 +45,55 @@ extension TransactionMainCommand {
         @Option(name: [.short, .long], help: "The file paths to the signing keys (repeat option to pass multiple).")
         var signingKeys: [FilePath] = []
         
-        @Option(name: [.short, .long], help: "The file name to save the signed transaction to. If not specified, '.signed.tx' will be used with the name of the input transaction.")
-        var outFile: FilePath? = nil
+        @Option(name: [.short, .long], help: "Witness file to write, one per signing key in the same order (repeat option to pass multiple). Defaults to '<transaction-name>.<key-role>.witness' in the current directory, e.g. qwe1.node.witness.")
+        var outFile: [FilePath] = []
         
-        @Flag(help: "Use cardano-cli to sign the transaction (default: use SwiftCardano)")
+        @Flag(help: "Use cardano-cli to witness the transaction (default: use SwiftCardano)")
         var useCardanoCLI = false
         
-        @Flag(inversion: .prefixedNo, help: "Save signed transaction to file")
+        @Flag(inversion: .prefixedNo, help: "Save the witness files (with --no-save they are printed instead)")
         var save = true
         
-        @Flag(help: "Submit the transaction to the blockchain")
+        @Flag(help: "Assemble the transaction with the witnesses and submit it to the blockchain")
         var submit = false
-        
+
+        /// A path relative to the current directory when it is inside it, for shorter output.
+        static func displayPath(_ path: FilePath, cwd: FilePath) -> String {
+            let prefix = cwd.string.hasSuffix("/") ? cwd.string : cwd.string + "/"
+            return path.string.hasPrefix(prefix) ? String(path.string.dropFirst(prefix.count)) : path.string
+        }
+
+        // MARK: - Validation
+
+        mutating func validate() throws {
+            guard outFile.isEmpty || outFile.count == signingKeys.count else {
+                throw ValidationError("Pass one --out-file per --signing-keys (got \(outFile.count) for \(signingKeys.count) keys), or none to use the default names.")
+            }
+        }
+
+        /// The witness file for each signing key: the matching --out-file, else
+        /// `<transaction-name>.<key-role>.witness` in the current directory, e.g.
+        /// `qwe1.unwitnessed.tx` + `qwe1.node.skey` → `qwe1.node.witness`. Keys sharing a
+        /// role (two payment keys) fall back to their full name: `qwe1.alice.payment.witness`.
+        static func witnessFiles(for signingKeys: [FilePath], outFiles: [FilePath], transactionName: String, cwd: FilePath) -> [FilePath] {
+            let roles = signingKeys.map(signingKeyRole)
+            return signingKeys.enumerated().map { index, key in
+                if outFiles.indices.contains(index) {
+                    let out = outFiles[index]
+                    return out.isAbsolute ? out : cwd.pushing(out)
+                }
+                let role = roles.filter { $0 == roles[index] }.count > 1 ? (key.stem ?? roles[index]) : roles[index]
+                return cwd.appending("\(transactionName).\(role).witness")
+            }
+        }
+
+        /// The name witness files are based on: the transaction file's name, or the
+        /// transaction ID for CBOR hex input.
+        func transactionName() throws -> String {
+            if let txFile { return transactionBaseName(txFile) }
+            return try resolveTransaction().id?.description ?? "transaction"
+        }
+
         // MARK: - Wizard
         
         mutating func wizard() async throws {
@@ -81,34 +122,45 @@ extension TransactionMainCommand {
                 )
             }
             
-            let outputFile = try optionalFilePathPrompt(
-                title: "Output File",
-                question: "Enter the output file path for the signed transaction (leave blank for default):",
-                mustExist: false
-            )
-            // Left empty, run() picks the default name (from the tx file, or the tx ID for CBOR hex).
-            outFile = outputFile
-            
             useCardanoCLI = noora.yesOrNoChoicePrompt(
-                title: "Build Method",
-                question: "Use cardano-cli to build transaction?",
+                title: "Witness Method",
+                question: "Use cardano-cli to witness the transaction?",
                 defaultAnswer: false,
                 description: "Default: SwiftCardano. Alternative: cardano-cli"
             )
             
             save = noora.yesOrNoChoicePrompt(
-                title: "Save Transaction",
-                question: "Save signed transaction to file?",
+                title: "Save Witness",
+                question: "Save the witness files?",
                 defaultAnswer: true,
-                description: "You can submit it later if desired."
+                description: "Choose no to print the witnesses instead."
             )
+
+            if save {
+                // One witness file per signing key; Enter keeps the default name.
+                let cwd = FilePath(FileManager.default.currentDirectoryPath)
+                let defaults = Self.witnessFiles(for: signingKeys, outFiles: [], transactionName: try transactionName(), cwd: cwd)
+                outFile = try zip(signingKeys, defaults).map { key, defaultFile in
+                    let defaultName = defaultFile.lastComponent?.string ?? defaultFile.string
+                    return try filePathPrompt(
+                        title: "Witness File",
+                        question: "Where should the witness for \(key.lastComponent?.string ?? key.string) be saved?",
+                        description: "A new file, or an existing one to overwrite.",
+                        fileMatches: { $0.hasSuffix(".witness") },
+                        defaultValue: defaultName,
+                        mustExist: false
+                    )
+                }
+            }
             
             submit = noora.yesOrNoChoicePrompt(
                 title: "Submit Transaction",
-                question: "Submit the transaction to the blockchain?",
+                question: "Assemble the transaction with the witnesses and submit it?",
                 defaultAnswer: false,
-                description: "Requires network connectivity and sufficient funds."
+                description: "Only when these witnesses are all the transaction needs. Requires network connectivity."
             )
+
+            try validate()
         }
         
         // MARK: - Run
@@ -164,34 +216,38 @@ extension TransactionMainCommand {
                 takeaways: signingMethods.map {
                     switch $0 {
                         case .hardwareWallet(let hwsfile):
-                            return "  - Hardware Wallet signing key: \(pathComponent(hwsfile.string))"
+                            return "  - Hardware Wallet signing key: \(hwsfile.string)"
                         case .softwareKey(let skey):
-                            return "  - Software signing key: \(pathComponent(skey.string))"
+                            return "  - Software signing key: \(skey.string)"
                     }
                 }
             ))
             
             let cwd = FilePath(FileManager.default.currentDirectoryPath)
-            let witnessFiles = signingMethods.map { method -> FilePath in
-                switch method {
-                    case .hardwareWallet(let filePath), .softwareKey(let filePath):
-                        return cwd.appending("\(filePath.stem!).witness")
-                }
+            // Submitting needs the witness files, so without --save they go to a temporary folder.
+            let writesWitnessFiles = save || submit
+            let witnessDirectory = save
+                ? cwd
+                : FilePath(FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).path)
+            if !save && submit {
+                try FileManager.default.createDirectory(atPath: witnessDirectory.string, withIntermediateDirectories: true)
             }
-            
-            if outFile == nil && txFile != nil {
-                guard let txFile = txFile else {
-                    noora.error("Transaction file path is required to determine default output file name.")
-                    throw ExitCode.validationFailure
-                }
-                outFile = cwd.appending("\(txFile.stem!).signed.tx")
-            } else if outFile == nil && cborHex != nil {
-                let timestamp = DateUtils.getCurrentTimestamp()
-                outFile = cwd.appending("\(txId)-\(timestamp).signed.tx")
+            defer {
+                if !save && submit { try? FileManager.default.removeItem(atPath: witnessDirectory.string) }
             }
-            
-            guard let outFile = outFile else {
-                noora.error("Output file path is required.")
+            let witnessFiles = Self.witnessFiles(
+                for: signingKeys,
+                outFiles: save ? outFile : [],
+                transactionName: try transactionName(),
+                cwd: witnessDirectory
+            )
+
+            // Two keys with the same name would write to the same default witness file.
+            guard Set(witnessFiles.map(\.string)).count == witnessFiles.count else {
+                noora.error(.alert(
+                    "Several signing keys would write to the same witness file.",
+                    takeaways: ["Pass one --out-file per signing key to name them."]
+                ))
                 throw ExitCode.validationFailure
             }
             
@@ -240,15 +296,15 @@ extension TransactionMainCommand {
                         logger: logger
                     )
                     
-                    for signingKey in signingKeys {
-                        let witnessFile = witnessFiles.first { $0.stem == "\(signingKey.stem!).witness"}!
+                    for (signingKey, witnessFile) in zip(signingKeys, witnessFiles) {
                         
                         // Absolutize input/output paths — cardano-cli does not resolve
                         // relative paths against the user's cwd.
                         let resolvedTxFile = try await effectiveTxFile
                         let txBodyArg = FileUtils.absolutePath(resolvedTxFile).string
                         let signingKeyArg = FileUtils.absolutePath(signingKey).string
-                        if save {
+                        if writesWitnessFiles {
+                            try await FileUtils.unlockIfExists(witnessFile)
                             _ = try await cli.transaction.witness(
                                 arguments: [
                                     "--tx-body-file", txBodyArg,
@@ -256,6 +312,7 @@ extension TransactionMainCommand {
                                     "--out-file", FileUtils.absolutePath(witnessFile).string
                                 ]
                             )
+                            try await FileUtils.fileLock(witnessFile)
                         } else {
                             let witness = try await cli.transaction.witness(
                                 arguments: [
@@ -272,27 +329,12 @@ extension TransactionMainCommand {
                 else {
                     let txBuilder = TxBuilder(context: context, logger: logger)
                     
-                    for method in signingMethods {
+                    for (method, witnessFile) in zip(signingMethods, witnessFiles) {
                         let skeyType: SigningKeyType
-                        let witnessFile: FilePath
                         
                         switch method {
                             case .softwareKey(let skeyPath):
                                 skeyType = try SigningKeyType.load(from: skeyPath.string)
-                                // witnessFiles are built as "<skey-stem>.witness";
-                                // match on the full file name. (`FilePath.stem`
-                                // strips the .witness extension, so comparing it to
-                                // "<stem>.witness" never matched → force-unwrap crash.)
-                                guard let match = witnessFiles.first(
-                                    where: { $0.lastComponent?.string == "\(skeyPath.stem!).witness" }
-                                ) else {
-                                    noora.error(.alert(
-                                        "Could not determine the witness output file for \(skeyPath.string).",
-                                        takeaways: ["Expected a witness file named \(skeyPath.stem!).witness."]
-                                    ))
-                                    throw ExitCode.failure
-                                }
-                                witnessFile = match
                             case .hardwareWallet:
                                 noora.error("Hardware wallet signing is not supported in software key signing method.")
                                 throw ExitCode.validationFailure
@@ -303,7 +345,7 @@ extension TransactionMainCommand {
                             keys: [skeyType]
                         )
                         
-                        if save {
+                        if writesWitnessFiles {
                             try await FileUtils.dumpLockedFile(
                                 witnessFile,
                                 data: try witness[0].toTextEnvelope()!
@@ -325,20 +367,25 @@ extension TransactionMainCommand {
             }
             
             spacedPrint("\n\(.success("✓")) Transaction witnessed successfully.")
-            
-            
-            
+
+            if save {
+                noora.success(.alert(
+                    "Witness files saved.",
+                    takeaways: witnessFiles.map { "\(Self.displayPath($0, cwd: cwd))" }
+                ))
+            }
+
             if submit {
-                try tx.save(to: outFile.string)
-                
                 let witnessArgs = witnessFiles.flatMap { ["--witness-file", $0.string] }
-                
                 await TransactionMainCommand.Assemble.main([
-                    "--tx-file", outFile.string
-                ] + witnessArgs)
-            } else {
+                    "--tx-file", try await effectiveTxFile.string,
+                    "--submit"
+                ] + (useCardanoCLI ? ["--use-cardano-cli"] : []) + witnessArgs)
+            } else if save {
+                let witnessArgs = witnessFiles.map { "--witness-file \(Self.displayPath($0, cwd: cwd))" }.joined(separator: " ")
                 noora.info(.alert(
-                    "Transaction not submitted. You can assemble and submit it later using the saved transaction file or cbor-encoded data."
+                    "Transaction not submitted.",
+                    takeaways: ["Assemble and submit it later with: scm transaction assemble --tx-file \(txFile?.string ?? "<tx file>") \(witnessArgs) --submit"]
                 ))
             }
         }

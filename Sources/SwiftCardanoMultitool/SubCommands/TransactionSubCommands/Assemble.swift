@@ -90,8 +90,8 @@ extension TransactionMainCommand {
             outFile = outputFile
             
             useCardanoCLI = noora.yesOrNoChoicePrompt(
-                title: "Build Method",
-                question: "Use cardano-cli to build transaction?",
+                title: "Assemble Method",
+                question: "Use cardano-cli to assemble the transaction?",
                 defaultAnswer: false,
                 description: "Default: SwiftCardano. Alternative: cardano-cli"
             )
@@ -150,7 +150,7 @@ extension TransactionMainCommand {
                     noora.error("Transaction file path is required to determine default output file name.")
                     throw ExitCode.validationFailure
                 }
-                outFile = cwd.appending("\(txFile.stem!).signed.tx")
+                outFile = cwd.appending("\(transactionBaseName(txFile)).signed.tx")
             } else if outFile == nil && cborHex != nil {
                 let timestamp = DateUtils.getCurrentTimestamp()
                 outFile = cwd.appending("\(txId)-\(timestamp).signed.tx")

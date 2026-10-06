@@ -619,7 +619,7 @@ struct TransactionDocumentationExamplesTests {
         ])
         #expect(cmd.txFile?.string == "tx.body")
         #expect(cmd.signingKeys.map(\.string) == ["payment.skey"])
-        #expect(cmd.outFile?.string == "payment.witness")
+        #expect(cmd.outFile.map(\.string) == ["payment.witness"])
     }
 
     // MARK: - assemble

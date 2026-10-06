@@ -69,3 +69,24 @@ extension TransactionAsyncParsableCommand {
     
     
 }
+
+/// Suffixes that mark a file as a transaction, longest first.
+private let transactionFileSuffixes = [".unwitnessed.tx", ".signed.tx", ".raw.tx", ".tx", ".unwitnessed", ".signed", ".raw", ".json"]
+
+/// The name of a transaction file without its transaction suffix, used to name the
+/// files made from it: `qwe1.unwitnessed.tx`, `qwe1.signed.tx` and `qwe1.tx` all give `qwe1`.
+func transactionBaseName(_ path: FilePath) -> String {
+    let name = path.lastComponent?.string ?? path.string
+    for suffix in transactionFileSuffixes where name.hasSuffix(suffix) && name.count > suffix.count {
+        return String(name.dropLast(suffix.count))
+    }
+    return name
+}
+
+/// The role a signing key plays, from its file name: `qwe1.node.skey` → `node`,
+/// `owner.payment.hwsfile` → `payment`, `payment.skey` → `payment`.
+func signingKeyRole(_ path: FilePath) -> String {
+    let stem = path.stem ?? path.lastComponent?.string ?? "key"
+    return stem.split(separator: ".").last.map(String.init) ?? stem
+}
+
