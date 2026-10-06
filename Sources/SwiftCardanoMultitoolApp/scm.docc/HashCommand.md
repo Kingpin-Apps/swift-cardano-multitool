@@ -162,6 +162,8 @@ scm hash pool-id --pool-name mypool
 | `--pool-name`, `-p` | Hashes `<name>.node.vkey` in the current directory. |
 | `--output-bech32` / `--output-hex` | `pool1…` (default) or hex. |
 
+To write the pool ID to `<name>.pool.id` and `<name>.pool.id-bech` files instead of printing it, use `scm generate pool-id`. See <doc:GenerateCommand>.
+
 ### vrf-key
 
 Print the hash of a node's VRF verification key, as registered in the pool parameters.

@@ -60,7 +60,7 @@ The `pool-registration` and `pool-deregistration` certificate commands also offe
 | `<name>.kes.counter` / `<name>.kes.counter-next` | KES rotation counters |
 | `<name>.kes-expire.json` | KES expiry information |
 | `<name>.metadata.json` | Pool metadata file (hosted at `meta_url`) |
-| `<name>.pool.id` / `<name>.pool.id-bech` | Pool ID in hex / bech32 |
+| `<name>.pool.id` / `<name>.pool.id-bech` | Pool ID in hex / bech32 (create them with `scm generate pool-id`) |
 
 ## Field reference
 

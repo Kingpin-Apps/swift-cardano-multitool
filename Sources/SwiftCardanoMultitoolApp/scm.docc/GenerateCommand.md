@@ -198,6 +198,23 @@ scm generate pool-json --pool-name myPool --pool-operator pool1...
 
 If the pool is already registered, its parameters are fetched from the chain and saved without prompting for them. The pool is identified by `--pool-operator`, or automatically from `<name>.pool.id-bech`, `<name>.pool.id`, `<name>.cold.vkey` or `<name>.node.vkey`. Key files in the current directory that match the registered hashes are linked; missing ones are left empty, and the registered hashes are stored instead (`vrf_key_hash`, each owner's `stake_key_hash`, `rewards_owner.reward_account`). This also works non-interactively.
 
+### pool-id
+
+Write a pool's ID to `<name>.pool.id` (hex) and `<name>.pool.id-bech` (bech32). The `poolid` alias is also accepted.
+
+```bash
+scm generate pool-id --pool-name myPool --pool-operator pool1...
+
+# From the pool's cold verification key
+scm generate pool-id --pool-name myPool --pool-operator myPool.node.vkey
+```
+
+| Option | Description |
+|--------|-------------|
+| `--pool-name`, `-p` | Writes `<name>.pool.id` and `<name>.pool.id-bech`. |
+| `--pool-operator` | Pool ID (`pool1...` or hex), cold verification key (`pool_vk1...` or hex), `.pool.id` file, `pool.json`, or cold key file. |
+| `--overwrite` | Replace the files if they exist. |
+
 The wizard collects pool ticker, description, homepage URL, optional logo, relays, and key file locations. After generating, host the file at a public HTTPS URL and include the URL and its hash in your pool registration certificate.
 
 ## Maintenance

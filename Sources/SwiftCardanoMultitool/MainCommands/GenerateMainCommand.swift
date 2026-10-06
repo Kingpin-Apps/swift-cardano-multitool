@@ -10,6 +10,7 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
     case paymentAndStakeAddress = "payment-and-stake-address"
     case keyRotation = "key-rotation"
     case poolJSON = "pool-json"
+    case poolID = "pool-id"
     case dRep = "drep"
     case policy = "policy"
     case assetMeta = "asset-meta"
@@ -31,6 +32,7 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .paymentAndStakeAddress: return "Payment and Stake Address"
             case .keyRotation: return "Key Rotation"
             case .poolJSON: return "Pool.json"
+            case .poolID: return "Pool ID Files"
             case .dRep: return "DRep Keys"
             case .policy: return "Policy"
             case .assetMeta: return "Asset Meta"
@@ -54,6 +56,7 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
             case .paymentAndStakeAddress: return "Generate a payment and stake address."
             case .keyRotation: return "Rotate KES keys and generate a new operational certificate."
             case .poolJSON: return "Generate a new pool.json file."
+            case .poolID: return "Generate the <name>.pool.id and <name>.pool.id-bech files."
             case .dRep: return "Generate Cardano governance DRep (Delegated Representative) keys."
             case .policy: return "Generate a Cardano native-script minting policy."
             case .assetMeta: return "Generate signed off-chain asset metadata for the Cardano Token Registry."
@@ -96,6 +99,8 @@ enum GenerateCommands: String, Subcommandable, AlignedChoiceDescribable {
                 return GenerateMainCommand.KeyRotation.self
             case .poolJSON:
                 return GenerateMainCommand.PoolJSON.self
+            case .poolID:
+                return GenerateMainCommand.PoolID.self
             case .dRep:
                 return GenerateMainCommand.DRepKeys.self
             case .policy:
