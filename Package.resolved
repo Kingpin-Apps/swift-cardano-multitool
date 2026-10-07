@@ -1,5 +1,5 @@
 {
-  "originHash" : "0d30236761f30e7ff64b4bb9f000a1eddb03f59c548e18cf24c3f08f9342bf07",
+  "originHash" : "b70b4b531d2e7bf4893a93bd6607d57cb0e4cb4ba314f6373c091e4cc1c4cc0d",
   "pins" : [
     {
       "identity" : "base32",
@@ -186,8 +186,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-cips.git",
       "state" : {
-        "revision" : "ec09cd3a379871415438306959b7f0fb9fbef4b8",
-        "version" : "0.3.8"
+        "revision" : "9f63fd03f63bf7d501b01184cf2c11089e44f124",
+        "version" : "0.4.0"
       }
     },
     {
@@ -240,8 +240,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git",
       "state" : {
-        "revision" : "27ab2eefcfcb4c003957a48908b9734c7e986860",
-        "version" : "1.1.2"
+        "revision" : "4b114a05212ded5a710516862070b954a0147ca2",
+        "version" : "1.2.0"
       }
     },
     {
@@ -249,8 +249,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git",
       "state" : {
-        "revision" : "9b85ee0d062dfa29f5694edcf1de18580ca4bf33",
-        "version" : "0.4.3"
+        "revision" : "6d4f8a598651af5a7f13fc1730ff0ccbb074606f",
+        "version" : "0.5.0"
       }
     },
     {
@@ -330,8 +330,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cose.git",
       "state" : {
-        "revision" : "8fe15e652bd33d9373fcc9695a3b1e5c35983076",
-        "version" : "1.3.1"
+        "revision" : "e85535e86aae58323c5e11c771fe925033a4857c",
+        "version" : "1.3.3"
       }
     },
     {
