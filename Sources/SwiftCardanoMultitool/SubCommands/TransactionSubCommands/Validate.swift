@@ -106,6 +106,9 @@ extension TransactionMainCommand {
                 }
                 
                 displayReport(report)
+                // An invalid transaction fails the command, as the node
+                // would refuse it, so scripts can stop on it.
+                if !report.isValid { throw ExitCode.failure }
             } else {
                 let report = try await txValidator.validate(
                     transaction: tx,
@@ -114,6 +117,7 @@ extension TransactionMainCommand {
                     chainContext: context
                 )
                 spacedPrint("\(try report.toJSON())")
+                if !report.isValid { throw ExitCode.failure }
             }
         }
 
