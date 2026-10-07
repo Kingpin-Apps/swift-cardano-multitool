@@ -1,3 +1,22 @@
+## 0.19.0 (2026-10-07)
+
+### Note
+
+- Every build wizard asks for the transaction TTL, with `--ttl-extra`, `--ttl-override` and `--no-ttl`.
+- `scm transaction validate` checks the fee as the node will charge it once the transaction is signed. An unsigned transaction whose fee covers its unsigned bytes, but not the signatures still to be added, now fails with **Fee Too Small** (the node's `FeeTooSmallUTxO`) before anyone signs.
+- `scm transaction validate` now exits 1 when the transaction is invalid, as text or `--json`, so scripts can stop on it.
+- Fees are the node's minimum exactly: the transaction is sized without its one-byte validity flag, as the ledger sizes it, 44 lovelace less than before. Certificates are written as a tagged set, like the inputs.
+- Picks up swift-cardano-txbuilder 1.2.0, txvalidator 0.5.0, swift-cardano-cips 0.4.0 and swift-cose 1.3.3.
+
+### Feat
+
+- ask for the transaction TTL in every build wizard, with --ttl-extra, --ttl-override and --no-ttl
+
+### Fix
+
+- **tx validate**: exit with failure when the transaction is invalid
+- **deps**: exact fees and hardware wallet builds from swift-cardano-txbuilder 1.2.0, and the signed-size fee check from swift-cardano-txvalidator 0.5.0
+
 ## 0.18.0 (2026-10-06)
 
 ### Note
