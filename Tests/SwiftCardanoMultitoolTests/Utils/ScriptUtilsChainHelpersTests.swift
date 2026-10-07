@@ -72,6 +72,13 @@ struct DisplayChainInfoTests {
         try await displayChainInfo(context: mock, tip: 100, ttl: 1_100)
     }
 
+    @Test("prints chain info without a TTL")
+    func noTTL() async throws {
+        let mock = MockChainContext(name: "Test", type: .online, networkId: .mainnet)
+        mock.stubEpoch = { 500 }
+        try await displayChainInfo(context: mock, tip: 100, ttl: nil)
+    }
+
     @Test("throws when the epoch stub throws")
     func propagatesEpochError() async {
         struct Boom: Error {}

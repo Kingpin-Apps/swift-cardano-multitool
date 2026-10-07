@@ -89,8 +89,6 @@ struct GovernanceActionInputs {
     var deposit: UInt64
     let anchor: Anchor
     let skipAnchorVerify: Bool
-    let ttlExtra: UInt64
-    let ttlOverride: UInt64?
     let generateOnly: Bool
     /// Optional override for the emitted `.action` file path. When nil the executor derives
     /// `<fee-payment-name>_<type-slug>_<timestamp>.action` in the current directory.
@@ -495,27 +493,18 @@ extension TransactionSendable {
             return
         }
 
-        // 6. UTXO query + TTL computation.
+        // 6. UTXO query.
         let utxos = try await queryAndFilterUtxos(
             feePaymentAddress: feePaymentAddress.info,
             context: context,
             config: config
         )
 
-        let ttl: UInt64
-        if let override = inputs.ttlOverride {
-            ttl = override
-        } else {
-            let tip = try await context.lastBlockSlot()
-            ttl = UInt64(tip) &+ inputs.ttlExtra
-        }
-
         // 7. Wire up TxBuilder. Cardano-cli mode threads the action file through buildArgs;
         // SwiftCardano mode calls addProposal directly so the proposal procedure is encoded in
-        // the body.
+        // the body. The TTL comes from the shared --ttl-* options inside buildTransaction.
         let logger = getLogger(config: config)
         let txBuilder = TxBuilder(context: context, logger: logger)
-        txBuilder.ttl = SlotNumber(ttl)
 
         var extraBuildArgs: [String] = []
         if transactionOptions.useCardanoCLI {
@@ -582,8 +571,6 @@ extension TransactionSendable {
     /// `--proposal-file <path>` per file. Mirrors `25b_regAction.sh`.
     mutating func runSubmitActionFiles(
         actionFiles: [FilePath],
-        ttlExtra: UInt64,
-        ttlOverride: UInt64?,
         outFile: inout FilePath?
     ) async throws {
         guard !actionFiles.isEmpty else {
@@ -638,17 +625,9 @@ extension TransactionSendable {
             config: config
         )
 
-        let ttl: UInt64
-        if let override = ttlOverride {
-            ttl = override
-        } else {
-            let tip = try await context.lastBlockSlot()
-            ttl = UInt64(tip) &+ ttlExtra
-        }
-
+        // The TTL comes from the shared --ttl-* options inside buildTransaction.
         let logger = getLogger(config: config)
         let txBuilder = TxBuilder(context: context, logger: logger)
-        txBuilder.ttl = SlotNumber(ttl)
 
         var extraBuildArgs: [String] = []
         if transactionOptions.useCardanoCLI {
@@ -728,12 +707,6 @@ struct SharedGovernanceActionOptions: ParsableArguments {
 
     @Option(name: .long, help: "Override the on-chain governance action deposit (lovelace). Defaults to the protocol parameter.")
     var deposit: UInt64 = 0
-
-    @Option(name: .long, help: "Extra slots added to chain tip when computing TTL (default: 500).")
-    var ttlExtra: UInt64 = 500
-
-    @Option(name: .long, help: "Override TTL with an absolute slot (skips tip + extra computation).")
-    var ttlOverride: UInt64?
 
     @Flag(name: .long, help: "Generate just the .action file and exit — do not build or submit a transaction.")
     var generateOnly: Bool = false

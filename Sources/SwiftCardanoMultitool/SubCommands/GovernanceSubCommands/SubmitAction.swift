@@ -29,12 +29,6 @@ extension GovernanceMainCommand {
         @Option(name: .long, parsing: .upToNextOption, help: "Path to a .action file. Repeatable.")
         var actionFile: [FilePath] = []
 
-        @Option(name: .long, help: "Extra slots added to chain tip when computing TTL (default: 500).")
-        var ttlExtra: UInt64 = 500
-
-        @Option(name: .long, help: "Override TTL with an absolute slot.")
-        var ttlOverride: UInt64?
-
         @OptionGroup var transactionOptions: SharedTransactionOptions
 
         @Option(name: [.short, .long], help: "Output file for the signed transaction.")
@@ -71,8 +65,6 @@ extension GovernanceMainCommand {
             var localOutFile = outFile
             try await runSubmitActionFiles(
                 actionFiles: actionFile,
-                ttlExtra: ttlExtra,
-                ttlOverride: ttlOverride,
                 outFile: &localOutFile
             )
             outFile = localOutFile

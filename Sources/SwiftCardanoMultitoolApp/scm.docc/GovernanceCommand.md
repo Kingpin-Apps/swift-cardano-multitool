@@ -42,7 +42,7 @@ scm governance vote gov_action1xyz... yes \
 | `--anchor-url` | Optional CIP-100 vote-rationale anchor URL. |
 | `--anchor-hash` | 64-hex anchor blake2b-256 hash (required if `--anchor-url` is set). Compute it with `scm hash anchor-data`. |
 | `--skip-anchor-verify` | Skip download + blake2b + CIP-100 verification of the anchor. |
-| `--ttl-extra` / `--ttl-override` | TTL controls (default: tip + 500 slots). |
+| `--ttl-extra` / `--ttl-override` / `--no-ttl` | Time to live: chain tip + extra slots (default: the configured `ttl_buffer`), an absolute slot, or no expiry. The wizard asks for this. |
 | `--no-sign` | Build without signing, e.g. when the voter key is offline. The unsigned transaction is kept for `scm transaction sign`. |
 | `--submit` | Broadcast the signed vote. Requires signing. |
 

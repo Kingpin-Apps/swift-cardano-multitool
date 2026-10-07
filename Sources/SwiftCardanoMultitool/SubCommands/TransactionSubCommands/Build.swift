@@ -110,6 +110,9 @@ extension TransactionMainCommand {
         @Option(name: .long, help: "Time that transaction is valid until (in slots).")
         var invalidHereafter: Int?
 
+        @Option(name: .long, help: "Set invalid-hereafter to the chain tip plus this many slots (cannot be combined with --invalid-hereafter).")
+        var ttlExtra: UInt64?
+
         // MARK: - Minting
 
         @Option(name: .long, parsing: .upToNextOption, help: "Mint value in multi-asset syntax. Repeat for multiple. Each mint value should be followed by its script via --extra-args.")
@@ -192,6 +195,9 @@ extension TransactionMainCommand {
                 guard ref.range(of: pattern, options: .regularExpression) != nil else {
                     throw ValidationError("Invalid reference input format '\(ref)'. Expected: txHash#index")
                 }
+            }
+            if ttlExtra != nil, invalidHereafter != nil {
+                throw ValidationError("--ttl-extra and --invalid-hereafter cannot be combined.")
             }
         }
 
@@ -338,10 +344,20 @@ extension TransactionMainCommand {
                 }
             }
 
+            // === REQUIRED: Time To Live ===
+            if invalidHereafter == nil, ttlExtra == nil {
+                let ttlBuffer = try getCardanoConfig(config: try await MultitoolConfig.load()).ttlBuffer
+                switch promptTTLChoice(defaultExtra: UInt64(max(ttlBuffer, 1))) {
+                case .tipPlus(let extra): ttlExtra = extra
+                case .absolute(let slot): invalidHereafter = Int(slot)
+                case .never: break
+                }
+            }
+
             // === OPTIONAL SECTIONS — multi-select ===
             let optionalSectionChoices: [String] = [
                 "Minting",
-                "Validity Window (invalid-before / invalid-hereafter)",
+                "Validity Start (invalid-before)",
                 "Certificates",
                 "Withdrawals",
                 "Collateral (for Plutus scripts)",
@@ -395,25 +411,17 @@ extension TransactionMainCommand {
                 }
             }
 
-            // === OPTIONAL: Validity Window ===
-            if needs.contains("Validity Window (invalid-before / invalid-hereafter)") {
-                spacedPrint("\n\(.primary("━━━ Validity Window ━━━"))\n")
+            // === OPTIONAL: Validity Start ===
+            if needs.contains("Validity Start (invalid-before)") {
+                spacedPrint("\n\(.primary("━━━ Validity Start ━━━"))\n")
                 let beforeStr = noora.textPrompt(
                     title: "Invalid Before",
                     prompt: "Enter invalid-before slot (leave empty to skip):",
+                    description: "The transaction is invalid until this slot. The expiry (invalid-hereafter) was chosen above.",
                     collapseOnAnswer: true
                 ).trimmingCharacters(in: .whitespacesAndNewlines)
                 if !beforeStr.isEmpty, let slot = Int(beforeStr) {
                     invalidBefore = slot
-                }
-
-                let hereafterStr = noora.textPrompt(
-                    title: "Invalid Hereafter",
-                    prompt: "Enter invalid-hereafter slot (leave empty to skip):",
-                    collapseOnAnswer: true
-                ).trimmingCharacters(in: .whitespacesAndNewlines)
-                if !hereafterStr.isEmpty, let slot = Int(hereafterStr) {
-                    invalidHereafter = slot
                 }
             }
 
@@ -812,6 +820,21 @@ extension TransactionMainCommand {
             txOut = try await resolveTxOutAddresses(txOut, network: network)
             if let returnCollateral = txOutReturnCollateral {
                 txOutReturnCollateral = try await resolveTxOutAddresses([returnCollateral], network: network).first
+            }
+
+            // Resolve a relative TTL against the chain tip now, so it is as fresh as possible.
+            if invalidHereafter == nil, let ttlExtra {
+                let context = try await getContext(config: config)
+                let tip = try await noora.progressStep(
+                    message: "Querying the chain tip for the TTL...",
+                    successMessage: "Chain tip retrieved.",
+                    errorMessage: "Failed to query the chain tip.",
+                    showSpinner: true
+                ) { _ in
+                    try await context.lastBlockSlot()
+                }
+                invalidHereafter = Int(UInt64(tip) &+ ttlExtra)
+                spacedPrint("TTL (invalid-hereafter): \(.primary("\(invalidHereafter!)")) (tip \(tip) + \(ttlExtra) slots)")
             }
 
             spacedPrint("\n\(.primary("━━━ Building Transaction ━━━"))\n")

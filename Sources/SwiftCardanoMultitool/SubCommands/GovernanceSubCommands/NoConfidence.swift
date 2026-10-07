@@ -77,8 +77,6 @@ extension GovernanceMainCommand {
                 deposit: actionOptions.deposit,
                 anchor: anchor,
                 skipAnchorVerify: actionOptions.skipAnchorVerify,
-                ttlExtra: actionOptions.ttlExtra,
-                ttlOverride: actionOptions.ttlOverride,
                 generateOnly: actionOptions.generateOnly,
                 actionOutFile: actionOptions.actionOutFile
             )

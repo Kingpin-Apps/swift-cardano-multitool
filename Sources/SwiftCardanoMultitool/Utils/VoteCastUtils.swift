@@ -30,8 +30,6 @@ struct VoteCastInputs {
     let choice: Vote
     let anchor: Anchor?
     let skipAnchorVerify: Bool
-    let ttlExtra: UInt64
-    let ttlOverride: UInt64?
 }
 
 // MARK: - Role inference
@@ -291,19 +289,10 @@ extension TransactionSendable {
             config: config
         )
 
-        // 4. TTL — explicit override wins, otherwise tip + extra slots
-        let ttl: UInt64
-        if let override = inputs.ttlOverride {
-            ttl = override
-        } else {
-            let tip = try await context.lastBlockSlot()
-            ttl = UInt64(tip) &+ inputs.ttlExtra
-        }
-
-        // 5. Wire up TxBuilder and per-mode vote handling
+        // 4. Wire up TxBuilder and per-mode vote handling. The TTL comes from the shared
+        //    --ttl-* options inside buildTransaction.
         let logger = getLogger(config: config)
         let txBuilder = TxBuilder(context: context, logger: logger)
-        txBuilder.ttl = SlotNumber(ttl)
 
         // Require the voter signer in the witness so the fee accounts for it. The payment
         // signer is inferred by the change-address pathway (matches Mint.runMintOrBurn).
@@ -347,7 +336,6 @@ extension TransactionSendable {
             takeaways: [
                 "Governance action: \(govActionLabel)",
                 "Voter vkey: \(inputs.voter.vkeyPath.string)",
-                "TTL: slot \(ttl)",
                 "Build via: \(transactionOptions.useCardanoCLI ? "cardano-cli" : "SwiftCardano")",
                 "Anchor: \(inputs.anchor.map { $0.anchorUrl.absoluteString } ?? "(none)")"
             ]

@@ -208,3 +208,50 @@ struct TransactionSendableValidateTests {
         #expect(sender.isSame == true)
     }
 }
+
+// MARK: - TTL options
+
+@Suite("SharedTransactionOptions TTL")
+struct SharedTransactionOptionsTTLTests {
+
+    private struct Sender: TransactionSendable {
+        @OptionGroup var transactionOptions: SharedTransactionOptions
+        func run() async throws {}
+    }
+
+    @Test("no TTL flags by default")
+    func defaults() throws {
+        let sender = try Sender.parse([])
+        #expect(!sender.transactionOptions.hasTTLArguments)
+        try sender.transactionOptions.validateTTL()
+    }
+
+    @Test("--ttl-override, --ttl-extra and --no-ttl are each accepted alone")
+    func singleFlags() throws {
+        for args in [["--ttl-override", "42"], ["--ttl-extra", "100"], ["--no-ttl"]] {
+            let sender = try Sender.parse(args)
+            #expect(sender.transactionOptions.hasTTLArguments)
+            try sender.transactionOptions.validateTTL()
+        }
+    }
+
+    @Test("combining TTL flags is rejected")
+    func combinedFlagsRejected() throws {
+        var sender = try Sender.parse(["--ttl-extra", "100", "--no-ttl"])
+        #expect(throws: ValidationError.self) { try sender.validateForTransaction() }
+    }
+
+    @Test("wizard choices map onto the flag fields")
+    func setChoice() throws {
+        var sender = try Sender.parse(["--no-ttl"])
+        sender.transactionOptions.set(ttlChoice: .absolute(7))
+        #expect(sender.transactionOptions.ttlOverride == 7)
+        #expect(!sender.transactionOptions.noTTL)
+        sender.transactionOptions.set(ttlChoice: .tipPlus(9))
+        #expect(sender.transactionOptions.ttlExtra == 9)
+        #expect(sender.transactionOptions.ttlOverride == nil)
+        sender.transactionOptions.set(ttlChoice: .never)
+        #expect(sender.transactionOptions.noTTL)
+        #expect(sender.transactionOptions.ttlExtra == nil)
+    }
+}

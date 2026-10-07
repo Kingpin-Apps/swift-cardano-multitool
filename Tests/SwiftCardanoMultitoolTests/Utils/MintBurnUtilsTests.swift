@@ -123,9 +123,9 @@ struct MintBurnUtilsTests {
         #expect(ma.data[scriptHash]?.data[defaultAsset] == 1)
     }
 
-    // MARK: - computeMintBurnTTL
+    // MARK: - mintBurnTTLCap
 
-    @Test("Unlimited policy → tip + extra")
+    @Test("Unlimited policy → no cap")
     func ttlUnlimited() throws {
         let policy = LoadedMintBurnPolicy(
             name: "p",
@@ -136,13 +136,8 @@ struct MintBurnUtilsTests {
             isHardwareWallet: false,
             validBeforeSlot: nil
         )
-        let ttl = try computeMintBurnTTL(
-            tipSlot: 1_000,
-            policy: policy,
-            extraSlots: 500,
-            action: .mint
-        )
-        #expect(ttl == 1_500)
+        let cap = try mintBurnTTLCap(tipSlot: 1_000, policy: policy, action: .mint)
+        #expect(cap == nil)
     }
 
     @Test("Time-locked policy clamps TTL to validBeforeSlot - 1 when smaller")
@@ -156,18 +151,13 @@ struct MintBurnUtilsTests {
             isHardwareWallet: false,
             validBeforeSlot: 1_100
         )
-        let ttl = try computeMintBurnTTL(
-            tipSlot: 1_000,
-            policy: policy,
-            extraSlots: 500,
-            action: .mint
-        )
-        // tip + extra would be 1500; policy expires at 1100; clamp to 1099.
-        #expect(ttl == 1_099)
+        let cap = try mintBurnTTLCap(tipSlot: 1_000, policy: policy, action: .mint)
+        // Policy expires at 1100; the TTL may not pass 1099.
+        #expect(cap == 1_099)
     }
 
-    @Test("Time-locked policy still in the future returns tip + extra when smaller than the clamp")
-    func ttlTimeLockedPicksTipPlusExtraWhenSmaller() throws {
+    @Test("Time-locked policy far in the future caps at validBeforeSlot - 1")
+    func ttlTimeLockedFarFuture() throws {
         let policy = LoadedMintBurnPolicy(
             name: "p",
             policyId: String(repeating: "a", count: 56),
@@ -177,13 +167,8 @@ struct MintBurnUtilsTests {
             isHardwareWallet: false,
             validBeforeSlot: 100_000
         )
-        let ttl = try computeMintBurnTTL(
-            tipSlot: 1_000,
-            policy: policy,
-            extraSlots: 500,
-            action: .mint
-        )
-        #expect(ttl == 1_500)
+        let cap = try mintBurnTTLCap(tipSlot: 1_000, policy: policy, action: .mint)
+        #expect(cap == 99_999)
     }
 
     @Test("Expired time-locked policy throws")
@@ -198,12 +183,7 @@ struct MintBurnUtilsTests {
             validBeforeSlot: 500
         )
         #expect(throws: (any Error).self) {
-            _ = try computeMintBurnTTL(
-                tipSlot: 1_000,
-                policy: policy,
-                extraSlots: 100,
-                action: .burn
-            )
+            _ = try mintBurnTTLCap(tipSlot: 1_000, policy: policy, action: .burn)
         }
     }
 

@@ -698,7 +698,7 @@ scm transaction validate
 
 #### Signing with offline keys
 
-Every command that builds a transaction (`send`, `certificate … --generate-transaction`, `governance`, `asset`, `transaction rewards-withdraw`) asks **Sign the transaction?** first, and only asks **Submit?** when you sign. Answer no, or pass `--no-sign`, and the transaction is built without reading any signing key. The unsigned `.tx` file is kept so you can sign it where the keys live and broadcast it from an online machine:
+Every command that builds a transaction (`send`, `certificate … --generate-transaction`, `governance`, `asset`, `transaction rewards-withdraw`) asks for a **time to live** (chain tip + extra slots, an absolute slot, or none via `--ttl-extra`, `--ttl-override`, `--no-ttl`), then asks **Sign the transaction?** first, and only asks **Submit?** when you sign. Answer no, or pass `--no-sign`, and the transaction is built without reading any signing key. The unsigned `.tx` file is kept so you can sign it where the keys live and broadcast it from an online machine:
 
 ```bash
 scm certificate stake-register-delegation --stake-address owner --pool-operator pool1... \

@@ -49,12 +49,13 @@ scm transaction build \
 | `--metadata-cbor-file` | Attach CBOR metadata. Repeatable. |
 | `--vote-file` | Include a governance vote. Repeatable. |
 | `--invalid-before` / `--invalid-hereafter` | Validity slot window. |
+| `--ttl-extra` | Set `invalid-hereafter` to the chain tip plus this many slots (cannot be combined with `--invalid-hereafter`). |
 | `--witness-override` | Override the witness count used in fee estimation. |
 | `--out-file`, `-o` | Output filepath of the JSON transaction body. |
 | `--sign` | Sign the transaction after building (prompts for the signing keys). |
 | `--submit` | Sign and submit the transaction after building. |
 
-The wizard asks whether to sign the transaction, and only asks whether to submit it when you sign. When signing, it then prompts for the signing keys.
+The wizard always asks for the time to live: chain tip plus extra slots (default 500, queried when the transaction is built), an absolute slot, or none so the transaction never expires. The wizard asks whether to sign the transaction, and only asks whether to submit it when you sign. When signing, it then prompts for the signing keys.
 
 For advanced Plutus script options (`--spending-tx-in-reference`, `--tx-in-script-file`, etc.), pass `--use-cardano-cli` (from `SharedTransactionOptions`) and any extra cardano-cli arguments through `--extra-args`.
 
@@ -252,6 +253,7 @@ scm transaction rewards-withdraw \
 | `--to-address`, `-t` | Where to send the withdrawn rewards. |
 | `--fee-payment-address`, `-f` | Address that pays the transaction fee. Defaults to the rewards destination. |
 | `--message`, `-m` | CIP-20 transaction message. Repeatable. |
+| `--ttl-extra` / `--ttl-override` / `--no-ttl` | Time to live: chain tip + extra slots (default: the configured `ttl_buffer`), an absolute slot, or no expiry. The wizard asks for this. |
 | `--no-sign` | Build without signing, e.g. when the keys are offline. |
 | `--submit` | Broadcast the signed transaction. |
 

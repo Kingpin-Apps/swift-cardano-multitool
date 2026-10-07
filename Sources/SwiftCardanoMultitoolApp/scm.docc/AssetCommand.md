@@ -42,8 +42,7 @@ scm asset mint \
 | `--policy-name` | Stem of the policy on disk. Loads `<name>.policy.{id,script,vkey,skey\|hwsfile}`. |
 | `--asset-name` | Asset name. Plain ASCII (e.g. `MYTOK`) or `{hex}`. Max 32 bytes. |
 | `--amount` | Number of tokens to mint (positive integer). |
-| `--ttl-extra` | Extra slots added to the chain tip when computing TTL (default: 500). |
-| `--ttl-override` | Override TTL with an absolute slot (skips tip + extra computation). |
+| `--ttl-extra` / `--ttl-override` / `--no-ttl` | Time to live: chain tip + extra slots (default: the configured `ttl_buffer`), an absolute slot, or no expiry. The wizard asks for this. |
 | `--out-file`, `-o` | Output file for the signed transaction. Defaults to `<addr>-<timestamp>.mint.signed.tx`. |
 | `--no-sign` | Build without signing, e.g. when the keys are offline. The unsigned transaction is kept for `scm transaction sign`. |
 | `--submit` | Broadcast the signed transaction. Requires signing. |

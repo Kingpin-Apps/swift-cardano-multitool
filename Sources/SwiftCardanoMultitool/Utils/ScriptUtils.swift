@@ -898,15 +898,17 @@ public func queryChainState(
 public func displayChainInfo(
     context: any ChainContext,
     tip: Int,
-    ttl: Int
+    ttl: Int?
 ) async throws {
     // Display chain info
     print(noora.format(
         "\n\(.primary("━━━ Chain Status ━━━"))\n"
     ))
     
+    let ttlNote = ttl.map { "(setting TTL[invalid_hereafter] to \($0))" }
+        ?? "(no TTL — the transaction never expires)"
     spacedPrint(
-        "Current Slot-Height: \(.primary("\(tip)")) \(.muted("(setting TTL[invalid_hereafter] to \(ttl))"))"
+        "Current Slot-Height: \(.primary("\(tip)")) \(.muted(ttlNote))"
     )
     
     spacedPrint(

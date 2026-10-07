@@ -59,14 +59,6 @@ extension GovernanceMainCommand {
         @Flag(name: .long, help: "Skip download + blake2b + CIP-100 verification of the anchor.")
         var skipAnchorVerify: Bool = false
 
-        // MARK: - TTL controls
-
-        @Option(name: .long, help: "Extra slots added to chain tip when computing TTL (default: 500).")
-        var ttlExtra: UInt64 = 500
-
-        @Option(name: .long, help: "Override TTL with an absolute slot (skips tip + extra computation).")
-        var ttlOverride: UInt64?
-
         // MARK: - Output
 
         @Option(name: [.short, .long], help: "Output file for the signed transaction. Defaults to <voterName>-<timestamp>.vote.signed.tx.")
@@ -189,9 +181,7 @@ extension GovernanceMainCommand {
                 voter: voter,
                 choice: choice.asCoreVote,
                 anchor: anchor,
-                skipAnchorVerify: skipAnchorVerify,
-                ttlExtra: ttlExtra,
-                ttlOverride: ttlOverride
+                skipAnchorVerify: skipAnchorVerify
             )
 
             var localOutFile = outFile

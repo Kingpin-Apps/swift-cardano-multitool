@@ -227,18 +227,17 @@ func buildMintMultiAsset(
 
 // MARK: - TTL computation
 
-/// Compute a TTL slot for a mint/burn transaction.
-/// - If the policy has a `before` slot constraint, return `min(beforeSlot - 1, tip + extraSlots)`.
+/// The latest TTL slot a mint/burn transaction may use, or nil when the policy is not time-locked.
+/// - If the policy has a `before` slot constraint, return `beforeSlot - 1`; a time-locked policy
+///   needs a TTL even when the user asked for none, and the TTL may not reach the lock.
 ///   If the policy has already expired (`tip >= beforeSlot`), throw with a clear error.
-/// - Otherwise return `tip + extraSlots`.
-func computeMintBurnTTL(
+/// - Otherwise return nil: any TTL, or none at all, is fine.
+func mintBurnTTLCap(
     tipSlot: UInt64,
     policy: LoadedMintBurnPolicy,
-    extraSlots: UInt64,
     action: MintAction
-) throws -> UInt64 {
-    let defaultTTL = tipSlot &+ extraSlots
-    guard let policyBefore = policy.validBeforeSlot else { return defaultTTL }
+) throws -> UInt64? {
+    guard let policyBefore = policy.validBeforeSlot else { return nil }
     guard tipSlot < policyBefore else {
         noora.error(.alert(
             "Policy is no longer valid for \(action.verbLower)ing.",
@@ -249,7 +248,7 @@ func computeMintBurnTTL(
         ))
         throw ExitCode.failure
     }
-    return min(policyBefore &- 1, defaultTTL)
+    return policyBefore &- 1
 }
 
 // MARK: - Burn pre-flight
@@ -379,8 +378,6 @@ struct MintBurnInputs {
     let policyName: String
     let assetName: String
     let amount: UInt64
-    let ttlExtra: UInt64
-    let ttlOverride: UInt64?
 }
 
 extension TransactionSendable {
@@ -443,19 +440,10 @@ extension TransactionSendable {
             )
         }
 
-        // 5. TTL — explicit override wins, otherwise compute from tip + policy
-        let ttl: UInt64
-        if let override = inputs.ttlOverride {
-            ttl = override
-        } else {
-            let tip = try await context.lastBlockSlot()
-            ttl = try computeMintBurnTTL(
-                tipSlot: UInt64(tip),
-                policy: policy,
-                extraSlots: inputs.ttlExtra,
-                action: inputs.action
-            )
-        }
+        // 5. A time-locked policy caps the TTL at its expiry; the TTL itself comes from the
+        //    shared --ttl-* options inside buildTransaction.
+        let tip = try await context.lastBlockSlot()
+        let maxTTL = try mintBurnTTLCap(tipSlot: UInt64(tip), policy: policy, action: inputs.action)
 
         // 6. Build mint MultiAsset
         let signedQty = inputs.action.signedAmount(inputs.amount)
@@ -470,7 +458,6 @@ extension TransactionSendable {
         let txBuilder = TxBuilder(context: context, logger: logger)
         txBuilder.mint = mintValue
         txBuilder.nativeScripts = [policy.nativeScript]
-        txBuilder.ttl = SlotNumber(ttl)
 
         // Require the policy signer in the witness so the fee accounts for it.
         let policyVKey = try PaymentVerificationKey.load(from: policy.vkeyPath.string)
@@ -488,7 +475,7 @@ extension TransactionSendable {
             takeaways: [
                 "Asset name: \(assetDisplay.isEmpty ? "(default)" : assetDisplay)",
                 "Policy script: \(policy.signingKeyPath.string)",
-                "TTL: slot \(ttl)\(policy.validBeforeSlot.map { " (policy valid before \($0))" } ?? "")",
+                "Policy valid before: \(policy.validBeforeSlot.map { "slot \($0)" } ?? "no time lock")",
                 "From / change: \(feePaymentAddress.info.description)"
             ]
         ))
@@ -507,6 +494,7 @@ extension TransactionSendable {
             config: config,
             utxos: utxos,
             witnessOverride: 2,
+            maxTTL: maxTTL,
             protocolParamsFile: protocolParamsFile,
             txRawFile: txRawFile,
             txFile: txFile,

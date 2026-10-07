@@ -46,14 +46,6 @@ extension AssetMainCommand {
         @Option(name: .long, help: "Number of tokens to burn (positive integer).")
         var amount: UInt64?
 
-        // MARK: - TTL controls
-
-        @Option(name: .long, help: "Extra slots added to chain tip when computing TTL (default: 500).")
-        var ttlExtra: UInt64 = 500
-
-        @Option(name: .long, help: "Override TTL with an absolute slot (skips tip + extra computation).")
-        var ttlOverride: UInt64?
-
         // MARK: - Output
 
         @Option(name: [.short, .long], help: "Output file for the signed transaction. Defaults to <addr>-<timestamp>.burn.signed.tx.")
@@ -131,9 +123,7 @@ extension AssetMainCommand {
                 action: .burn,
                 policyName: policyName,
                 assetName: assetName ?? "",
-                amount: amount,
-                ttlExtra: ttlExtra,
-                ttlOverride: ttlOverride
+                amount: amount
             )
 
             var localOutFile = outFile

@@ -25,6 +25,7 @@ Every certificate subcommand accepts the same core flags plus the full set of sh
 | `--message`, `-m` | CIP-20 transaction message. Repeatable. |
 | `--metadata-json` / `--metadata-cbor` | Attach metadata files to the transaction. Repeatable. |
 | `--utxo-filter` / `--utxo-limit` / `--skip-utxo-with-asset` / `--only-utxo-with-asset` | UTxO selection controls. |
+| `--ttl-extra` / `--ttl-override` / `--no-ttl` | Time to live: chain tip + extra slots (default: the configured `ttl_buffer`), an absolute slot, or no expiry. The wizard asks for this. |
 | `--use-cardano-cli` | Build the transaction with cardano-cli instead of SwiftCardano. |
 | `--save` / `--no-save` | Whether to write the built transaction to disk (default: `--save`). |
 | `--sign` / `--no-sign` | Whether to sign the built transaction (default: `--sign`). Use `--no-sign` when the keys are offline; the unsigned transaction is kept for `scm transaction sign`. |

@@ -23,6 +23,7 @@ extension TransactionSendable {
         guard transactionOptions.sign || !transactionOptions.submit else {
             throw ValidationError("--submit requires signing. Remove --no-sign or --submit.")
         }
+        try transactionOptions.validateTTL()
 
         // Validate messages length (64 bytes max)
         for msg in transactionOptions.messages {
@@ -115,6 +116,12 @@ extension TransactionSendable {
             transactionOptions.feePaymentAddress = try await getFeePaymentAddress(
                 title: "Fee Payment Address"
             )
+        }
+
+        // Time to live — defaults to tip + configured ttl_buffer when non-interactive or given as a flag.
+        if isInteractiveSession(), !transactionOptions.hasTTLArguments {
+            let ttlBuffer = try getCardanoConfig(config: try await MultitoolConfig.load()).ttlBuffer
+            transactionOptions.set(ttlChoice: promptTTLChoice(defaultExtra: UInt64(max(ttlBuffer, 1))))
         }
         
         // Messages (optional) — skipped (default) when non-interactive.
@@ -647,6 +654,7 @@ extension TransactionSendable {
         config: MultitoolConfig,
         utxos: [UTxO] = [],
         witnessOverride: Int? = nil,
+        maxTTL: UInt64? = nil,
         buildArgs: [String] = [],
         protocolParamsFile: FilePath,
         txRawFile: FilePath,
@@ -683,15 +691,22 @@ extension TransactionSendable {
             try auxilliaryData?.saveJSON(to: metadataFile.string, overwrite: true)
         }
         
-        let (tip, ttl) = try await queryChainState(
+        let (tip, _) = try await queryChainState(
             context: txBuilder.context,
             config: config
         )
-        
+
+        // TTL from --ttl-extra / --ttl-override / --no-ttl (default: tip + ttl_buffer), capped by
+        // `maxTTL` when the caller needs an upper bound, e.g. a time-locked minting policy.
+        var ttl = try transactionOptions.ttl(tip: tip, config: config)
+        if let maxTTL {
+            ttl = min(ttl ?? maxTTL, maxTTL)
+        }
+
         try await displayChainInfo(
             context: txBuilder.context,
             tip: tip,
-            ttl: ttl
+            ttl: ttl.map { Int($0) }
         )
         
         let utxosToUse: [UTxO]
@@ -752,7 +767,7 @@ extension TransactionSendable {
         )
         
         
-        txBuilder.ttl = SlotNumber(ttl)
+        txBuilder.ttl = ttl.map { SlotNumber($0) }
         txBuilder.auxiliaryData = auxilliaryData
         
         if transactionOptions.useCardanoCLI {
@@ -765,7 +780,7 @@ extension TransactionSendable {
                 config: config,
                 utxos: utxosToUse,
                 transactionOutputs: txBuilder.outputs,
-                ttl: SlotNumber(ttl),
+                ttl: ttl.map { SlotNumber($0) },
                 protocolParamsFile: protocolParamsFile,
                 assetsOutString: assetsOutString,
                 txRawFile: txRawFile,
@@ -807,7 +822,7 @@ extension TransactionSendable {
         config: MultitoolConfig,
         utxos: [UTxO],
         transactionOutputs: [TransactionOutput],
-        ttl: SlotNumber,
+        ttl: SlotNumber?,
         protocolParamsFile: FilePath,
         assetsOutString: String,
         txRawFile: FilePath,
@@ -839,9 +854,11 @@ extension TransactionSendable {
             buildArgs.append(utxo.input.description)
         }
         
-        // Add TTL
-        buildArgs.append("--invalid-hereafter")
-        buildArgs.append("\(ttl)")
+        // Add TTL (omitted with --no-ttl)
+        if let ttl {
+            buildArgs.append("--invalid-hereafter")
+            buildArgs.append("\(ttl)")
+        }
         
         // Add metadata if present
         if let messages = messages, !messages.isEmpty,

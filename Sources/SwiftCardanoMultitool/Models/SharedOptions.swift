@@ -66,4 +66,51 @@ struct SharedTransactionOptions: ParsableArguments {
 
     @Flag(help: "Submit the transaction to the blockchain (requires signing)")
     var submit = false
+
+    // MARK: - Time To Live
+
+    @Option(name: .long, help: "Extra slots added to the chain tip when computing the TTL (invalid-hereafter). Defaults to the configured ttl_buffer.")
+    var ttlExtra: UInt64?
+
+    @Option(name: .long, help: "Override the TTL with an absolute slot (skips tip + extra computation).")
+    var ttlOverride: UInt64?
+
+    @Flag(name: .customLong("no-ttl"), help: "Build the transaction without a TTL so it never expires.")
+    var noTTL = false
+}
+
+extension SharedTransactionOptions {
+    /// True when a TTL flag was given on the command line, so the wizard must not ask.
+    var hasTTLArguments: Bool {
+        ttlExtra != nil || ttlOverride != nil || noTTL
+    }
+
+    /// Throws when the TTL flags contradict each other.
+    func validateTTL() throws {
+        let given = [ttlExtra != nil, ttlOverride != nil, noTTL].filter { $0 }.count
+        guard given <= 1 else {
+            throw ValidationError("--ttl-extra, --ttl-override and --no-ttl cannot be combined.")
+        }
+    }
+
+    /// Store a wizard answer in the same fields the command-line flags use.
+    mutating func set(ttlChoice: TTLChoice) {
+        ttlExtra = nil
+        ttlOverride = nil
+        noTTL = false
+        switch ttlChoice {
+        case .tipPlus(let extra): ttlExtra = extra
+        case .absolute(let slot): ttlOverride = slot
+        case .never: noTTL = true
+        }
+    }
+
+    /// The absolute TTL slot for a transaction built at `tip`, or nil when it should never
+    /// expire. Without any TTL flag the chain tip plus the configured `ttl_buffer` is used.
+    func ttl(tip: Int, config: MultitoolConfig) throws -> UInt64? {
+        if noTTL { return nil }
+        if let ttlOverride { return ttlOverride }
+        let extra = try ttlExtra ?? UInt64(getCardanoConfig(config: config).ttlBuffer)
+        return UInt64(tip) &+ extra
+    }
 }
