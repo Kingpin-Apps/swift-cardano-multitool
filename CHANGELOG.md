@@ -1,3 +1,9 @@
+## 0.19.1 (2026-10-08)
+
+### Fix
+
+- **deps**: show pool and DRep delegations from newer cardano-cli via swift-cardano-utils 0.5.8
+
 ## 0.19.0 (2026-10-07)
 
 ### Note
