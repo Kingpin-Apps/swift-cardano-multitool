@@ -34,6 +34,7 @@ The tool provides two interaction modes:
 - <doc:GovernanceCommand>
 - <doc:HashCommand>
 - <doc:InstallCommand>
+- <doc:PingCommand>
 - <doc:ProtectCommand>
 - <doc:QueryCommand>
 - <doc:RunCommand>

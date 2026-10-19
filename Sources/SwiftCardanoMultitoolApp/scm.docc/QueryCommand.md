@@ -244,5 +244,6 @@ The positional filter accepts `all`, a pool or calidus bech32 ID, a 64-char hex 
 ## Notes
 
 - Queries require the node to be fully synced with the network for accurate results. Use `scm query tip` to check sync status first.
+- To read a relay's tip, or a local node's tip over its socket, without a configured chain context, use `scm ping <node> --mode tip` (see <doc:PingCommand>).
 - Some queries (like `leadership-schedule`) require both the running node socket and specific private key material. Keep your VRF signing key accessible on the block-producing server.
 - If Blockfrost or Koios is configured, many queries can fall back to those APIs when the local node socket is unavailable.
