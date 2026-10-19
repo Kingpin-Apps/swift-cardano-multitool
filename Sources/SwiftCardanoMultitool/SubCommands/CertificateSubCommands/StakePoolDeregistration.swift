@@ -113,7 +113,6 @@ extension CertificateMainCommand {
                         validationRules: [NonEmptyValidationRule(error: "Pool name cannot be empty.")]
                     ).trimmingCharacters(in: .whitespacesAndNewlines)
                     
-                    let cwd = FilePath(FileManager.default.currentDirectoryPath)
                     poolJSON = FileUtils.absolutePath("\(poolName!).pool.json")
                     
                 case .poolJSON:

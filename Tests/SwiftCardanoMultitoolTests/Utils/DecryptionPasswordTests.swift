@@ -35,7 +35,7 @@ struct DecryptionPasswordTests {
 
     @Test("rejects a weak environment password instead of falling back to a prompt")
     func rejectsWeakEnvironmentPassword() async throws {
-        try await withEnvPassword("short") {
+        await withEnvPassword("short") {
             // Assert the specific error: a fallthrough to the interactive prompt would also
             // throw in a non-TTY test process, which would pass a looser expectation.
             await #expect(throws: ExitCode.validationFailure) {
@@ -46,7 +46,7 @@ struct DecryptionPasswordTests {
 
     @Test("an empty environment value is treated as set and rejected")
     func rejectsEmptyEnvironmentPassword() async throws {
-        try await withEnvPassword("") {
+        await withEnvPassword("") {
             // Assert the specific error: a fallthrough to the interactive prompt would also
             // throw in a non-TTY test process, which would pass a looser expectation.
             await #expect(throws: ExitCode.validationFailure) {

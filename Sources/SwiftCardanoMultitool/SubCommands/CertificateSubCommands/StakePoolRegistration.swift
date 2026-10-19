@@ -210,7 +210,6 @@ extension CertificateMainCommand {
                         validationRules: [NonEmptyValidationRule(error: "Pool name cannot be empty.")]
                     ).trimmingCharacters(in: .whitespacesAndNewlines)
                     
-                    let cwd = FilePath(FileManager.default.currentDirectoryPath)
                     poolJSON = FileUtils.absolutePath("\(poolName!).pool.json")
                     
                 case .poolJSON:
@@ -262,7 +261,6 @@ extension CertificateMainCommand {
                 return
             }
 
-            let workingDirectory = FilePath(FileManager.default.currentDirectoryPath)
             if poolJSON == nil, let poolName {
                 poolJSON = FileUtils.absolutePath("\(poolName).pool.json")
             }
@@ -1497,7 +1495,6 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
         metadataFile: FilePath?,
         keys: PoolKeyFileMatcher
     ) async throws {
-        let cwd = FilePath(FileManager.default.currentDirectoryPath)
         let name: String
         if isInteractiveSession() {
             let save = noora.yesOrNoChoicePrompt(
