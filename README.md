@@ -336,7 +336,7 @@ The file is plain JSON and safe to edit by hand, but fields like `registration`,
 | [`governance`](#governance) | — | Cast votes and submit Conway-era governance proposals |
 | [`hash`](#hash) | — | Hashes and IDs of keys, scripts, metadata, anchor data, and genesis files |
 | [`install`](#install) | — | Install Cardano ecosystem tools |
-| [`ping`](#ping) | — | Ping remote relays, or read their tip or handshake parameters |
+| [`ping`](#ping) | — | Ping relays, or read a node's tip or supported versions |
 | [`protect`](#protect) | — | Encrypt and decrypt sensitive files |
 | [`query`](#query) | — | Query live blockchain data |
 | [`run`](#run) | — | Start Cardano node services |
@@ -565,22 +565,23 @@ scm install completions        # Tab completion for scm in your shell
 
 ### `ping`
 
-Talk to remote cardano-node relays over the node-to-node protocol. No local node or API key is needed. `--mode` picks what to ask each node:
+Talk to cardano-node directly, with no API key needed. Give a relay as `host:port` (node-to-node, over TCP), or a local node's socket path (node-to-client; anything with a `/`). `--mode` picks what to ask:
 
 | Mode | What it does |
 |------|--------------|
-| `ping` (default) | Connects and completes the handshake `--count` times (default 4), timing each round trip, then prints min/avg/max and loss |
+| `ping` (default) | Connects once, shows the handshake time, then sends `--count` keep-alives (default 4) and times each round trip, like `cardano-cli ping`. Relays only. |
 | `tip` | Reads the node's chain tip (slot, block number, block hash) over chain-sync |
-| `query` | Shows the handshake parameters the node agreed to: protocol version, network magic, diffusion mode, peer sharing |
+| `query` | Lists every protocol version the node supports, with network magic, diffusion mode, peer sharing and Peras flags |
 
 ```bash
-scm ping backbone.cardano.iog.io:3001                     # 4 pings, port defaults to 3001
-scm ping relay1:3001 [2001:db8::1]:3001 --count 10        # several nodes, IPv6 in brackets
+scm ping backbone.cardano.iog.io:3001                     # 4 keep-alives, port defaults to 3001
+scm ping relay1:3001 [2001:db8::1]:3001 --count 10        # several relays, IPv6 in brackets
 scm ping backbone.cardano.iog.io:3001 --mode tip          # remote chain tip
 scm ping preview-node.play.dev.cardano.org --mode query --network-magic 2 --json
+scm ping ~/cardano/db/node.socket --mode tip              # local node over its socket
 ```
 
-The handshake uses the network from your config, or mainnet when there is no config. Use `--network-magic` for a node on another network; if the magic is wrong, the error tells you the node's magic. `--json` gives machine-readable output. The command exits non-zero when a node does not answer, so it also works as a health check.
+The handshake uses the network from your config, or mainnet when there is no config. Use `--network-magic` for a node on another network; if the magic is wrong, the error names the node's magic. `--json` gives machine-readable output. The command exits non-zero when a node does not answer, so it also works as a health check. On macOS a socket path must be shorter than 104 characters.
 
 ---
 

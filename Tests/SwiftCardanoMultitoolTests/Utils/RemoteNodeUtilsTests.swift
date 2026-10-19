@@ -28,6 +28,18 @@ struct RemoteNodeAddressTests {
         #expect(RemoteNodeAddress(argument: "2001:db8::1") == RemoteNodeAddress(host: "2001:db8::1", port: 3001))
     }
 
+    @Test("a path is a socket, with ~ expanded")
+    func socketPaths() {
+        #expect(RemoteNodeAddress(argument: "./node.socket") == .socket(path: "./node.socket"))
+        #expect(RemoteNodeAddress(argument: "/ipc/node.socket") == .socket(path: "/ipc/node.socket"))
+        let home = RemoteNodeAddress(argument: "~/db/node.socket")
+        #expect(home == .socket(path: NSHomeDirectory() + "/db/node.socket"))
+        #expect(home?.isSocket == true)
+        #expect(home?.protocolName == "node-to-client")
+        #expect(RemoteNodeAddress(host: "a").protocolName == "node-to-node")
+        #expect(RemoteNodeAddress.socket(path: "/ipc/node.socket").description == "/ipc/node.socket")
+    }
+
     @Test("rejects bad input", arguments: ["", "host:", ":3001", "host:0", "host:65536", "host:abc", "[::1", "[]:3001", "[::1]3001"])
     func rejects(_ input: String) {
         #expect(RemoteNodeAddress(argument: input) == nil)
@@ -58,6 +70,54 @@ struct RemoteNodeMagicTests {
         try await Configs.$override.withValue(TestConfigs.make(network: .preview)) {
             let magic = try await resolveNetworkMagic(nil)
             #expect(magic == 2)
+        }
+    }
+
+    @Test("connections advertise InitiatorOnly and send their own keep-alives")
+    func configuration() {
+        let tcp = remoteNodeConfiguration(address: RemoteNodeAddress(host: "relay", port: 6000), networkMagic: 2, timeoutSeconds: 3)
+        #expect(tcp.connection.host == "relay")
+        #expect(tcp.connection.port == 6000)
+        #expect(tcp.connection.networkMagic == 2)
+        #expect(tcp.protocol.initiatorOnly)
+        #expect(tcp.protocol.keepAliveIntervalSeconds == 0)
+        #expect(tcp.protocol.keepAliveTimeoutSeconds == 3)
+
+        let socket = remoteNodeConfiguration(address: .socket(path: "/ipc/node.socket"), networkMagic: 1, timeoutSeconds: 3)
+        #expect(socket.connection.socketPath == "/ipc/node.socket")
+    }
+
+    @Test("NtC versions are shown without bit 15")
+    func ntcDisplayVersion() {
+        #expect(displayVersion(32791) == 23)
+        #expect(displayVersion(15) == 15)
+        let ntc = RemoteVersion(QueriedVersion(version: 32791, versionData: .nodeToClient(networkMagic: 2, query: false)))
+        #expect(ntc.version == 23)
+        #expect(ntc.diffusionMode == nil)
+        #expect(ntc.peerSharing == nil)
+    }
+
+    @Test("NtN version rows carry diffusion mode, peer sharing and Peras")
+    func ntnVersionRow() {
+        let row = RemoteVersion(QueriedVersion(
+            version: 16,
+            versionData: .nodeToNode(networkMagic: 1, initiatorOnly: false, peerSharing: 1, query: false),
+            perasSupport: true
+        ))
+        #expect(row.version == 16)
+        #expect(row.diffusionMode == "InitiatorAndResponder")
+        #expect(row.peerSharing == true)
+        #expect(row.perasSupport == true)
+    }
+
+    @Test("a missing socket gets a clear error")
+    func missingSocket() async {
+        let address = RemoteNodeAddress.socket(path: "/nonexistent/scm-test.socket")
+        do {
+            _ = try await queryRemoteTip(address, networkMagic: 2, timeoutSeconds: 1)
+            Issue.record("expected an error")
+        } catch {
+            #expect(describeRemoteError(error) == "no socket at /nonexistent/scm-test.socket. Is cardano-node running with --socket-path set to it?")
         }
     }
 
@@ -103,6 +163,14 @@ struct PingMainCommandTests {
         #expect(json == #"{"error":"a:3001 closed the chain-sync stream without reporting a tip.","node":"a:3001"}"#)
     }
 
+    @Test("ping mode rejects a socket; tip and query accept one")
+    func socketModes() throws {
+        #expect(throws: (any Error).self) { try PingMainCommand.parse(["./node.socket"]) }
+        let tip = try PingMainCommand.parse(["./node.socket", "--mode", "tip"])
+        #expect(tip.nodes == [.socket(path: "./node.socket")])
+        _ = try PingMainCommand.parse(["./node.socket", "--mode", "query"])
+    }
+
     @Test("rejects a zero count")
     func zeroCount() {
         #expect(throws: (any Error).self) { try PingMainCommand.parse(["a.example", "-c", "0"]) }
@@ -110,11 +178,11 @@ struct PingMainCommandTests {
 
     @Test("summary statistics skip lost pings")
     func summary() {
-        let summary = PingSummary(node: "a:3001", networkMagic: 2, pings: [
-            RemotePingResult(sequence: 1, milliseconds: 10, nodeToNodeVersion: 14, error: nil),
-            RemotePingResult(sequence: 2, milliseconds: nil, nodeToNodeVersion: nil, error: "timeout"),
-            RemotePingResult(sequence: 3, milliseconds: 30, nodeToNodeVersion: 14, error: nil),
-            RemotePingResult(sequence: 4, milliseconds: 20, nodeToNodeVersion: 14, error: nil),
+        let summary = PingSummary(node: "a:3001", networkMagic: 2, nodeToNodeVersion: 15, handshakeMilliseconds: [300, 280], pings: [
+            RemotePingResult(sequence: 1, milliseconds: 10, error: nil),
+            RemotePingResult(sequence: 2, milliseconds: nil, error: "timeout"),
+            RemotePingResult(sequence: 3, milliseconds: 30, error: nil),
+            RemotePingResult(sequence: 4, milliseconds: 20, error: nil),
         ])
         #expect(summary.sent == 4)
         #expect(summary.received == 3)
@@ -122,6 +190,7 @@ struct PingMainCommandTests {
         #expect(summary.minMilliseconds == 10)
         #expect(summary.avgMilliseconds == 20)
         #expect(summary.maxMilliseconds == 30)
-        #expect(summary.nodeToNodeVersion == 14)
+        #expect(summary.nodeToNodeVersion == 15)
+        #expect(summary.handshakeMilliseconds == [300, 280])
     }
 }
