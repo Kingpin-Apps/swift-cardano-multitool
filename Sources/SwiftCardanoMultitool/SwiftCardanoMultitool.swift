@@ -14,6 +14,7 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
     case governance
     case hash
     case install
+    case ping
     case protect
     case query
     case run
@@ -42,6 +43,7 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
             case .governance: return "Governance"
             case .hash: return "Hash"
             case .install: return "Install"
+            case .ping: return "Ping"
             case .protect: return "Protect"
             case .query: return "Query"
             case .run: return "Run"
@@ -67,6 +69,7 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
             case .governance: return "Cast votes and (later) submit governance-action proposals."
             case .hash: return "Hash keys, scripts, metadata, anchor data and genesis files."
             case .install: return "Install cli tools or dependencies."
+            case .ping: return "Ping remote cardano-node relays."
             case .protect: return "Secure sensitive data with a password."
             case .query: return "Get various data from the blockchain."
             case .run: return "Start various Cardano services."
@@ -92,6 +95,7 @@ enum MainCommands: String, CaseIterable, AlignedChoiceDescribable {
             case .governance: return GovernanceMainCommand.self
             case .hash: return HashMainCommand.self
             case .install: return InstallMainCommand.self
+            case .ping: return PingMainCommand.self
             case .protect: return ProtectMainCommand.self
             case .query: return QueryMainCommand.self
             case .run: return RunMainCommand.self

@@ -336,6 +336,7 @@ The file is plain JSON and safe to edit by hand, but fields like `registration`,
 | [`governance`](#governance) | — | Cast votes and submit Conway-era governance proposals |
 | [`hash`](#hash) | — | Hashes and IDs of keys, scripts, metadata, anchor data, and genesis files |
 | [`install`](#install) | — | Install Cardano ecosystem tools |
+| [`ping`](#ping) | — | Ping remote relays, or read their tip or handshake parameters |
 | [`protect`](#protect) | — | Encrypt and decrypt sensitive files |
 | [`query`](#query) | — | Query live blockchain data |
 | [`run`](#run) | — | Start Cardano node services |
@@ -559,6 +560,27 @@ scm install ogmios             # WebSocket bridge for cardano-node
 scm install mithril            # Fast bootstrap via certified snapshots
 scm install completions        # Tab completion for scm in your shell
 ```
+
+---
+
+### `ping`
+
+Talk to remote cardano-node relays over the node-to-node protocol. No local node or API key is needed. `--mode` picks what to ask each node:
+
+| Mode | What it does |
+|------|--------------|
+| `ping` (default) | Connects and completes the handshake `--count` times (default 4), timing each round trip, then prints min/avg/max and loss |
+| `tip` | Reads the node's chain tip (slot, block number, block hash) over chain-sync |
+| `query` | Shows the handshake parameters the node agreed to: protocol version, network magic, diffusion mode, peer sharing |
+
+```bash
+scm ping backbone.cardano.iog.io:3001                     # 4 pings, port defaults to 3001
+scm ping relay1:3001 [2001:db8::1]:3001 --count 10        # several nodes, IPv6 in brackets
+scm ping backbone.cardano.iog.io:3001 --mode tip          # remote chain tip
+scm ping preview-node.play.dev.cardano.org --mode query --network-magic 2 --json
+```
+
+The handshake uses the network from your config, or mainnet when there is no config. Use `--network-magic` for a node on another network; if the magic is wrong, the error tells you the node's magic. `--json` gives machine-readable output. The command exits non-zero when a node does not answer, so it also works as a health check.
 
 ---
 
