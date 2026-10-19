@@ -1,3 +1,23 @@
+## 0.20.0 (2026-10-19)
+
+### Note
+
+- New `scm ping`, modelled on `cardano-cli ping`, with three modes:
+  - `ping` (default) connects once, shows the handshake time, then times `--count` keep-alive round trips.
+  - `--mode tip` reads a node's chain tip.
+  - `--mode query` lists every protocol version the node supports, with diffusion mode, peer sharing and Peras flags.
+- `scm ping` reaches relays as `host:port`, and a local node over its socket when given a path. It needs no API key and no config (it uses mainnet unless `--network-magic` or your config says otherwise). `--json` is supported, and a node that never answers makes it exit 1, so it works as a health check.
+- Picks up swift-cardano-network 1.2.2: NtN v15, the handshake version query, one-shot keep-alive, and library logs on stderr.
+
+### Feat
+
+- **ping**: keep-alive round trips, full version query and socket targets
+- **ping**: ping remote nodes with ping, tip and query modes
+
+### Fix
+
+- clear unused-variable and needless-try build warnings
+
 ## 0.19.1 (2026-10-08)
 
 ### Fix
