@@ -569,7 +569,7 @@ Talk to cardano-node directly, with no API key needed. Give a relay as `host:por
 
 | Mode | What it does |
 |------|--------------|
-| `ping` (default) | Connects once, shows the handshake time, then sends `--count` keep-alives (default 4) and times each round trip, like `cardano-cli ping`. Relays only. |
+| `ping` (default) | Connects once, shows the TCP connect and handshake times, then sends `--count` keep-alives (default 4) and times each round trip, like `cardano-cli ping`. Relays only. |
 | `tip` | Reads the node's chain tip (slot, block number, block hash) over chain-sync |
 | `query` | Lists every protocol version the node supports, with network magic, diffusion mode, peer sharing and Peras flags |
 
@@ -580,6 +580,8 @@ scm ping backbone.cardano.iog.io:3001 --mode tip          # remote chain tip
 scm ping preview-node.play.dev.cardano.org --mode query --network-magic 2 --json
 scm ping ~/cardano/db/node.socket --mode tip              # local node over its socket
 ```
+
+`--timeout` (10 s) bounds the connect and each answer; `--handshake-timeout` (30 s) bounds the handshake on its own, because a busy cardano-node can accept the connection at once and still take many seconds to answer it. When a check fails, the error says which step failed: refused, no answer, closed during the handshake, or handshake too slow.
 
 The handshake uses the network from your config, or mainnet when there is no config. Use `--network-magic` for a node on another network; if the magic is wrong, the error names the node's magic. `--json` gives machine-readable output. The command exits non-zero when a node does not answer, so it also works as a health check. On macOS a socket path must be shorter than 104 characters.
 

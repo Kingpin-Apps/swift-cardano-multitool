@@ -22,7 +22,7 @@ You can give several nodes at once; each is checked in turn.
 
 ### ping
 
-The default. Connects once and shows the connect and handshake time, then sends `--count` keep-alives over that connection and times each round trip. Relays only, because keep-alive is a node-to-node protocol.
+The default. Connects once and shows the TCP connect and handshake times, then sends `--count` keep-alives over that connection and times each round trip. Relays only, because keep-alive is a node-to-node protocol.
 
 ```bash
 scm ping backbone.cardano.iog.io:3001
@@ -31,12 +31,12 @@ scm ping relay1:3001 [2001:db8::1]:3001 --count 10 --interval 0.5
 
 ```
 Pinging backbone.cardano.iog.io:3001 (magic 764824073)
-  connected: handshake 343.45 ms, NtN v15
-  seq=1 time=141.01 ms
-  seq=2 time=135.24 ms
-  seq=3 time=139.61 ms
-  seq=4 time=136.5 ms
-  4 sent, 4 received, 0% lost; min/avg/max = 135.24/138.09/141.01 ms
+  connected: tcp 146.09 ms, handshake 137.9 ms, NtN v15
+  seq=1 time=137.71 ms
+  seq=2 time=140.84 ms
+  seq=3 time=139.51 ms
+  seq=4 time=138.45 ms
+  4 sent, 4 received, 0% lost; min/avg/max = 137.71/139.13/140.84 ms
 ```
 
 If a keep-alive fails, `scm` reconnects before the next one and shows the new handshake time.
@@ -76,8 +76,28 @@ Node-to-client versions are shown as plain numbers (NtC v23), as `cardano-cli` s
 | `-c`, `--count` | Keep-alives to send to each node in ping mode. Default 4. |
 | `-i`, `--interval` | Seconds between keep-alives in ping mode. Default 1. |
 | `-m`, `--network-magic` | Network magic for the handshake. Defaults to the network in your scm config, or mainnet when there is no config. |
-| `-t`, `--timeout` | Seconds to wait for each answer. Default 10. |
+| `-t`, `--timeout` | Seconds to wait for the connect and for each answer after the handshake. Default 10. |
+| `--handshake-timeout` | Seconds to wait for the handshake. Default 30. |
 | `-j`, `--json` | Machine-readable output. |
+
+## Slow relays
+
+A busy cardano-node delays new inbound connections once it is past its accepted-connections limit. The relay then accepts the TCP connection at once but takes many seconds to answer the handshake. `scm` times the two steps apart and gives the handshake its own, longer timeout:
+
+```
+Pinging r1.wavepool.digital:3001 (magic 764824073)
+  connected: tcp 111.02 ms, handshake 8966.81 ms, NtN v15
+  seq=1 time=52.43 ms
+```
+
+If even 30 s is not enough, the error says so and suggests a longer `--handshake-timeout`. When a check fails, the error names the step:
+
+| Error | Meaning |
+|-------|---------|
+| `refused the connection` | Nothing is listening on that port (or socket). |
+| `No answer … within 10s` | The host never accepted the connection: down, firewalled, or the wrong address. |
+| `closed it during the handshake` | Something accepted the connection and then hung up; it may not be a cardano-node. |
+| `did not answer the handshake within 30s` | The connection worked but the node is too busy, or too far behind, to answer in time. |
 
 ## Notes
 

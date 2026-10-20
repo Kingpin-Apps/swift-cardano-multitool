@@ -2,6 +2,8 @@ import Foundation
 import ArgumentParser
 import SwiftCardanoCore
 import SwiftCardanoNetwork
+import NIOCore
+import NIOPosix
 
 // MARK: - Node address
 
@@ -103,6 +105,10 @@ func resolveNetworkMagic(_ explicit: UInt32?) async throws -> UInt32 {
 
 enum RemoteNodeError: Error, LocalizedError {
     case timedOut(RemoteNodeAddress, seconds: Double)
+    case handshakeStalled(RemoteNodeAddress, connectMilliseconds: Double, seconds: Double)
+    case closedDuringHandshake(RemoteNodeAddress, connectMilliseconds: Double)
+    case refused(RemoteNodeAddress)
+    case connectFailed(RemoteNodeAddress, reason: String)
     case noTip(RemoteNodeAddress)
     case pingNeedsTCP(RemoteNodeAddress)
     case noSocket(String)
@@ -111,6 +117,18 @@ enum RemoteNodeError: Error, LocalizedError {
         switch self {
             case .timedOut(let address, let seconds):
                 return "No answer from \(address) within \(seconds.formatted())s."
+            case .handshakeStalled(let address, let connect, let seconds):
+                let what = address.isSocket ? "opened the socket" : "accepted the connection"
+                return "\(address) \(what) in \(formatMilliseconds(connect)) ms but did not answer the handshake within \(seconds.formatted())s. Busy relays can be slow; try --handshake-timeout \(Int(seconds * 2))."
+            case .closedDuringHandshake(let address, let connect):
+                return "\(address) accepted the connection in \(formatMilliseconds(connect)) ms, then closed it during the handshake. It may not be a cardano-node, or it may be refusing new peers."
+            case .refused(let address):
+                if case .tcp(_, let port) = address {
+                    return "\(address) refused the connection: nothing is listening on port \(port)."
+                }
+                return "\(address) refused the connection: no cardano-node is listening on the socket."
+            case .connectFailed(let address, let reason):
+                return "could not connect to \(address): \(reason)."
             case .noTip(let address):
                 return "\(address) closed the chain-sync stream without reporting a tip."
             case .pingNeedsTCP(let address):
@@ -119,6 +137,16 @@ enum RemoteNodeError: Error, LocalizedError {
                 return "no socket at \(path). Is cardano-node running with --socket-path set to it?"
         }
     }
+}
+
+/// How long to wait at each step of a check.
+struct RemoteTimeouts: Sendable, Equatable {
+    /// The TCP or socket connect, and each reply after the handshake
+    /// (a keep-alive response, the tip).
+    var reply: Double = 10
+    /// The handshake. A busy cardano-node delays new inbound connections, so
+    /// a relay can accept TCP at once and still take many seconds to answer.
+    var handshake: Double = 30
 }
 
 /// The network-library configuration for one connection to `address`.
@@ -148,29 +176,168 @@ func remoteNodeConfiguration(
     return config
 }
 
-/// Run `operation`, failing with ``RemoteNodeError/timedOut(_:seconds:)`` if it
-/// has not finished after `seconds`. The TCP connect has its own timeout, but a
-/// peer that accepts the socket and never answers the handshake would hang.
+/// Run `operation`, failing with `onTimeout` if it has not finished after
+/// `seconds`. The TCP connect has its own timeout, but a peer that accepts the
+/// socket and never answers the handshake would otherwise hang.
 func withRemoteTimeout<T: Sendable>(
     _ seconds: Double,
     address: RemoteNodeAddress,
+    onTimeout: RemoteNodeError? = nil,
     _ operation: @escaping @Sendable () async throws -> T
 ) async throws -> T {
     if case .socket(let path) = address, !FileManager.default.fileExists(atPath: path) {
         throw RemoteNodeError.noSocket(path)
     }
+    let timeoutError = onTimeout ?? .timedOut(address, seconds: seconds)
     return try await withThrowingTaskGroup(of: T.self) { group in
         group.addTask { try await operation() }
         group.addTask {
             try await Task.sleep(for: .seconds(seconds))
-            throw RemoteNodeError.timedOut(address, seconds: seconds)
+            throw timeoutError
         }
         defer { group.cancelAll() }
-        guard let result = try await group.next() else {
-            throw RemoteNodeError.timedOut(address, seconds: seconds)
-        }
+        guard let result = try await group.next() else { throw timeoutError }
         return result
     }
+}
+
+/// Run `operation` and return its result with how long it took.
+private func timed<T: Sendable>(_ operation: () async throws -> T) async rethrows -> (T, Double) {
+    let clock = ContinuousClock()
+    let start = clock.now
+    let value = try await operation()
+    return (value, start.duration(to: clock.now).milliseconds)
+}
+
+/// A channel that has completed its transport connect and handshake.
+private struct OpenedChannel<Handshake: Sendable>: Sendable {
+    let channel: any Channel
+    let demux: DemuxHandler
+    let handshake: Handshake
+    let connectMilliseconds: Double
+    let handshakeMilliseconds: Double
+}
+
+/// Connect to `address`, then run `handshake` on the new channel, timing and
+/// bounding each step on its own. The channel is closed if the handshake fails.
+private func openChannel<Handshake: Sendable>(
+    _ address: RemoteNodeAddress,
+    config: CardanoNetworkConfiguration,
+    timeouts: RemoteTimeouts,
+    handshake: @escaping @Sendable (any Channel, DemuxHandler) async throws -> Handshake
+) async throws -> OpenedChannel<Handshake> {
+    // The library's connect factories configure logging; we connect directly.
+    LoggerFactory.configure(config.logging)
+
+    let ((channel, demux), connectMs) = try await timed {
+        try await mappingConnectErrors(address, seconds: timeouts.reply) {
+            switch address {
+                case .tcp:
+                    return try await TCPTransport(
+                        config: config.connection,
+                        protocolConfig: config.protocol,
+                        group: MultiThreadedEventLoopGroup.singleton
+                    ).connect()
+                case .socket:
+                    return try await UnixSocketTransport(
+                        config: config.connection,
+                        protocolConfig: config.protocol,
+                        group: MultiThreadedEventLoopGroup.singleton
+                    ).connect()
+            }
+        }
+    }
+
+    do {
+        let stalled = RemoteNodeError.handshakeStalled(
+            address, connectMilliseconds: connectMs, seconds: timeouts.handshake
+        )
+        let (result, handshakeMs) = try await timed {
+            try await withRemoteTimeout(timeouts.handshake, address: address, onTimeout: stalled) {
+                try await handshake(channel, demux)
+            }
+        }
+        return OpenedChannel(
+            channel: channel,
+            demux: demux,
+            handshake: result,
+            connectMilliseconds: connectMs,
+            handshakeMilliseconds: handshakeMs
+        )
+    } catch {
+        try? await channel.close()
+        if let channelError = error as? ChannelError {
+            switch channelError {
+                case .ioOnClosedChannel, .eof, .alreadyClosed, .inputClosed, .outputClosed:
+                    throw RemoteNodeError.closedDuringHandshake(address, connectMilliseconds: connectMs)
+                default:
+                    break
+            }
+        }
+        throw error
+    }
+}
+
+/// Run a transport connect, turning NIO's connection errors into plain ones.
+private func mappingConnectErrors<T: Sendable>(
+    _ address: RemoteNodeAddress,
+    seconds: Double,
+    _ connect: @escaping @Sendable () async throws -> T
+) async throws -> T {
+    do {
+        return try await withRemoteTimeout(seconds, address: address, connect)
+    } catch let error as NIOConnectionError {
+        let errnos = error.connectionErrors.compactMap { ($0.error as? IOError)?.errnoCode }
+        if errnos.contains(ECONNREFUSED) { throw RemoteNodeError.refused(address) }
+        if error.connectionErrors.isEmpty, error.dnsAError != nil || error.dnsAAAAError != nil {
+            throw RemoteNodeError.connectFailed(address, reason: "the host name did not resolve")
+        }
+        if let first = errnos.first {
+            throw RemoteNodeError.connectFailed(address, reason: String(cString: strerror(first)).lowercased())
+        }
+        throw error
+    } catch let error as IOError where error.errnoCode == ECONNREFUSED {
+        throw RemoteNodeError.refused(address)
+    } catch ChannelError.connectTimeout {
+        throw RemoteNodeError.timedOut(address, seconds: seconds)
+    }
+}
+
+/// Open a node-to-node connection: TCP connect, then the NtN handshake.
+private func openNodeToNode(
+    _ address: RemoteNodeAddress,
+    config: CardanoNetworkConfiguration,
+    timeouts: RemoteTimeouts
+) async throws -> (NodeToNodeConnection, OpenedChannel<NegotiatedVersion>) {
+    let opened = try await openChannel(address, config: config, timeouts: timeouts) { channel, demux in
+        try await HandshakeClient(channel: channel, demux: demux, config: config.protocol, mode: .nodeToNode)
+            .negotiate(networkMagic: config.connection.networkMagic)
+    }
+    let connection = NodeToNodeConnection(
+        channel: opened.channel,
+        demux: opened.demux,
+        protocolConfig: config.protocol,
+        negotiatedVersion: opened.handshake
+    )
+    return (connection, opened)
+}
+
+/// Open a node-to-client connection: socket connect, then the NtC handshake.
+private func openNodeToClient(
+    _ address: RemoteNodeAddress,
+    config: CardanoNetworkConfiguration,
+    timeouts: RemoteTimeouts
+) async throws -> (NodeToClientConnection, OpenedChannel<NegotiatedVersion>) {
+    let opened = try await openChannel(address, config: config, timeouts: timeouts) { channel, demux in
+        try await HandshakeClient(channel: channel, demux: demux, config: config.protocol, mode: .nodeToClient)
+            .negotiate(networkMagic: config.connection.networkMagic)
+    }
+    let connection = NodeToClientConnection(
+        channel: opened.channel,
+        demux: opened.demux,
+        negotiatedVersion: opened.handshake.version
+    )
+    return (connection, opened)
 }
 
 // MARK: - Ping
@@ -185,28 +352,27 @@ struct RemotePingResult: Codable, Sendable {
 /// A node-to-node connection that ping mode sends keep-alives over.
 struct RemotePingConnection: Sendable {
     let connection: NodeToNodeConnection
-    /// TCP connect plus handshake time.
+    /// TCP connect time.
+    let connectMilliseconds: Double
+    /// NtN handshake time, after the TCP connect.
     let handshakeMilliseconds: Double
     let nodeToNodeVersion: UInt16?
 }
 
-/// Connect to a relay and complete the NtN handshake, timing both.
+/// Connect to a relay and complete the NtN handshake, timing each step.
 func openPingConnection(
     _ address: RemoteNodeAddress,
     networkMagic: UInt32,
-    timeoutSeconds: Double
+    timeouts: RemoteTimeouts
 ) async throws -> RemotePingConnection {
     guard !address.isSocket else { throw RemoteNodeError.pingNeedsTCP(address) }
-    let config = remoteNodeConfiguration(address: address, networkMagic: networkMagic, timeoutSeconds: timeoutSeconds)
-    let clock = ContinuousClock()
-    let start = clock.now
-    let connection = try await withRemoteTimeout(timeoutSeconds, address: address) {
-        try await CardanoNode.connectToNode(config: config)
-    }
+    let config = remoteNodeConfiguration(address: address, networkMagic: networkMagic, timeoutSeconds: timeouts.reply)
+    let (connection, opened) = try await openNodeToNode(address, config: config, timeouts: timeouts)
     return RemotePingConnection(
         connection: connection,
-        handshakeMilliseconds: start.duration(to: clock.now).milliseconds,
-        nodeToNodeVersion: connection.negotiatedVersion?.version
+        connectMilliseconds: opened.connectMilliseconds,
+        handshakeMilliseconds: opened.handshakeMilliseconds,
+        nodeToNodeVersion: opened.handshake.version
     )
 }
 
@@ -239,6 +405,11 @@ struct RemoteTip: Codable, Sendable {
     let hash: String?
     let block: UInt64
     let version: UInt16?
+    /// TCP or socket connect time.
+    let connectMilliseconds: Double
+    /// Handshake time, after the connect.
+    let handshakeMilliseconds: Double
+    /// Total time, connect to tip.
     let milliseconds: Double
 }
 
@@ -250,23 +421,25 @@ struct RemoteTip: Codable, Sendable {
 func queryRemoteTip(
     _ address: RemoteNodeAddress,
     networkMagic: UInt32,
-    timeoutSeconds: Double
+    timeouts: RemoteTimeouts
 ) async throws -> RemoteTip {
-    let config = remoteNodeConfiguration(address: address, networkMagic: networkMagic, timeoutSeconds: timeoutSeconds)
+    let config = remoteNodeConfiguration(address: address, networkMagic: networkMagic, timeoutSeconds: timeouts.reply)
     let clock = ContinuousClock()
     let start = clock.now
 
-    let (tip, version): (Tip, UInt16?) = try await withRemoteTimeout(timeoutSeconds, address: address) {
-        if address.isSocket {
-            return try await CardanoNode.withClient(config: config) { connection in
-                let events: AsyncThrowingStream<ChainEvent, Error> = connection.chainSync.follow()
-                return (try await firstTip(of: events, address: address), connection.negotiatedVersion)
-            }
-        } else {
-            return try await CardanoNode.withNode(config: config) { connection in
-                let events: AsyncThrowingStream<ChainEvent, Error> = connection.chainSync.follow()
-                return (try await firstTip(of: events, address: address), connection.negotiatedVersion?.version)
-            }
+    let tip: Tip
+    let opened: OpenedChannel<NegotiatedVersion>
+    if address.isSocket {
+        let (connection, o) = try await openNodeToClient(address, config: config, timeouts: timeouts)
+        opened = o
+        tip = try await readTip(over: connection.chainSync, address: address, seconds: timeouts.reply) {
+            await connection.close()
+        }
+    } else {
+        let (connection, o) = try await openNodeToNode(address, config: config, timeouts: timeouts)
+        opened = o
+        tip = try await readTip(over: connection.chainSync, address: address, seconds: timeouts.reply) {
+            await connection.close()
         }
     }
 
@@ -276,19 +449,37 @@ func queryRemoteTip(
         slot: tip.point.slot,
         hash: tip.point.hashHex,
         block: tip.blockNo,
-        version: version.map(displayVersion),
+        version: displayVersion(opened.handshake.version),
+        connectMilliseconds: opened.connectMilliseconds,
+        handshakeMilliseconds: opened.handshakeMilliseconds,
         milliseconds: start.duration(to: clock.now).milliseconds
     )
 }
 
-private func firstTip(of events: AsyncThrowingStream<ChainEvent, Error>, address: RemoteNodeAddress) async throws -> Tip {
-    for try await event in events {
-        switch event {
-            case .rollBackward(_, let tip), .rollForward(_, let tip):
-                return tip
+/// Read the first chain-sync event's tip, then close the connection either way.
+private func readTip(
+    over chainSync: ChainSyncClient,
+    address: RemoteNodeAddress,
+    seconds: Double,
+    close: @escaping @Sendable () async -> Void
+) async throws -> Tip {
+    do {
+        let tip = try await withRemoteTimeout(seconds, address: address) {
+            let events: AsyncThrowingStream<ChainEvent, Error> = chainSync.follow()
+            for try await event in events {
+                switch event {
+                    case .rollBackward(_, let tip), .rollForward(_, let tip):
+                        return tip
+                }
+            }
+            throw RemoteNodeError.noTip(address)
         }
+        await close()
+        return tip
+    } catch {
+        await close()
+        throw error
     }
-    throw RemoteNodeError.noTip(address)
 }
 
 // MARK: - Version query
@@ -311,28 +502,32 @@ struct RemoteVersions: Codable, Sendable {
     let node: String
     let `protocol`: String
     let versions: [RemoteVersion]
-    let milliseconds: Double
+    /// TCP or socket connect time.
+    let connectMilliseconds: Double
+    /// Time for the node to answer the query handshake, after the connect.
+    let handshakeMilliseconds: Double
 }
 
 /// Ask a node which versions it supports, like `cardano-cli ping --mode query`.
 func queryRemoteVersions(
     _ address: RemoteNodeAddress,
     networkMagic: UInt32,
-    timeoutSeconds: Double
+    timeouts: RemoteTimeouts
 ) async throws -> RemoteVersions {
-    let config = remoteNodeConfiguration(address: address, networkMagic: networkMagic, timeoutSeconds: timeoutSeconds)
-    let clock = ContinuousClock()
-    let start = clock.now
-    let table = try await withRemoteTimeout(timeoutSeconds, address: address) {
-        address.isSocket
-            ? try await CardanoNode.queryClientVersions(config: config)
-            : try await CardanoNode.queryNodeVersions(config: config)
+    let config = remoteNodeConfiguration(address: address, networkMagic: networkMagic, timeoutSeconds: timeouts.reply)
+    let mode: HandshakeCodec.Mode = address.isSocket ? .nodeToClient : .nodeToNode
+    let opened = try await openChannel(address, config: config, timeouts: timeouts) { channel, demux in
+        try await HandshakeClient(channel: channel, demux: demux, config: config.protocol, mode: mode)
+            .queryVersions(networkMagic: config.connection.networkMagic)
     }
+    // The node closes the connection after its reply; close our side too.
+    try? await opened.channel.close()
     return RemoteVersions(
         node: address.description,
         protocol: address.protocolName,
-        versions: table.map(RemoteVersion.init),
-        milliseconds: start.duration(to: clock.now).milliseconds
+        versions: opened.handshake.map(RemoteVersion.init),
+        connectMilliseconds: opened.connectMilliseconds,
+        handshakeMilliseconds: opened.handshakeMilliseconds
     )
 }
 
@@ -401,4 +596,9 @@ extension Duration {
         let (seconds, attoseconds) = components
         return Double(seconds) * 1_000 + Double(attoseconds) / 1e15
     }
+}
+
+/// Milliseconds with at most two decimals, as scm prints them.
+func formatMilliseconds(_ value: Double) -> String {
+    value.formatted(.number.precision(.fractionLength(0...2)).grouping(.never))
 }

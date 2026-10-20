@@ -114,11 +114,35 @@ struct RemoteNodeMagicTests {
     func missingSocket() async {
         let address = RemoteNodeAddress.socket(path: "/nonexistent/scm-test.socket")
         do {
-            _ = try await queryRemoteTip(address, networkMagic: 2, timeoutSeconds: 1)
+            _ = try await queryRemoteTip(address, networkMagic: 2, timeouts: RemoteTimeouts(reply: 1, handshake: 1))
             Issue.record("expected an error")
         } catch {
             #expect(describeRemoteError(error) == "no socket at /nonexistent/scm-test.socket. Is cardano-node running with --socket-path set to it?")
         }
+    }
+
+    @Test("a closed local port is reported as refused")
+    func refusedPort() async {
+        let address = RemoteNodeAddress(host: "127.0.0.1", port: 1)
+        do {
+            _ = try await queryRemoteTip(address, networkMagic: 2, timeouts: RemoteTimeouts(reply: 3, handshake: 3))
+            Issue.record("expected an error")
+        } catch {
+            #expect(describeRemoteError(error) == "127.0.0.1:1 refused the connection: nothing is listening on port 1.")
+        }
+    }
+
+    @Test("a stalled handshake says the connection worked and how to wait longer")
+    func stalledMessage() {
+        let error = RemoteNodeError.handshakeStalled(RemoteNodeAddress(host: "r1", port: 3001), connectMilliseconds: 52.4, seconds: 30)
+        #expect(describeRemoteError(error) == "r1:3001 accepted the connection in 52.4 ms but did not answer the handshake within 30s. Busy relays can be slow; try --handshake-timeout 60.")
+        let closed = RemoteNodeError.closedDuringHandshake(RemoteNodeAddress(host: "r1", port: 3001), connectMilliseconds: 3)
+        #expect(describeRemoteError(closed).hasPrefix("r1:3001 accepted the connection in 3 ms, then closed it during the handshake."))
+    }
+
+    @Test("default timeouts: 10 s per answer, 30 s for the handshake")
+    func defaultTimeouts() {
+        #expect(RemoteTimeouts() == RemoteTimeouts(reply: 10, handshake: 30))
     }
 
     @Test("a magic mismatch names the node's magic")
@@ -163,6 +187,13 @@ struct PingMainCommandTests {
         #expect(json == #"{"error":"a:3001 closed the chain-sync stream without reporting a tip.","node":"a:3001"}"#)
     }
 
+    @Test("--handshake-timeout defaults to 30 and must be positive")
+    func handshakeTimeoutOption() throws {
+        #expect(try PingMainCommand.parse(["a.example"]).handshakeTimeout == 30)
+        #expect(try PingMainCommand.parse(["a.example", "--handshake-timeout", "45"]).handshakeTimeout == 45)
+        #expect(throws: (any Error).self) { try PingMainCommand.parse(["a.example", "--handshake-timeout", "0"]) }
+    }
+
     @Test("ping mode rejects a socket; tip and query accept one")
     func socketModes() throws {
         #expect(throws: (any Error).self) { try PingMainCommand.parse(["./node.socket"]) }
@@ -178,7 +209,7 @@ struct PingMainCommandTests {
 
     @Test("summary statistics skip lost pings")
     func summary() {
-        let summary = PingSummary(node: "a:3001", networkMagic: 2, nodeToNodeVersion: 15, handshakeMilliseconds: [300, 280], pings: [
+        let summary = PingSummary(node: "a:3001", networkMagic: 2, nodeToNodeVersion: 15, connectMilliseconds: [50, 55], handshakeMilliseconds: [300, 280], pings: [
             RemotePingResult(sequence: 1, milliseconds: 10, error: nil),
             RemotePingResult(sequence: 2, milliseconds: nil, error: "timeout"),
             RemotePingResult(sequence: 3, milliseconds: 30, error: nil),
@@ -191,6 +222,7 @@ struct PingMainCommandTests {
         #expect(summary.avgMilliseconds == 20)
         #expect(summary.maxMilliseconds == 30)
         #expect(summary.nodeToNodeVersion == 15)
+        #expect(summary.connectMilliseconds == [50, 55])
         #expect(summary.handshakeMilliseconds == [300, 280])
     }
 }

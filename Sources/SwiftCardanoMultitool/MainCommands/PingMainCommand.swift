@@ -43,11 +43,17 @@ struct PingMainCommand: AsyncParsableCommand {
         picks what to do with each node:
 
           ping   Connect once, then send --count keep-alives and time each \
-        round trip. The connect and handshake time is shown once. Relays only.
+        round trip. The TCP connect and handshake times are shown once. \
+        Relays only.
           tip    Ask the node for its current chain tip (slot, block hash, \
         block number) over chain-sync.
           query  List every protocol version the node supports, with its \
         network magic, diffusion mode, peer sharing and Peras flags.
+
+        --timeout bounds the connect and each answer after the handshake; \
+        --handshake-timeout (30 s) bounds the handshake on its own. A busy \
+        cardano-node can accept the connection at once and still take many \
+        seconds to answer the handshake, and the error says which step stalled.
 
         The handshake must use the node's network magic. By default it comes \
         from the network in your scm config, or mainnet when there is no \
@@ -70,8 +76,15 @@ struct PingMainCommand: AsyncParsableCommand {
     @Option(name: [.customShort("m"), .long], help: "Network magic for the handshake. Defaults to the network in your scm config.")
     var networkMagic: UInt32?
 
-    @Option(name: .shortAndLong, help: "Seconds to wait for each answer.")
+    @Option(name: .shortAndLong, help: "Seconds to wait for the connect and for each answer after the handshake.")
     var timeout: Double = 10
+
+    @Option(help: "Seconds to wait for the handshake. Busy relays can take a while to answer it.")
+    var handshakeTimeout: Double = 30
+
+    private var timeouts: RemoteTimeouts {
+        RemoteTimeouts(reply: timeout, handshake: handshakeTimeout)
+    }
 
     @Flag(name: .shortAndLong, help: "Output as JSON instead of formatted text.")
     var json: Bool = false
@@ -80,6 +93,7 @@ struct PingMainCommand: AsyncParsableCommand {
         guard count > 0 else { throw ValidationError("--count must be at least 1.") }
         guard interval >= 0 else { throw ValidationError("--interval cannot be negative.") }
         guard timeout > 0 else { throw ValidationError("--timeout must be greater than 0.") }
+        guard handshakeTimeout > 0 else { throw ValidationError("--handshake-timeout must be greater than 0.") }
         if mode == .ping, let socket = nodes.first(where: \.isSocket) {
             throw ValidationError(RemoteNodeError.pingNeedsTCP(socket).errorDescription ?? "Ping mode needs a relay.")
         }
@@ -136,6 +150,7 @@ struct PingMainCommand: AsyncParsableCommand {
             }
 
             var connection: RemotePingConnection?
+            var connects: [Double] = []
             var handshakes: [Double] = []
             var version: UInt16?
             var results: [RemotePingResult] = []
@@ -144,8 +159,9 @@ struct PingMainCommand: AsyncParsableCommand {
                 // Connect on the first ping, and again after a failure.
                 if connection == nil {
                     do {
-                        let opened = try await openPingConnection(node, networkMagic: magic, timeoutSeconds: timeout)
+                        let opened = try await openPingConnection(node, networkMagic: magic, timeouts: timeouts)
                         connection = opened
+                        connects.append(opened.connectMilliseconds)
                         handshakes.append(opened.handshakeMilliseconds)
                         version = version ?? opened.nodeToNodeVersion
                         if !json { printConnected(opened, reconnect: handshakes.count > 1) }
@@ -174,6 +190,7 @@ struct PingMainCommand: AsyncParsableCommand {
                 node: node.description,
                 networkMagic: magic,
                 nodeToNodeVersion: version,
+                connectMilliseconds: connects,
                 handshakeMilliseconds: handshakes,
                 pings: results
             )
@@ -196,7 +213,7 @@ struct PingMainCommand: AsyncParsableCommand {
         for node in nodes {
             let answer: RemoteNodeAnswer<RemoteTip>
             do {
-                answer = .init(node: node, value: try await queryRemoteTip(node, networkMagic: magic, timeoutSeconds: timeout))
+                answer = .init(node: node, value: try await queryRemoteTip(node, networkMagic: magic, timeouts: timeouts))
             } catch {
                 answer = .init(node: node, error: error)
             }
@@ -208,7 +225,7 @@ struct PingMainCommand: AsyncParsableCommand {
                 formatPrint("  slot   \(.primary(tip.slot.map(String.init) ?? "origin"))")
                 formatPrint("  block  \(.primary(String(tip.block)))")
                 formatPrint("  hash   \(.primary(tip.hash ?? "-"))")
-                formatPrint("  \(.muted("\(versionLabel(tip.version, socket: node.isSocket)), \(formatMs(tip.milliseconds)) ms"))")
+                formatPrint("  \(.muted("\(versionLabel(tip.version, socket: node.isSocket)); \(timingLabel(connect: tip.connectMilliseconds, handshake: tip.handshakeMilliseconds, socket: node.isSocket)); total \(formatMilliseconds(tip.milliseconds)) ms"))")
             } else {
                 formatPrint("  \(.danger("failed: \(answer.error ?? "unknown error")"))")
             }
@@ -223,7 +240,7 @@ struct PingMainCommand: AsyncParsableCommand {
         for node in nodes {
             let answer: RemoteNodeAnswer<RemoteVersions>
             do {
-                answer = .init(node: node, value: try await queryRemoteVersions(node, networkMagic: magic, timeoutSeconds: timeout))
+                answer = .init(node: node, value: try await queryRemoteVersions(node, networkMagic: magic, timeouts: timeouts))
             } catch {
                 answer = .init(node: node, error: error)
             }
@@ -239,7 +256,7 @@ struct PingMainCommand: AsyncParsableCommand {
                     if let peras = v.perasSupport { details.append("Peras \(peras ? "on" : "off")") }
                     formatPrint("  \(.primary(versionLabel(v.version, socket: node.isSocket)))  \(.muted(details.joined(separator: ", ")))")
                 }
-                formatPrint("  \(.muted("\(formatMs(table.milliseconds)) ms"))")
+                formatPrint("  \(.muted(timingLabel(connect: table.connectMilliseconds, handshake: table.handshakeMilliseconds, socket: node.isSocket)))")
             } else {
                 formatPrint("  \(.danger("failed: \(answer.error ?? "unknown error")"))")
             }
@@ -254,21 +271,26 @@ struct PingMainCommand: AsyncParsableCommand {
     private func printConnected(_ connection: RemotePingConnection, reconnect: Bool) {
         let version = connection.nodeToNodeVersion.map { ", NtN v\($0)" } ?? ""
         let verb = reconnect ? "reconnected" : "connected"
-        formatPrint("  \(.muted("\(verb): handshake \(formatMs(connection.handshakeMilliseconds)) ms\(version)"))")
+        let timing = timingLabel(connect: connection.connectMilliseconds, handshake: connection.handshakeMilliseconds, socket: false)
+        formatPrint("  \(.muted("\(verb): \(timing)\(version)"))")
+    }
+
+    private func timingLabel(connect: Double, handshake: Double, socket: Bool) -> String {
+        "\(socket ? "socket" : "tcp") \(formatMilliseconds(connect)) ms, handshake \(formatMilliseconds(handshake)) ms"
     }
 
     private func printPing(_ result: RemotePingResult) {
         if let ms = result.milliseconds {
-            formatPrint("  seq=\(result.sequence) time=\(.primary(formatMs(ms))) ms")
+            formatPrint("  seq=\(result.sequence) time=\(.primary(formatMilliseconds(ms))) ms")
         } else {
             formatPrint("  seq=\(result.sequence) \(.danger("failed: \(result.error ?? "unknown error")"))")
         }
     }
 
     private func printSummary(_ summary: PingSummary) {
-        var line = "  \(summary.sent) sent, \(summary.received) received, \(formatMs(summary.lossPercent))% lost"
+        var line = "  \(summary.sent) sent, \(summary.received) received, \(formatMilliseconds(summary.lossPercent))% lost"
         if let min = summary.minMilliseconds, let avg = summary.avgMilliseconds, let max = summary.maxMilliseconds {
-            line += "; min/avg/max = \(formatMs(min))/\(formatMs(avg))/\(formatMs(max)) ms"
+            line += "; min/avg/max = \(formatMilliseconds(min))/\(formatMilliseconds(avg))/\(formatMilliseconds(max)) ms"
         }
         formatPrint("\(.muted(line))")
     }
@@ -316,12 +338,13 @@ struct RemoteNodeAnswer<Value: Codable & Sendable>: Codable, Sendable {
 
 /// The results of pinging one node, with the usual ping statistics.
 ///
-/// Times are keep-alive round trips. The connect + handshake time of each
-/// connection (more than one when a failure forced a reconnect) is kept apart.
+/// Times are keep-alive round trips. The TCP connect and handshake time of each
+/// connection (more than one when a failure forced a reconnect) are kept apart.
 struct PingSummary: Codable, Sendable {
     let node: String
     let networkMagic: UInt32
     let nodeToNodeVersion: UInt16?
+    let connectMilliseconds: [Double]
     let handshakeMilliseconds: [Double]
     let sent: Int
     let received: Int
@@ -335,6 +358,7 @@ struct PingSummary: Codable, Sendable {
         node: String,
         networkMagic: UInt32,
         nodeToNodeVersion: UInt16? = nil,
+        connectMilliseconds: [Double] = [],
         handshakeMilliseconds: [Double] = [],
         pings: [RemotePingResult]
     ) {
@@ -342,6 +366,7 @@ struct PingSummary: Codable, Sendable {
         self.node = node
         self.networkMagic = networkMagic
         self.nodeToNodeVersion = nodeToNodeVersion
+        self.connectMilliseconds = connectMilliseconds
         self.handshakeMilliseconds = handshakeMilliseconds
         self.sent = pings.count
         self.received = times.count
@@ -353,6 +378,3 @@ struct PingSummary: Codable, Sendable {
     }
 }
 
-private func formatMs(_ value: Double) -> String {
-    value.formatted(.number.precision(.fractionLength(0...2)).grouping(.never))
-}
