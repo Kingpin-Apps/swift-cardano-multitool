@@ -1,3 +1,16 @@
+## 0.20.1 (2026-10-19)
+
+### Note
+
+- `scm ping` times the TCP connect and the handshake separately: `connected: tcp 56 ms, handshake 4038 ms`. A busy relay can accept the connection at once and take many seconds to answer the handshake; before, that showed up as "No answer … within 10s".
+- New `--handshake-timeout` (default 30 s) bounds the handshake on its own. `--timeout` (10 s) still bounds the connect and each answer after it.
+- Errors now name the step that failed: the connection was refused, the host never answered, it closed the connection during the handshake, or the handshake took too long (with a suggested `--handshake-timeout`).
+- Picks up swift-cardano-network 1.3.0.
+
+### Fix
+
+- **ping**: time TCP connect and handshake apart, with a 30 s handshake timeout and clear errors
+
 ## 0.20.0 (2026-10-19)
 
 ### Note
