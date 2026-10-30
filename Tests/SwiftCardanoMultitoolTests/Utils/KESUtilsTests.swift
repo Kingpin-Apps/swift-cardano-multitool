@@ -211,51 +211,58 @@ struct KESUtilsNextKESNumberTests {
     }
 }
 
-// MARK: - getCurrentKESPeriod / getKESExpireInfo error paths
+// MARK: - getCurrentKESPeriod
 
-@Suite("KESUtils.getCurrentKESPeriod missing-byronGenesis path")
+@Suite("KESUtils.getCurrentKESPeriod")
 struct KESUtilsGetCurrentKESPeriodTests {
 
-    /// Build GenesisParameters using the simple init — byronGenesis stays nil so any
-    /// call to `getCurrentKESPeriod` will throw `KESError.missingGenesisParameter("byronGenesis")`.
-    private func makeBareGenesisParameters() -> GenesisParameters {
+    /// Genesis without a Byron genesis, for the given network magic.
+    private func genesis(magic: UInt32, systemStart: Date) -> GenesisParameters {
         GenesisParameters(
-            activeSlotsCoefficient: 0.05,
+            activeSlotsCoefficient: UnitInterval(numerator: 1, denominator: 20),
             epochLength: 432_000,
             maxKesEvolutions: 62,
             maxLovelaceSupply: 45_000_000_000_000_000,
             networkId: "Mainnet",
-            networkMagic: 764_824_073,
+            networkMagic: magic,
             securityParam: 2160,
             slotLength: 1,
             slotsPerKesPeriod: 129_600,
-            systemStart: Date(timeIntervalSince1970: 1_596_059_091),
+            systemStart: systemStart,
             updateQuorum: 5
         )
     }
 
-    @Test("getCurrentKESPeriod throws when byronGenesis is missing")
-    func throwsOnMissingByronGenesis() {
-        let params = makeBareGenesisParameters()
-        #expect(throws: (any Error).self) {
-            _ = try KESUtils.getCurrentKESPeriod(
-                currentTimeSec: 1_700_000_000,
-                genesisParameters: params,
-                byronToShelleyEpochTransition: 208
-            )
-        }
+    @Test("Mainnet's KES period comes from its exact slot timeline, with no Byron genesis needed")
+    func mainnetFromTimeline() throws {
+        // Shelley began at slot 4,492,800 on 2020-07-29T21:44:51Z (1,596,059,091), one slot a
+        // second: at 1,700,000,000 the slot is 108,433,709, and 108,433,709 / 129,600 = 836.
+        let params = genesis(magic: 764_824_073, systemStart: Date(timeIntervalSince1970: 1_506_203_091))
+        let period = try KESUtils.getCurrentKESPeriod(
+            currentTimeSec: 1_700_000_000,
+            genesisParameters: params,
+            byronToShelleyEpochTransition: 208
+        )
+        #expect(period == 836)
     }
 
-    @Test("getKESExpireInfo bubbles the missing-byronGenesis error from getCurrentKESPeriod")
-    func getKESExpireInfoThrowsOnMissingByron() {
-        let params = makeBareGenesisParameters()
-        #expect(throws: (any Error).self) {
-            _ = try KESUtils.getKESExpireInfo(
-                genesisParameters: params,
-                latestKESFileIndex: 1,
-                byronToShelleyEpochTransition: 208
-            )
-        }
+    @Test("A chain that always had one slot length counts slots from its system start")
+    func uniformChainFromSystemStart() throws {
+        let start = 1_700_000_000
+        let params = genesis(magic: 42, systemStart: Date(timeIntervalSince1970: TimeInterval(start)))
+        let period = try KESUtils.getCurrentKESPeriod(
+            currentTimeSec: start + 2 * 129_600 + 5,
+            genesisParameters: params,
+            byronToShelleyEpochTransition: 0
+        )
+        #expect(period == 2)
+        let info = try KESUtils.getKESExpireInfo(
+            genesisParameters: params,
+            latestKESFileIndex: 1,
+            byronToShelleyEpochTransition: 0,
+            currentTime: Date(timeIntervalSince1970: TimeInterval(start + 2 * 129_600 + 5))
+        )
+        #expect(info.currentKESPeriod == 2)
     }
 }
 

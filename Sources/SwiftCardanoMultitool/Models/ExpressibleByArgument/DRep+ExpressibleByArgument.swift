@@ -121,23 +121,19 @@ extension DRep: @retroactive ExpressibleByArgument {
     /// Load a DRep from a key file or an ID file.
     ///
     /// `DRep.load` only understands a file holding a bare bech32/hex ID, so a key
-    /// envelope has to be hashed here instead. Key files are dispatched on their
-    /// envelope type: key loading doesn't check the type, so reading a signing key
-    /// as a verification key would silently yield the wrong hash.
+    /// envelope has to be hashed here instead. Key loading refuses a file holding
+    /// another type of key, so each type is tried in turn.
     private static func fromFile(_ filePath: String) -> DRep? {
         if let vkey = try? DRepVerificationKey.load(from: filePath) {
-            if vkey._type.contains("SigningKey") {
-                guard let skey = try? DRepSigningKey.load(from: filePath),
-                      let derived: DRepVerificationKey = try? skey.toVerificationKey(),
-                      let hash = try? derived.hash() else {
-                    return nil
-                }
-                return DRep(credential: .verificationKeyHash(hash))
+            guard let hash = try? vkey.hash() else { return nil }
+            return DRep(credential: .verificationKeyHash(hash))
+        }
+        if let skey = try? DRepSigningKey.load(from: filePath) {
+            guard let derived: DRepVerificationKey = try? skey.toVerificationKey(),
+                  let hash = try? derived.hash() else {
+                return nil
             }
-            if vkey._type.contains("VerificationKey") {
-                guard let hash = try? vkey.hash() else { return nil }
-                return DRep(credential: .verificationKeyHash(hash))
-            }
+            return DRep(credential: .verificationKeyHash(hash))
         }
 
         return try? DRep.load(from: filePath)

@@ -337,7 +337,7 @@ extension CertificateMainCommand {
                         "--out-file", FileUtils.absolutePath(outFile).string
                     ])
                 } else {
-                    let deregCert = SwiftCardanoCore.PoolRetirement(
+                    let deregCert = try SwiftCardanoCore.PoolRetirement(
                         poolKeyHash: poolKeyHash,
                         epoch: EpochNumber(retireEpoch)
                     )

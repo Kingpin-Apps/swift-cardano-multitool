@@ -226,7 +226,7 @@ extension CertificateMainCommand {
                         spacedPrint(
                             "Generate Registration-Certificate in \(.primary("\(era)")) format."
                         )
-                        let stakeRegistrationCertificate = SwiftCardanoCore.StakeRegistration(
+                        let stakeRegistrationCertificate = try SwiftCardanoCore.StakeRegistration(
                             stakeCredential: stakeCredential
                         )
                         try stakeRegistrationCertificate.save(to: outFile.string)
@@ -234,7 +234,7 @@ extension CertificateMainCommand {
                         spacedPrint(
                             "Generate Registration-Certificate with the currently set deposit fee: \(.primary("\(depositFee)")) lovelaces."
                         )
-                        let stakeRegistrationCertificate = Register(
+                        let stakeRegistrationCertificate = try Register(
                             stakeCredential: stakeCredential,
                             coin: Coin(depositFee)
                         )

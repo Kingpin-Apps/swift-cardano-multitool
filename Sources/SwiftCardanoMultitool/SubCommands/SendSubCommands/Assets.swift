@@ -1,3 +1,4 @@
+import BigInt
 import Foundation
 import ArgumentParser
 import Noora
@@ -108,7 +109,7 @@ extension SendMainCommand {
             )
 
             // Collect available assets: (policyId hex, assetNameHex, total amount)
-            var assetMap: [(policyId: String, assetNameHex: String, totalAmount: Int64)] = []
+            var assetMap: [(policyId: String, assetNameHex: String, totalAmount: BigInt)] = []
             for utxo in utxos {
                 for (scriptHash, asset) in utxo.output.amount.multiAsset.data {
                     for (assetName, qty) in asset.data {
@@ -247,7 +248,7 @@ extension SendMainCommand {
             let targetAssetNameData = assetNameHex.hexStringToData
             let targetAssetName = try AssetName(payload: targetAssetNameData)
 
-            var totalAvailable: Int64 = 0
+            var totalAvailable = BigInt(0)
             for utxo in utxos {
                 if let assetUnderPolicy = utxo.output.amount.multiAsset.data[scriptHash],
                    let qty = assetUnderPolicy.data[targetAssetName] {
@@ -268,7 +269,7 @@ extension SendMainCommand {
             }
 
             // Resolve amount
-            let resolvedAmount: Int64
+            let resolvedAmount: BigInt
             let amountLower = amount.lowercased()
             switch amountLower {
             case "all":
@@ -276,11 +277,20 @@ extension SendMainCommand {
             case "min":
                 resolvedAmount = 1
             default:
-                guard let n = Int64(amount), n > 0 else {
+                guard let n = UInt64(amount), n > 0 else {
                     noora.error(.alert("Invalid amount '\(amount)'. Must be 'all', 'min', or a positive integer."))
                     throw ExitCode.validationFailure
                 }
-                resolvedAmount = n
+                resolvedAmount = BigInt(n)
+            }
+
+            // One output holds at most a ledger Word64 of each token.
+            guard resolvedAmount <= BigInt(UInt64.max) else {
+                noora.error(.alert(
+                    "Too many tokens for one output.",
+                    takeaways: ["Requested: \(resolvedAmount)", "An output holds at most \(UInt64.max)."]
+                ))
+                throw ExitCode.validationFailure
             }
 
             guard resolvedAmount <= totalAvailable else {
@@ -320,7 +330,7 @@ extension SendMainCommand {
 
             let txOut = TransactionOutput(
                 address: toAddress.info.address!,
-                amount: Value(coin: Int64(resolvedLovelace), multiAsset: assetOut)
+                amount: Value(coin: resolvedLovelace, multiAsset: assetOut)
             )
 
             let logger = getLogger(config: config)

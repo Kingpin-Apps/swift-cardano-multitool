@@ -10,15 +10,15 @@ struct MintBurnUtilsTests {
     // MARK: - MintAction.signedAmount
 
     @Test("MintAction.mint produces a positive signed amount")
-    func mintSignedPositive() {
-        #expect(MintAction.mint.signedAmount(1) == 1)
-        #expect(MintAction.mint.signedAmount(1_000_000) == 1_000_000)
+    func mintSignedPositive() throws {
+        #expect(try MintAction.mint.signedAmount(1) == 1)
+        #expect(try MintAction.mint.signedAmount(1_000_000) == 1_000_000)
     }
 
     @Test("MintAction.burn produces a negative signed amount")
-    func burnSignedNegative() {
-        #expect(MintAction.burn.signedAmount(1) == -1)
-        #expect(MintAction.burn.signedAmount(1_000_000) == -1_000_000)
+    func burnSignedNegative() throws {
+        #expect(try MintAction.burn.signedAmount(1) == -1)
+        #expect(try MintAction.burn.signedAmount(1_000_000) == -1_000_000)
     }
 
     @Test("MintAction past-tense and file-suffix labels match expectations")

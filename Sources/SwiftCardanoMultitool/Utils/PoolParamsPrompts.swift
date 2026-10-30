@@ -83,7 +83,7 @@ func promptPoolRelay() -> PoolRelay {
 }
 
 /// Lovelace as a plain ADA amount for prompt defaults, e.g. `340` or `1.5`.
-private func adaDefault(_ lovelace: Int) -> String {
+private func adaDefault(_ lovelace: UInt64) -> String {
     "\(Decimal(lovelace) / AdaFormatter.lovelacePerAda)"
 }
 
@@ -110,7 +110,7 @@ func editPoolParams(
                     collapseOnAnswer: true,
                     validationRules: [AdaValidationRule(defaultUnit: .ada, error: "Pledge must be a non-negative ADA amount.")]
                 )
-                draft.pledge = Int(adaFormatter.toLovelace(input) ?? UInt64(draft.pledge))
+                draft.pledge = adaFormatter.toLovelace(input) ?? draft.pledge
 
             case .cost:
                 let input = noora.textPrompt(
@@ -125,7 +125,7 @@ func editPoolParams(
                         error: "Cost must be at least \(lovelaceToAdaFormatString(UInt64(minPoolCost)))."
                     )]
                 )
-                draft.cost = Int(adaFormatter.toLovelace(input) ?? UInt64(draft.cost))
+                draft.cost = adaFormatter.toLovelace(input) ?? draft.cost
 
             case .margin:
                 var margin: UnitInterval? = nil

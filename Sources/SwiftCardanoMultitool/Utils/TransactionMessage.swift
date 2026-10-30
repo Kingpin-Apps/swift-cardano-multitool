@@ -91,27 +91,27 @@ public struct TransactionMessage {
                     
                     transactionMessageMetadata = try Metadata(
                         [
-                            674: .map(
+                            674: .map(MapPairs(
                                 OrderedDictionary(
                                     uniqueKeysWithValues: [
                                         .text("enc"): .text("basic"),
                                         .text("msg"): .list(encryptedMessages.map({ .text($0) })),
                                     ]
                                 )
-                            ),
+                            )),
                         ]
                     )
                 case .none:
                     // Plain text messages
                     transactionMessageMetadata = try Metadata(
                         [
-                            674: .map(
+                            674: .map(MapPairs(
                                 OrderedDictionary(
                                     uniqueKeysWithValues: [
                                         .text("msg"): .list(messages.map({ .text($0) })),
                                     ]
                                 )
-                            ),
+                            )),
                         ]
                     )
             }

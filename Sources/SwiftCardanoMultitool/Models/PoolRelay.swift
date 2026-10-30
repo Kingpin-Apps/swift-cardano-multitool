@@ -151,9 +151,9 @@ extension PoolRelay {
                 return .singleHostAddr(SingleHostAddr(port: port, ipv4: ipv4, ipv6: nil))
             case .dns:
                 if hostType == .multi {
-                    return .multiHostName(MultiHostName(dnsName: host))
+                    return .multiHostName(try MultiHostName(dnsName: host))
                 }
-                return .singleHostName(SingleHostName(port: port, dnsName: host))
+                return .singleHostName(try SingleHostName(port: port, dnsName: host))
         }
     }
 

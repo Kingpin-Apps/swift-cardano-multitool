@@ -232,7 +232,7 @@ extension CertificateMainCommand {
                         spacedPrint(
                             "Generate Deregistration-Certificate in \(.primary("\(era)")) format."
                         )
-                        let stakeRegistrationCertificate = SwiftCardanoCore.StakeDeregistration(
+                        let stakeRegistrationCertificate = try SwiftCardanoCore.StakeDeregistration(
                             stakeCredential: stakeCredential
                         )
                         try stakeRegistrationCertificate.save(to: outFile.string)
@@ -240,7 +240,7 @@ extension CertificateMainCommand {
                         spacedPrint(
                             "Generate Deregistration-Certificate with the currently set deposit fee: \(.primary("\(depositFee)")) lovelaces."
                         )
-                        let stakeRegistrationCertificate = Unregister(
+                        let stakeRegistrationCertificate = try Unregister(
                             stakeCredential: stakeCredential,
                             coin: Coin(depositFee)
                         )

@@ -365,8 +365,15 @@ struct TextViewDecoder {
                 }
                 if let rewards = mir.rewards {
                     var map = DecodedObject()
-                    for (credential, delta) in rewards.sorted(by: { $0.key < $1.key }) {
-                        map.add(credential, "\(delta.deltaCoin) lovelace", key: credential)
+                    // Labelled as cardano-cli labels a credential.
+                    let labelled = rewards.map { credential, delta -> (String, DeltaCoin) in
+                        switch credential.credential {
+                        case .verificationKeyHash(let hash): return ("keyHash-\(hash.payload.toHex)", delta)
+                        case .scriptHash(let hash): return ("scriptHash-\(hash.payload.toHex)", delta)
+                        }
+                    }
+                    for (label, delta) in labelled.sorted(by: { $0.0 < $1.0 }) {
+                        map.add(label, "\(delta) lovelace", key: label)
                     }
                     decoded.add("Rewards", map)
                 }
@@ -593,7 +600,7 @@ struct TextViewDecoder {
         let view = try TxValidator().inspect(transaction: tx)
         var decoded = DecodedObject()
 
-        decoded.add("Transaction ID", body.id.payload.toHex)
+        decoded.add("Transaction ID", try body.id.payload.toHex)
         if !bodyOnly {
             decoded.add("Valid", .bool(tx.valid))
         }
@@ -691,7 +698,7 @@ struct TextViewDecoder {
         return .object(object)
     }
 
-    private func assets(_ policies: [String: [String: Int64]]) -> DecodedValue {
+    private func assets<Quantity: BinaryInteger>(_ policies: [String: [String: Quantity]]) -> DecodedValue {
         .array(policies.sorted { $0.key < $1.key }.flatMap { policy, names in
             names.sorted { $0.key < $1.key }.map { name, amount -> DecodedValue in
                 .string("\(amount) \(policy).\(name)")

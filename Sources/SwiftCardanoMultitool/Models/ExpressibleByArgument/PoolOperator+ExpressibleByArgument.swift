@@ -97,9 +97,8 @@ extension PoolOperator: @retroactive ExpressibleByArgument {
 
     /// Load a pool operator from a cold verification/signing key file or a pool ID file.
     ///
-    /// Key files must be dispatched on their envelope type: key loading doesn't check
-    /// the type, so reading a key file as a pool ID (or a signing key as a verification
-    /// key) silently yields the wrong pool hash.
+    /// Key loading refuses a file holding another type of key, so each type is tried in
+    /// turn and the pool hash comes from the verification key either way.
     private static func fromFile(_ filePath: String) -> PoolOperator? {
         // A pool.json holds the ID directly, but it also decodes as neither a key
         // file nor a pool ID file, so it has to be dispatched on its extension.
@@ -108,18 +107,15 @@ extension PoolOperator: @retroactive ExpressibleByArgument {
         }
 
         if let vkey = try? StakePoolVerificationKey.load(from: filePath) {
-            if vkey._type.contains("SigningKey") {
-                guard let skey = try? StakePoolSigningKey.load(from: filePath),
-                      let derived: StakePoolVerificationKey = try? skey.toVerificationKey(),
-                      let poolKeyHash = try? derived.poolKeyHash() else {
-                    return nil
-                }
-                return PoolOperator(poolKeyHash: poolKeyHash)
+            guard let poolKeyHash = try? vkey.poolKeyHash() else { return nil }
+            return PoolOperator(poolKeyHash: poolKeyHash)
+        }
+        if let skey = try? StakePoolSigningKey.load(from: filePath) {
+            guard let derived: StakePoolVerificationKey = try? skey.toVerificationKey(),
+                  let poolKeyHash = try? derived.poolKeyHash() else {
+                return nil
             }
-            if vkey._type.contains("VerificationKey") {
-                guard let poolKeyHash = try? vkey.poolKeyHash() else { return nil }
-                return PoolOperator(poolKeyHash: poolKeyHash)
-            }
+            return PoolOperator(poolKeyHash: poolKeyHash)
         }
 
         return try? PoolOperator.load(from: filePath)

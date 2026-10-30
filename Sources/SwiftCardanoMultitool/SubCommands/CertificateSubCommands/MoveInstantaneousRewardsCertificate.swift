@@ -1,3 +1,4 @@
+import OrderedCollections
 import Foundation
 import ArgumentParser
 import Noora
@@ -127,11 +128,11 @@ extension CertificateMainCommand {
                     noora.error(.alert("Invalid amount.", takeaways: ["Enter a valid ADA or lovelace amount."]))
                     throw ExitCode.validationFailure
                 }
-                moveInstantaneousReward = MoveInstantaneousReward(source: source, rewards: nil, coin: amount)
+                moveInstantaneousReward = MoveInstantaneousReward(source: source, coin: amount)
                 cliArguments.append(contentsOf: ["--transfer", "\(amount)"])
             } else {
                 // Reward distributions to stake addresses
-                var rewards: [String: DeltaCoin] = [:]
+                var rewards = OrderedDictionary<StakeCredential, DeltaCoin>()
                 var moreAddresses = true
 
                 while moreAddresses {
@@ -156,11 +157,18 @@ extension CertificateMainCommand {
                         noora.error(.alert("Invalid reward amount.", takeaways: ["Enter a valid ADA or lovelace amount."]))
                         throw ExitCode.validationFailure
                     }
-                    let reward = Int(rewardLovelace)
-
-                    let deltaCoin = try JSONDecoder().decode(DeltaCoin.self, from: Data("{\"deltaCoin\":\(reward)}".utf8))
-                    rewards[stakeAddr] = deltaCoin
-                    cliArguments.append(contentsOf: ["--stake-address", stakeAddr, "--reward", "\(reward)"])
+                    let credential: StakeCredential
+                    switch (try? Address(from: .string(stakeAddr)))?.stakingPart {
+                    case .verificationKeyHash(let hash)?:
+                        credential = StakeCredential(credential: .verificationKeyHash(hash))
+                    case .scriptHash(let hash)?:
+                        credential = StakeCredential(credential: .scriptHash(hash))
+                    default:
+                        noora.error(.alert("Invalid stake address.", takeaways: ["Enter a stake address (stake1... or stake_test1...)."]))
+                        throw ExitCode.validationFailure
+                    }
+                    rewards[credential] = DeltaCoin(rewardLovelace)
+                    cliArguments.append(contentsOf: ["--stake-address", stakeAddr, "--reward", "\(rewardLovelace)"])
 
                     moreAddresses = noora.yesOrNoChoicePrompt(
                         title: "More Addresses",
@@ -169,7 +177,7 @@ extension CertificateMainCommand {
                     )
                 }
 
-                moveInstantaneousReward = MoveInstantaneousReward(source: source, rewards: rewards, coin: nil)
+                moveInstantaneousReward = MoveInstantaneousReward(source: source, rewards: rewards)
             }
 
             print(noora.format("\nGenerating MIR certificate from: \(.primary(sourceOption.rawValue))"))
@@ -185,7 +193,7 @@ extension CertificateMainCommand {
                     _ = try await cli.legacy.governance(arguments: ["create-mir-certificate"] + cliArguments)
                     try await FileUtils.fileLock(outFile)
                 } else {
-                    let cert = SwiftCardanoCore.MoveInstantaneousRewards(
+                    let cert = try SwiftCardanoCore.MoveInstantaneousRewards(
                         moveInstantaneousRewards: moveInstantaneousReward
                     )
                     try cert.save(to: outFile.string, overwrite: true)

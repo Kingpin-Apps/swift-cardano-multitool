@@ -1,3 +1,4 @@
+import BigInt
 import Foundation
 import ArgumentParser
 import Noora
@@ -22,11 +23,13 @@ enum MintAction {
     var fileSuffix: String { self == .mint ? "mint" : "burn" }
 
     /// Apply the action's sign to a positive amount.
-    func signedAmount(_ amount: UInt64) -> Int64 {
-        switch self {
-        case .mint: return Int64(amount)
-        case .burn: return -Int64(amount)
+    /// - Throws: When the amount does not fit the ledger's signed 64-bit mint quantity.
+    func signedAmount(_ amount: UInt64) throws -> Int64 {
+        guard let quantity = Int64(exactly: amount) else {
+            throw SwiftCardanoMultitoolError.valueError(
+                "\(amount) tokens is more than one transaction can \(verbLower) (at most \(Int64.max)).")
         }
+        return self == .mint ? quantity : -quantity
     }
 }
 
@@ -274,15 +277,15 @@ func verifyBurnHoldings(
         throw ExitCode.validationFailure
     }
 
-    var available: Int64 = 0
+    var available = BigInt(0)
     for utxo in utxos {
         if let perPolicy = utxo.output.amount.multiAsset.data[scriptHash],
            let qty = perPolicy.data[assetName] {
-            available &+= qty
+            available += qty
         }
     }
 
-    guard available >= Int64(amount) else {
+    guard available >= BigInt(amount) else {
         noora.error(.alert(
             "Insufficient tokens to burn.",
             takeaways: [
@@ -446,7 +449,7 @@ extension TransactionSendable {
         let maxTTL = try mintBurnTTLCap(tipSlot: UInt64(tip), policy: policy, action: inputs.action)
 
         // 6. Build mint MultiAsset
-        let signedQty = inputs.action.signedAmount(inputs.amount)
+        let signedQty = try inputs.action.signedAmount(inputs.amount)
         let mintValue = try buildMintMultiAsset(
             policyIdHex: policy.policyId,
             assetNameHex: assetNameHex,

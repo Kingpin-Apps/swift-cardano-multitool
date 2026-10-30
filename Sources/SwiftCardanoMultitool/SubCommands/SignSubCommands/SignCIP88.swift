@@ -131,6 +131,9 @@ extension SignMainCommand {
             switch m {
             case .int(let n):
                 return ["int": NSNumber(value: n)]
+            case .bigInt(let n):
+                // A metadata integer is at most 65 bits, well within a decimal number's 38 digits.
+                return ["int": NSDecimalNumber(string: n.description)]
             case .bytes(let d):
                 return ["bytes": d.toHex]
             case .text(let s):

@@ -135,7 +135,7 @@ extension CertificateMainCommand {
                     _ = try await cli.governance.committeeAuthorization(arguments: arguments)
                     try await FileUtils.fileLock(outFile)
                 } else {
-                    let cert = SwiftCardanoCore.AuthCommitteeHot(
+                    let cert = try SwiftCardanoCore.AuthCommitteeHot(
                         committeeColdCredential: coldCredential,
                         committeeHotCredential: hotCredential
                     )

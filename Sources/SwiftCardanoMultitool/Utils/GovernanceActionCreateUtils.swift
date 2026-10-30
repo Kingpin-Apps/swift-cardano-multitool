@@ -460,7 +460,7 @@ extension TransactionSendable {
             )
         } else {
             let govAction = try buildGovAction(payload: inputs.payload)
-            let procedure = ProposalProcedure(
+            let procedure = try ProposalProcedure(
                 deposit: Coin(resolvedDeposit),
                 rewardAccount: rewardAccount,
                 govAction: govAction,
@@ -511,7 +511,7 @@ extension TransactionSendable {
             extraBuildArgs.append(contentsOf: ["--proposal-file", FileUtils.absolutePath(actionFile).string])
         } else {
             let govAction = try buildGovAction(payload: inputs.payload)
-            txBuilder.addProposal(
+            try txBuilder.addProposal(
                 deposit: Int(resolvedDeposit),
                 rewardAccount: rewardAccount,
                 govAction: govAction,
@@ -639,7 +639,7 @@ extension TransactionSendable {
             // ProposalProcedure carries deposit + reward account + govAction + anchor we
             // reconstruct addProposal calls directly.
             for proc in procedures {
-                txBuilder.addProposal(
+                try txBuilder.addProposal(
                     deposit: Int(proc.deposit),
                     rewardAccount: proc.rewardAccount,
                     govAction: proc.govAction,

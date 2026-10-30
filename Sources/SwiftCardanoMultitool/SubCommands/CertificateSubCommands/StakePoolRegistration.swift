@@ -811,7 +811,7 @@ extension CertificateMainCommand {
                     let updatedPoolParams = try pool.toPoolParams(
                         network: config.cardano?.network.networkId ?? .mainnet
                     )
-                    let regCert = SwiftCardanoCore.PoolRegistration(poolParams: updatedPoolParams)
+                    let regCert = try SwiftCardanoCore.PoolRegistration(poolParams: updatedPoolParams)
                     try regCert.save(to: outFile.string)
                 }
             } catch {
@@ -1137,9 +1137,25 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
     /// Apply the parameter edit flags. Returns whether any were given.
     private func applyFlagEdits(_ draft: inout PoolParamsDraft, network: NetworkId) async throws -> Bool {
         let ada = AdaFormatter(defaultUnit: .ada)
-        if let pledge, let lovelace = ada.toLovelace(pledge) { draft.pledge = Int(lovelace) }
-        if let cost, let lovelace = ada.toLovelace(cost) { draft.cost = Int(lovelace) }
-        if let margin, let interval = PoolParamsFormat.parseMargin(margin) { draft.margin = interval }
+        // A flag that does not parse is an error, not a value left unchanged.
+        if let pledge {
+            guard let lovelace = ada.toLovelace(pledge) else {
+                throw SwiftCardanoMultitoolError.valueError("Invalid pledge '\(pledge)'.")
+            }
+            draft.pledge = lovelace
+        }
+        if let cost {
+            guard let lovelace = ada.toLovelace(cost) else {
+                throw SwiftCardanoMultitoolError.valueError("Invalid cost '\(cost)'.")
+            }
+            draft.cost = lovelace
+        }
+        if let margin {
+            guard let interval = PoolParamsFormat.parseMargin(margin) else {
+                throw SwiftCardanoMultitoolError.valueError("Invalid margin '\(margin)'.")
+            }
+            draft.margin = interval
+        }
         if !relays.isEmpty { draft.relays = relays }
         if !owners.isEmpty { draft.owners = owners.map(\.keyHash) }
         if let rewardAccount { draft.rewardAccount = try rewardAccount.rewardAccount(network: network) }
@@ -1358,7 +1374,7 @@ extension CertificateMainCommand.StakePoolRegistrationCertificate {
                 cliArgs += ["--out-file", FileUtils.absolutePath(outFile).string]
                 _ = try await cli.stakePool.registrationCertificate(arguments: cliArgs)
             } else {
-                let regCert = SwiftCardanoCore.PoolRegistration(poolParams: try draft.toPoolParams())
+                let regCert = try SwiftCardanoCore.PoolRegistration(poolParams: try draft.toPoolParams())
                 try regCert.save(to: outFile.string)
             }
         } catch {

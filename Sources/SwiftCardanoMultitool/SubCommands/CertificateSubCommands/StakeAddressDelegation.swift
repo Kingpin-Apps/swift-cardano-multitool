@@ -204,7 +204,7 @@ extension CertificateMainCommand {
                     let stakeCredential = StakeCredential(
                         credential: .verificationKeyHash(try stakeVkey.hash())
                     )
-                    let stakeDelegationCertificate = SwiftCardanoCore.StakeDelegation(
+                    let stakeDelegationCertificate = try SwiftCardanoCore.StakeDelegation(
                         stakeCredential: stakeCredential,
                         poolKeyHash: poolOperator.poolKeyHash
                     )

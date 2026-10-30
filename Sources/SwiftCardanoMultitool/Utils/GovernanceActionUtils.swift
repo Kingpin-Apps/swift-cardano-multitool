@@ -60,7 +60,9 @@ public func govActionInfoSummary(
             }
     }
 
-    spacedPrint("Action Type:     \(.primary(govActionTypeLabel(info.govAction)))")
+    // The node keeps a proposal's body only while it is live.
+    let actionType = info.govAction.map(govActionTypeLabel) ?? "Unknown (no longer held by the node)"
+    spacedPrint("Action Type:     \(.primary(actionType))")
 
     if let proposed = info.proposedIn {
         spacedPrint("Proposed In:     \(.primary("\(proposed)"))")

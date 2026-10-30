@@ -1,3 +1,4 @@
+import BigInt
 import Foundation
 import Noora
 import SwiftCardanoChain
@@ -82,7 +83,7 @@ struct AcceptanceResult: Sendable {
     var committeeRequired: Bool
     /// Reads as N/A in the "Full approval" row (e.g. Info actions are advisory).
     var advisoryOnly: Bool
-    /// True when committee threshold == 0 (chain in committee-no-confidence state proxy).
+    /// True when the chain has no committee: the ledger's no-confidence state.
     var committeeNoConfidenceState: Bool
 }
 
@@ -277,8 +278,10 @@ private func groupsTouched(by update: ProtocolParamUpdate) -> ParameterChangeGro
 ///  * SPO formulas can't separate pools delegating to `drep-alwaysAbstain` /
 ///    `drep-alwaysNoConfidence` because `SPOStakeEntry` doesn't carry the delegated
 ///    DRep. Non-voting pools default to NO, which slightly overcounts the denominator.
-///  * Committee "no-confidence state" detection has no SDK equivalent — we proxy on
-///    `CommitteeStateInfo.threshold == 0`.
+///
+/// Whether each body passes is decided as the ledger decides it, in exact rationals:
+/// `yes / (total − abstain) ≥ threshold`. The ratios and thresholds in the result are
+/// `Double`s for display only.
 func computeAcceptance(
     proposal: GovActionVotes,
     drepTally: DRepTally,
@@ -291,11 +294,14 @@ func computeAcceptance(
     let pvt = pp.poolVotingThresholds
     let protocolMajor = pp.protocolVersion.major
 
-    let committeeThreshold = committee?.threshold ?? 0
-    let committeeNoConfidenceState = (committee != nil) && committeeThreshold <= 0
+    // The chain reports no threshold when there is no committee: the ledger's
+    // no-confidence state.
+    let committeeNoConfidenceState = committee != nil && committee?.threshold == nil
+    let committeeThreshold = committee?.threshold ?? UnitInterval(numerator: 0, denominator: 1)
 
-    var drepThreshold: Double = 0
-    var spoThreshold: Double = 0
+    let zero = UnitInterval(numerator: 0, denominator: 1)
+    var drepThreshold = zero
+    var spoThreshold = zero
     var drepRequired = true
     var spoRequired = true
     var committeeRequired = true
@@ -327,12 +333,13 @@ func computeAcceptance(
         }
         spoThreshold = pvt.hardForkInitiation
     case .parameterChangeAction(let action):
+        // The highest threshold of every group the update touches.
         let groups = groupsTouched(by: action.protocolParamUpdate)
-        var dt: Double = 0
-        if groups.network { dt = max(dt, dvt.ppNetworkGroup) }
-        if groups.economic { dt = max(dt, dvt.ppEconomicGroup) }
-        if groups.technical { dt = max(dt, dvt.ppTechnicalGroup) }
-        if groups.governance { dt = max(dt, dvt.ppGovGroup) }
+        var dt = zero
+        if groups.network { dt = higher(dt, dvt.ppNetworkGroup) }
+        if groups.economic { dt = higher(dt, dvt.ppEconomicGroup) }
+        if groups.technical { dt = higher(dt, dvt.ppTechnicalGroup) }
+        if groups.governance { dt = higher(dt, dvt.ppGovGroup) }
         drepThreshold = dt
         if groups.security {
             spoThreshold = pvt.ppSecurityGroup
@@ -354,53 +361,69 @@ func computeAcceptance(
     }
 
     // DRep ratio
-    let drepRatio: Double
-    let drepDenom = Int64(drepTally.activeTotal) &+ Int64(drepTally.alwaysNCPower) &- Int64(drepTally.abstainPower)
-    let drepNumerator: UInt64 = {
+    let drepDenom = BigInt(drepTally.activeTotal) + BigInt(drepTally.alwaysNCPower) - BigInt(drepTally.abstainPower)
+    let drepNumerator: BigInt = {
         if case .noConfidence = proposal.govAction {
-            return drepTally.yesPower &+ drepTally.alwaysNCPower
+            return BigInt(drepTally.yesPower) + BigInt(drepTally.alwaysNCPower)
         }
-        return drepTally.yesPower
+        return BigInt(drepTally.yesPower)
     }()
-    if drepDenom > 0 {
-        drepRatio = Double(drepNumerator) / Double(drepDenom)
-    } else {
-        drepRatio = 0
-    }
 
     // SPO ratio — non-voting pools count as NO; alwaysAbstain-delegating non-voters
     // can't be removed (see note above), so this is a slight overcount.
-    let spoDenomI = Int64(spoTally.totalPoolStake) &- Int64(spoTally.abstainPower)
-    let spoRatio: Double = spoDenomI > 0
-        ? Double(spoTally.yesPower) / Double(spoDenomI)
-        : 0
+    let spoDenom = BigInt(spoTally.totalPoolStake) - BigInt(spoTally.abstainPower)
+    let spoNumerator = BigInt(spoTally.yesPower)
 
     // Committee ratio (one-member-one-vote)
-    let ccDenom = committeeTally.activeMembers - committeeTally.abstainCount
-    let committeeRatio: Double = ccDenom > 0
-        ? Double(committeeTally.yesCount) / Double(ccDenom)
-        : 0
+    let ccDenom = BigInt(committeeTally.activeMembers) - BigInt(committeeTally.abstainCount)
+    let ccNumerator = BigInt(committeeTally.yesCount)
 
-    let drepPassed = !drepRequired || drepRatio >= drepThreshold
-    let spoPassed = !spoRequired || spoRatio >= spoThreshold
-    let committeePassed = !committeeRequired || committeeRatio >= committeeThreshold
+    let drepPassed = !drepRequired || meets(drepNumerator, drepDenom, drepThreshold)
+    let spoPassed = !spoRequired || meets(spoNumerator, spoDenom, spoThreshold)
+    let committeePassed = !committeeRequired || meets(ccNumerator, ccDenom, committeeThreshold)
+
+    let drepRatio = ratio(drepNumerator, drepDenom)
+    let spoRatio = ratio(spoNumerator, spoDenom)
+    let committeeRatio = ratio(ccNumerator, ccDenom)
 
     return AcceptanceResult(
         drepPassed: drepPassed,
-        drepThreshold: drepThreshold,
+        drepThreshold: display(drepThreshold),
         drepRatio: drepRatio,
         drepRequired: drepRequired,
         spoPassed: spoPassed,
-        spoThreshold: spoThreshold,
+        spoThreshold: display(spoThreshold),
         spoRatio: spoRatio,
         spoRequired: spoRequired,
         committeePassed: committeePassed,
-        committeeThreshold: committeeThreshold,
+        committeeThreshold: display(committeeThreshold),
         committeeRatio: committeeRatio,
         committeeRequired: committeeRequired,
         advisoryOnly: advisoryOnly,
         committeeNoConfidenceState: committeeNoConfidenceState
     )
+}
+
+/// Whether `numerator / denominator` reaches `threshold`, as the ledger decides it:
+/// a ratio with no denominator is 0.
+func meets(_ numerator: BigInt, _ denominator: BigInt, _ threshold: UnitInterval) -> Bool {
+    guard denominator > 0 else { return threshold.numerator == 0 }
+    return numerator * BigInt(threshold.denominator) >= BigInt(threshold.numerator) * denominator
+}
+
+/// The larger of two thresholds, compared exactly.
+func higher(_ a: UnitInterval, _ b: UnitInterval) -> UnitInterval {
+    BigInt(a.numerator) * BigInt(b.denominator) >= BigInt(b.numerator) * BigInt(a.denominator) ? a : b
+}
+
+/// `numerator / denominator` for display, 0 with no denominator.
+private func ratio(_ numerator: BigInt, _ denominator: BigInt) -> Double {
+    denominator > 0 ? Double(numerator) / Double(denominator) : 0
+}
+
+/// A threshold for display.
+private func display(_ threshold: UnitInterval) -> Double {
+    threshold.denominator == 0 ? 0 : Double(threshold.numerator) / Double(threshold.denominator)
 }
 
 // MARK: - Status Filter

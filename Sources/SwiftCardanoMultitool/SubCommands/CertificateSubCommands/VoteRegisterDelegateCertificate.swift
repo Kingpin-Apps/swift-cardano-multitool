@@ -149,7 +149,7 @@ extension CertificateMainCommand {
                 } else {
                     let stakeVkey = try StakeVerificationKey.load(from: stakeVkeyFilePath.string)
                     let stakeCredential = StakeCredential(credential: .verificationKeyHash(try stakeVkey.hash()))
-                    let cert = SwiftCardanoCore.VoteRegisterDelegate(
+                    let cert = try SwiftCardanoCore.VoteRegisterDelegate(
                         stakeCredential: stakeCredential,
                         drep: drep,
                         coin: Coin(depositFee)

@@ -182,38 +182,54 @@ public struct KESUtils {
             throw KESError.missingGenesisParameter("systemStart")
         }
         
-        // Extract Byron genesis start time
+        let currentMilliseconds = Int64(currentTimeSec) * 1000
+
+        // The ledger's KES period is the slot divided by slotsPerKESPeriod. Where core
+        // knows the chain's exact timeline (the public networks, or any chain that has
+        // always used one slot length), the slot comes from it.
+        if let timeline = SlotTimeline.forChain(genesis: genesisParameters) {
+            let slot = timeline.slot(atMilliseconds: currentMilliseconds)
+            return Int(slot / slotsPerKesPeriod)
+        }
+
+        // A chain with a Byron era of another slot length: genesis does not say when
+        // it forked to Shelley, so the configured transition epoch places it, as the
+        // SPO scripts do. Worked in whole milliseconds.
         guard let byronGenesis = genesisParameters.byronGenesis else {
             throw KESError.missingGenesisParameter("byronGenesis")
         }
-        let startTimeByron = byronGenesis.startTime
-        
-        // Convert systemStart Date to Unix timestamp
-        let startTimeSec = Int(systemStart.timeIntervalSince1970)
-        
-        // Calculate transition time end
-        let transTimeEnd = startTimeSec + (byronToShelleyEpochTransition * epochLength)
-        
-        // Byron slot calculations (Byron used 20-second slots)
-        let byronSlotDuration = 20.0
-        let byronSlots = Double(startTimeSec - Int(startTimeByron)) / byronSlotDuration
-        let transSlots = Double(byronToShelleyEpochTransition * epochLength) / byronSlotDuration
-        
-        // Calculate current slot based on whether we're in or past the transition phase
-        let currentSlot: Double
-        if currentTimeSec < transTimeEnd {
-            // In Transition Phase between ShelleyGenesisStart and TransitionEnd
-            currentSlot = byronSlots + Double(currentTimeSec - startTimeSec) / byronSlotDuration
-        } else {
-            // After Transition Phase
-            currentSlot = byronSlots + transSlots + (Double(currentTimeSec - transTimeEnd) / Double(slotLength))
+        guard let slotMilliseconds = Self.milliseconds(slotLength), slotMilliseconds > 0,
+              let byronSlotMilliseconds = Int64(exactly: byronGenesis.blockVersionData.slotDuration),
+              byronSlotMilliseconds > 0,
+              let epochSlots = Int64(exactly: epochLength),
+              let kesSlots = Int64(exactly: slotsPerKesPeriod), kesSlots > 0
+        else {
+            throw KESError.missingGenesisParameter("slotLength")
         }
-        
-        // Calculate KES period
-        let currentKESPeriod = (currentSlot - byronSlots) / (Double(slotsPerKesPeriod) * Double(slotLength))
-        
-        // Ensure non-negative
-        return max(Int(currentKESPeriod), 0)
+        let startMilliseconds = Int64(systemStart.timeIntervalSince1970 * 1000)
+        let byronStartMilliseconds = Int64(byronGenesis.startTime) * 1000
+        // The transition is `byronToShelleyEpochTransition` Shelley-length epochs of time.
+        let transitionMilliseconds = Int64(byronToShelleyEpochTransition) * epochSlots * 1000
+        let transitionEnd = startMilliseconds + transitionMilliseconds
+
+        let byronSlots = (startMilliseconds - byronStartMilliseconds) / byronSlotMilliseconds
+        let currentSlot: Int64
+        if currentMilliseconds < transitionEnd {
+            currentSlot = byronSlots + (currentMilliseconds - startMilliseconds) / byronSlotMilliseconds
+        } else {
+            currentSlot = byronSlots + transitionMilliseconds / byronSlotMilliseconds
+                + (currentMilliseconds - transitionEnd) / slotMilliseconds
+        }
+        return max(Int((currentSlot - byronSlots) / kesSlots), 0)
+    }
+
+    /// A slot length in whole milliseconds, or `nil` when it is not one.
+    static func milliseconds(_ seconds: Decimal) -> Int64? {
+        var exact = seconds * 1000
+        var whole = Decimal()
+        NSDecimalRound(&whole, &exact, 0, .plain)
+        guard whole == exact else { return nil }
+        return Int64(whole.description)
     }
     
     /// Convenience method that uses the current system time.
@@ -282,11 +298,16 @@ public struct KESUtils {
         spacedPrint("Current KES Period: \(.primary("\(currentKESPeriod)"))")
         
         // Calculate expiration
-        let expireKESPeriod = currentKESPeriod + maxKesEvolutions
+        guard let evolutions = Int(exactly: maxKesEvolutions),
+              let slotMilliseconds = Self.milliseconds(slotLength),
+              let kesSlots = Int64(exactly: slotsPerKesPeriod) else {
+            throw KESError.missingGenesisParameter("maxKesEvolutions")
+        }
+        let expireKESPeriod = currentKESPeriod + evolutions
         
         // Calculate expire time:
         // expire_time_sec = current_time_sec + (slotLength * maxKesEvolutions * slotsPerKESPeriod)
-        let secondsUntilExpire = slotLength * maxKesEvolutions * slotsPerKesPeriod
+        let secondsUntilExpire = Int(slotMilliseconds * Int64(evolutions) * kesSlots / 1000)
         let expireTimeSec = currentTimeSec + secondsUntilExpire
         let expireDate = Date(timeIntervalSince1970: TimeInterval(expireTimeSec))
         

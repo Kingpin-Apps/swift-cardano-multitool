@@ -234,7 +234,7 @@ extension CertificateMainCommand {
                     let stakeCredential = StakeCredential(
                         credential: .verificationKeyHash(try stakeVkey.hash())
                     )
-                    let voteDelegationCertificate = VoteDelegate(
+                    let voteDelegationCertificate = try VoteDelegate(
                         stakeCredential: stakeCredential,
                         drep: drep
                     )

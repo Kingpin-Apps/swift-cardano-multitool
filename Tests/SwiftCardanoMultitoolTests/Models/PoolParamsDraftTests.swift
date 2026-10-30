@@ -71,7 +71,7 @@ struct PoolParamsDraftTests {
             margin: UnitInterval(numerator: 1, denominator: 3),
             rewardAccount: RewardAccountHash(payload: reward.toBytes()),
             poolOwners: .orderedSet(try OrderedSet([owner])),
-            relays: [.singleHostName(SingleHostName(port: 3001, dnsName: "relay.example.com"))],
+            relays: [.singleHostName(try SingleHostName(port: 3001, dnsName: "relay.example.com"))],
             poolMetadata: try PoolMetadata(
                 url: try Url("https://example.com/pool.json"),
                 poolMetadataHash: PoolMetadataHash(payload: Data(repeating: 0xab, count: 32))

@@ -91,11 +91,11 @@ public struct OpCertUtils {
         
         // Genesis parameters
         let maxKESEvolutions = Int(shelleyGenesis.maxKESEvolutions)
-        let slotLength = Int(shelleyGenesis.slotLength)
+        let slotLength = shelleyGenesis.slotLength
         let slotsPerKESPeriod = Int(shelleyGenesis.slotsPerKESPeriod)
         
-        // Calculate current KES period
-        let currentKESPeriod = max(currentSlot / (slotsPerKESPeriod * slotLength), 0)
+        // The ledger's KES period: the slot divided by slotsPerKESPeriod.
+        let currentKESPeriod = max(currentSlot / slotsPerKESPeriod, 0)
         
         spacedPrint("Current EPOCH: \(.success("\(currentEpoch)"))\n")
         
@@ -249,10 +249,15 @@ public struct OpCertUtils {
         currentKESPeriod: Int,
         maxKESEvolutions: Int,
         slotsPerKESPeriod: Int,
-        slotLength: Int,
+        slotLength: Decimal,
         currentSlot: Int
     ) -> Bool {
         let expireKESPeriod = onDiskKESStart + maxKESEvolutions
+        // The slot the KES key expires at, and the seconds between it and now.
+        let expireSlot = expireKESPeriod * slotsPerKESPeriod
+        func seconds(_ slots: Int) -> Int {
+            NSDecimalNumber(decimal: Decimal(slots) * slotLength).intValue
+        }
         
         print(noora.format("KES-Interval Check: "), terminator: "")
         
@@ -265,7 +270,7 @@ public struct OpCertUtils {
             spacedPrint("File KES expiry Period: \(.success("\(expireKESPeriod)"))")
             
             // Calculate time until expiry
-            let expireInSecs = (expireKESPeriod * slotsPerKESPeriod * slotLength) - currentSlot
+            let expireInSecs = seconds(expireSlot - currentSlot)
             let expireFormatted = formatDuration(seconds: expireInSecs)
             
             let style: TerminalStyleCode
@@ -288,7 +293,7 @@ public struct OpCertUtils {
             formatPrint("File KES expiry Period: \(.danger("\(expireKESPeriod)"))")
             
             // Calculate how long ago it expired
-            let expiredBeforeSecs = currentSlot - (expireKESPeriod * slotsPerKESPeriod * slotLength)
+            let expiredBeforeSecs = seconds(currentSlot - expireSlot)
             let expiredFormatted = formatDuration(seconds: expiredBeforeSecs)
             
             formatPrint("File KES expired before: \(.danger(expiredFormatted))\n")

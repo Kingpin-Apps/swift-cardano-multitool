@@ -131,7 +131,7 @@ extension CertificateMainCommand {
                     _ = try await cli.governance.committeeResignation(arguments: arguments)
                     try await FileUtils.fileLock(outFile)
                 } else {
-                    let cert = SwiftCardanoCore.ResignCommitteeCold(
+                    let cert = try SwiftCardanoCore.ResignCommitteeCold(
                         committeeColdCredential: coldCredential,
                         anchor: anchor
                     )

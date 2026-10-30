@@ -774,6 +774,11 @@ public struct Pool: Codable, Sendable {
                 "Cost is required to generate pool parameters."
             )
         }
+        guard let pledgeCoin = Coin(exactly: pledge), let costCoin = Coin(exactly: cost) else {
+            throw SwiftCardanoMultitoolError.valueError(
+                "Pledge (\(pledge)) and cost (\(cost)) must not be negative."
+            )
+        }
         
         // Margin (convert Double to UnitInterval)
         guard let margin = margin else {
@@ -781,7 +786,7 @@ public struct Pool: Codable, Sendable {
                 "Margin is required to generate pool parameters."
             )
         }
-        let (numerator, denominator) = Self.doubleToFraction(margin)
+        let (numerator, denominator) = try Self.marginFraction(margin)
         let unitInterval = UnitInterval(
             numerator: numerator,
             denominator: denominator
@@ -843,8 +848,8 @@ public struct Pool: Codable, Sendable {
         return PoolParams(
             poolOperator: poolOperator,
             vrfKeyHash: vrfKeyHash,
-            pledge: pledge,
-            cost: cost,
+            pledge: pledgeCoin,
+            cost: costCoin,
             margin: unitInterval,
             rewardAccount: rewardAccount,
             poolOwners: poolOwners,
@@ -853,25 +858,31 @@ public struct Pool: Codable, Sendable {
         )
     }
     
-    /// Convert a Double (0.0 - 1.0) to a fraction (numerator, denominator)
-    private static func doubleToFraction(_ value: Double) -> (UInt64, UInt64) {
-        guard value > 0 else { return (0, 1) }
-        guard value < 1 else { return (1, 1) }
-        
-        // Multiply by increasing powers of 10 until we get integers
-        var denominator: UInt64 = 1
-        var numerator = value
-        while numerator != Double(UInt64(numerator)) && denominator < 1_000_000_000 {
-            numerator *= 10
-            denominator *= 10
+    /// The margin as the exact fraction its decimal spells: `0.015` is 3/200.
+    ///
+    /// A `Double`'s shortest description is the decimal it was read from, so that text
+    /// is read as a `Decimal` and reduced — never rounded through powers of ten.
+    /// - Throws: When the margin is not between 0 and 1.
+    static func marginFraction(_ value: Double) throws -> (UInt64, UInt64) {
+        guard value.isFinite, value >= 0, value <= 1,
+              let decimal = Decimal(string: String(value), locale: Locale(identifier: "en_US_POSIX"))
+        else {
+            throw SwiftCardanoMultitoolError.valueError("Margin \(value) must be between 0.00 and 1.00 (100%)!")
         }
-        let num = UInt64(numerator.rounded())
-        
-        // Simplify by GCD
-        let divisor = gcd(num, denominator)
-        return (num / divisor, denominator / divisor)
+        guard let significand = UInt64(decimal.significand.description) else {
+            throw SwiftCardanoMultitoolError.valueError("Margin \(value) has too many digits")
+        }
+        let exponent = Int(decimal.exponent)
+        guard exponent < 0 else { return (significand == 0 ? 0 : 1, 1) }
+        guard -exponent <= 19 else {
+            throw SwiftCardanoMultitoolError.valueError("Margin \(value) has too many digits")
+        }
+        var denominator: UInt64 = 1
+        for _ in 0 ..< -exponent { denominator *= 10 }
+        let divisor = gcd(significand, denominator)
+        return (significand / divisor, denominator / divisor)
     }
-    
+
     /// Greatest common divisor
     private static func gcd(_ a: UInt64, _ b: UInt64) -> UInt64 {
         b == 0 ? a : gcd(b, a % b)

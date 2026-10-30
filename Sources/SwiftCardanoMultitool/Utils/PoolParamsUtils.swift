@@ -19,8 +19,8 @@ import FoundationNetworking
 struct PoolParamsDraft: Equatable {
     var poolKeyHash: PoolKeyHash
     var vrfKeyHash: VrfKeyHash
-    var pledge: Int
-    var cost: Int
+    var pledge: Coin
+    var cost: Coin
     var margin: UnitInterval
     var rewardAccount: RewardAccountHash
     var owners: [VerificationKeyHash]
@@ -115,7 +115,7 @@ struct PoolParamsDraft: Equatable {
 
     /// Validate the parameters against ledger rules and the protocol parameters.
     func validate(minPoolCost: Int) throws {
-        if cost < minPoolCost {
+        if Int(clamping: cost) < minPoolCost {
             throw SwiftCardanoMultitoolError.valueError(
                 "Cost \(lovelaceToAdaFormatString(UInt64(cost))) is below the minimum pool cost of \(lovelaceToAdaFormatString(UInt64(minPoolCost)))."
             )
@@ -154,8 +154,8 @@ enum PoolParamsFormat {
         return "\(rounded)%"
     }
 
-    static func ada(_ lovelace: Int) -> String {
-        "\(lovelaceToAdaFormatString(UInt64(max(lovelace, 0)))) (\(lovelace) lovelace)"
+    static func ada<T: BinaryInteger>(_ lovelace: T) -> String {
+        "\(lovelaceToAdaFormatString(UInt64(clamping: lovelace))) (\(lovelace) lovelace)"
     }
 
     static func rewardAccount(_ account: RewardAccountHash) -> String {
@@ -522,8 +522,8 @@ extension Pool {
         var pool = try Pool(
             name: name,
             owners: owners,
-            pledge: draft.pledge,
-            cost: draft.cost,
+            pledge: Int(clamping: draft.pledge),
+            cost: Int(clamping: draft.cost),
             margin: margin,
             relays: draft.relays,
             metaName: draft.metadataName,

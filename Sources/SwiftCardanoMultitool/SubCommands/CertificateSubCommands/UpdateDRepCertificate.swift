@@ -131,7 +131,7 @@ extension CertificateMainCommand {
                     _ = try await cli.governance.drepUpdate(arguments: arguments)
                     try await FileUtils.fileLock(outFile)
                 } else {
-                    let cert = SwiftCardanoCore.UpdateDRep(
+                    let cert = try SwiftCardanoCore.UpdateDRep(
                         drepCredential: drepCredential,
                         anchor: anchor
                     )

@@ -202,7 +202,7 @@ extension CertificateMainCommand {
                     let genesisHash = GenesisHash(payload: genesisRawHex.hexStringToData)
                     let genesisDelegateHash = GenesisDelegateHash(payload: delegateRawHex.hexStringToData)
 
-                    let cert = SwiftCardanoCore.GenesisKeyDelegation(
+                    let cert = try SwiftCardanoCore.GenesisKeyDelegation(
                         genesisHash: genesisHash,
                         genesisDelegateHash: genesisDelegateHash,
                         vrfKeyHash: vrfKeyHash

@@ -89,4 +89,22 @@ struct DRepArgumentParsingTests {
             #expect(DRep(argument: "absent") == nil)
         }
     }
+
+    @Test("derives the DRep from a verification or signing key file")
+    func acceptsKeyFiles() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let skey = try DRepSigningKey.generate()
+        let vkey: DRepVerificationKey = try skey.toVerificationKey()
+        let expected = try vkey.hash().payload.toHex
+        let vkeyPath = dir.appendingPathComponent("drep.vkey").path
+        let skeyPath = dir.appendingPathComponent("drep.skey").path
+        try vkey.save(to: vkeyPath)
+        try skey.save(to: skeyPath)
+
+        #expect(keyHash(DRep(argument: vkeyPath)) == expected)
+        #expect(keyHash(DRep(argument: skeyPath)) == expected)
+    }
 }

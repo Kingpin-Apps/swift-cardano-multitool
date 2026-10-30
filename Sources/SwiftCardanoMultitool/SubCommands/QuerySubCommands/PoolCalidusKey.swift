@@ -114,7 +114,7 @@ extension QueryMainCommand {
                 case .all:
                     return true
                 case .poolIdBech32(let target):
-                    return (row.poolIdBech32?.value as? String)?.caseInsensitiveCompare(target) == .orderedSame
+                    return row.poolIdBech32?.caseInsensitiveCompare(target) == .orderedSame
                 case .calidusIdBech32(let target):
                     return row.calidusIdBech32?.caseInsensitiveCompare(target) == .orderedSame
                 case .calidusPubKeyHex(let target):
@@ -231,16 +231,16 @@ extension QueryMainCommand {
                 let header: TerminalText = "\(.primary("Entry \(index + 1) of \(rows.count)"))"
                 spacedPrint(header)
 
-                let poolId = (row.poolIdBech32?.value as? String) ?? "—"
-                let poolStatus = (row.poolStatus?.value as? String) ?? "—"
+                let poolId = row.poolIdBech32 ?? "—"
+                let poolStatus = row.poolStatus?.rawValue ?? "—"
                 let calidusId = row.calidusIdBech32 ?? "—"
                 let calidusPubKey = row.calidusPubKey ?? "—"
-                let nonce = row.calidusNonce.map { String(Int64($0)) } ?? "—"
+                let nonce = wholeNumberString(row.calidusNonce)
                 let registered = row.registered.map { $0 ? "yes" : "no" } ?? "—"
-                let txHash = (row.txHash?.value as? String) ?? "—"
-                let epoch = anyValueString(row.epochNo?.value)
-                let blockHeight = anyValueString(row.blockHeight?.value)
-                let blockTime = blockTimeString(row.blockTime?.value)
+                let txHash = row.txHash ?? "—"
+                let epoch = row.epochNo.map { String($0) } ?? "—"
+                let blockHeight = wholeNumberString(row.blockHeight)
+                let blockTime = blockTimeString(row.blockTime)
 
                 print(noora.format("  Pool ID:        \(.primary(poolId))"))
                 print(noora.format("  Pool Status:    \(.primary(poolStatus))"))
@@ -266,7 +266,7 @@ extension QueryMainCommand {
             }
 
             let uniqueCalidusKeys = Set(totalRows.compactMap { $0.calidusPubKey?.lowercased() }).count
-            let uniquePools = Set(totalRows.compactMap { ($0.poolIdBech32?.value as? String)?.lowercased() }).count
+            let uniquePools = Set(totalRows.compactMap { $0.poolIdBech32?.lowercased() }).count
             let matchWord = rows.count == 1 ? "match" : "matches"
             let keyWord = uniqueCalidusKeys == 1 ? "key" : "keys"
             let poolWord = uniquePools == 1 ? "pool" : "pools"
@@ -275,21 +275,16 @@ extension QueryMainCommand {
             )
         }
 
-        private func anyValueString(_ any: Any?) -> String {
-            guard let any = any else { return "—" }
-            if let s = any as? String { return s }
-            if let i = any as? Int { return String(i) }
-            if let d = any as? Double { return String(Int64(d)) }
-            return String(describing: any)
+        /// A whole number Koios sends as a JSON number, shown without a fraction;
+        /// anything else is shown as sent rather than truncated.
+        private func wholeNumberString(_ value: Double?) -> String {
+            guard let value else { return "—" }
+            if let whole = Int64(exactly: value) { return String(whole) }
+            return String(value)
         }
 
-        private func blockTimeString(_ any: Any?) -> String {
-            guard let any = any else { return "—" }
-            let seconds: TimeInterval?
-            if let d = any as? Double { seconds = d }
-            else if let i = any as? Int { seconds = TimeInterval(i) }
-            else { seconds = nil }
-            guard let seconds = seconds else { return anyValueString(any) }
+        private func blockTimeString(_ seconds: Double?) -> String {
+            guard let seconds else { return "—" }
             let date = Date(timeIntervalSince1970: seconds)
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions = [.withInternetDateTime]

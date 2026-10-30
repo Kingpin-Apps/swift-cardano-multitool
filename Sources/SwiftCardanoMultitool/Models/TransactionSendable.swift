@@ -1,3 +1,4 @@
+import BigInt
 import ArgumentParser
 import Foundation
 import SystemPackage
@@ -936,8 +937,8 @@ extension TransactionSendable {
         
         let lovelacesToReturn: UInt64
         if isSame {
-            lovelacesToReturn = UInt64(bitPattern:
-                transactionOutputs.reduce(0) {
+            lovelacesToReturn = UInt64(clamping:
+                transactionOutputs.reduce(BigInt(0)) {
                     if $1.address == feePaymentAddress.info.address! {
                         return $0 + $1.lovelace
                     } else {
@@ -950,8 +951,8 @@ extension TransactionSendable {
                 "Lovelaces that will be returned to destination Address: \(.primary("\(lovelaceToAdaFormatString(lovelacesToReturn))")) / \(.primary("\(lovelacesToReturn)")) lovelaces "
             )
         } else {
-            lovelacesToReturn = UInt64(bitPattern:
-                transactionOutputs.reduce(0) {
+            lovelacesToReturn = UInt64(clamping:
+                transactionOutputs.reduce(BigInt(0)) {
                     if $1.address == feePaymentAddress.info.address! {
                         return $0 + $1.lovelace
                     } else {
@@ -961,8 +962,8 @@ extension TransactionSendable {
             )
             
             if let toAddress = toAddress {
-                let lovelacesToDestination = UInt64(bitPattern:
-                    transactionOutputs.reduce(0) {
+                let lovelacesToDestination = UInt64(clamping:
+                    transactionOutputs.reduce(BigInt(0)) {
                         if $1.address == toAddress.info.address! {
                             return $0 + $1.lovelace
                         } else {
@@ -1048,8 +1049,8 @@ extension TransactionSendable {
                 
         let lovelacesToReturn: UInt64
         if isSame {
-            lovelacesToReturn = UInt64(bitPattern:
-                txBody.outputs.reduce(0) {
+            lovelacesToReturn = UInt64(clamping:
+                txBody.outputs.reduce(BigInt(0)) {
                     if $1.address == feePaymentAddress.info.address! {
                         return $0 + $1.lovelace
                     } else {
@@ -1062,8 +1063,8 @@ extension TransactionSendable {
                 "\nLovelaces that will be returned to destination Address: \(.primary("\(lovelaceToAdaFormatString(lovelacesToReturn))")) / \(.primary("\(lovelacesToReturn)")) lovelaces "
             )
         } else {
-            lovelacesToReturn = UInt64(bitPattern:
-                txBody.outputs.reduce(0) {
+            lovelacesToReturn = UInt64(clamping:
+                txBody.outputs.reduce(BigInt(0)) {
                     if $1.address == feePaymentAddress.info.address! {
                         return $0 + $1.lovelace
                     } else {
@@ -1077,8 +1078,8 @@ extension TransactionSendable {
             )
             
             if let toAddress = toAddress {
-                let lovelacesToDestination = UInt64(bitPattern:
-                    txBody.outputs.reduce(0) {
+                let lovelacesToDestination = UInt64(clamping:
+                    txBody.outputs.reduce(BigInt(0)) {
                         if $1.address == toAddress.info.address! {
                             return $0 + $1.lovelace
                         } else {

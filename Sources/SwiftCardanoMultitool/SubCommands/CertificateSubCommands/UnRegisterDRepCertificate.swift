@@ -126,7 +126,7 @@ extension CertificateMainCommand {
                     _ = try await cli.governance.drepRetirement(arguments: arguments)
                     try await FileUtils.fileLock(outFile)
                 } else {
-                    let cert = SwiftCardanoCore.UnregisterDRep(
+                    let cert = try SwiftCardanoCore.UnregisterDRep(
                         drepCredential: drepCredential,
                         coin: Coin(drepDeposit)
                     )
