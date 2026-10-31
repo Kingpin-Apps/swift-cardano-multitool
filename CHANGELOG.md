@@ -1,3 +1,9 @@
+## 0.21.0 (2026-10-30)
+
+### Feat
+
+- build against swift-cardano-core 0.10 with exact pool, vote and KES arithmetic
+
 ## 0.20.1 (2026-10-19)
 
 ### Note
