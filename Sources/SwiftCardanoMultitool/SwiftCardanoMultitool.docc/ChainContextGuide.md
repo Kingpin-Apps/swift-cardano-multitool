@@ -37,7 +37,7 @@ import SwiftCardanoMultitool
 // Load config from the path in $CARDANO_MULTITOOL_CONFIG
 let config = try await MultitoolConfig.load()
 
-// Obtain a ChainContext (Blockfrost, Koios, Ogmios, Yaci DevKit, or local node socket)
+// Obtain a ChainContext (Blockfrost, Koios, Ogmios, Yaci DevKit, UTxO RPC, or local node socket)
 let context = try await getContext(config: config)
 
 // Query the current protocol parameters
@@ -56,6 +56,21 @@ The provider returned by ``getContext(config:)`` depends on your ``MultitoolConf
 | `lite` | Uses Blockfrost or Koios (no local node required) |
 | `devkit` | A local Yaci DevKit devnet, read through its Yaci Store and admin APIs |
 | `offline` | No network provider — for air-gapped use only |
+
+In `auto`, `online` and `lite` mode, a `[utxorpc]` block with a `url` puts that
+UTxO RPC server in front of the provider chosen above, as a `UTxORPCChainContext`
+wrapping it. The server answers UTxO lookups, protocol parameters, the tip,
+submission and evaluation; the wrapped provider answers the stake, pool and
+governance queries UTxO RPC lacks. The server is left out, with a warning, when it
+doesn't answer within 5 seconds or its tip trails the wrapped provider's by more than
+600 slots.
+
+```toml
+[utxorpc]
+url = "unix:///opt/cardano/mainnet/socket/rpc.sock"   # cardano-node 11.x, "EnableRpc": true
+# url = "https://cardano-mainnet.utxorpc-m1.demeter.run" with UTXORPC_API_KEY set
+# api_version = "v1alpha"                              # cardano-node-api
+```
 
 `devkit` is only ever reached by asking for it. `auto` never falls through to it,
 so a `[yaci]` block left over from a devnet session cannot silently redirect a
@@ -150,6 +165,7 @@ Environment variables override individual fields:
 | Variable | Overrides |
 |----------|-----------|
 | `BLOCKFROST_PROJECT_ID` | `config.blockfrostProjectId` |
+| `UTXORPC_API_KEY` | `config.utxorpc?.apiKey` |
 | `CARDANO_MULTITOOL_CONFIG` | Path used by `MultitoolConfig.load()` |
 
 ## Querying chain state

@@ -13,6 +13,7 @@ Set up your environment and configuration file for `scm`.
 | `CARDANO_MULTITOOL_CONFIG` | **Required for most commands.** Path to the main config file. |
 | `CARDANO_MULTITOOL_CONFIGS` | Path to a named-configs index file (for multi-environment setups). |
 | `BLOCKFROST_PROJECT_ID` | Blockfrost API project ID (overrides `blockfrost_project_id` in the file). |
+| `UTXORPC_API_KEY` | UTxO RPC API key (overrides `api_key` in the `utxorpc` section). |
 | `CARDANO_MULTITOOL_DECRYPT_PASSWORD` | Pre-supply a decryption password to skip the interactive prompt. |
 | `CARDANO_MULTITOOL_SKIP_PROMPT` | Set to `1` / `true` / `yes` to suppress interactive confirmations. |
 | `CARDANO_MULTITOOL_USE_CARDANO_CLI` | Set to `1` to force the `cardano-cli` execution backend. |
@@ -163,6 +164,36 @@ log_level = "info"
 |-------|---------|-------------|
 | `host` | `localhost` | Kupo host |
 | `port` | `1442` | Kupo port |
+
+### utxorpc section
+
+Optional. When it has a `url`, `scm` puts the [UTxO RPC](https://utxorpc.org) server
+in front of the context `mode` picks (`auto`, `online` and `lite`; never `devkit` or
+`offline`). The server then answers UTxO lookups, protocol parameters, the tip,
+submission and script evaluation, and the context behind it still answers stake, pool
+and governance queries, which UTxO RPC has no calls for.
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `url` | — | `unix:///path/to/rpc.sock`, `https://host[:port]` or `http://host[:port]` |
+| `api_key` | — | API key sent with every call. Better set as `UTXORPC_API_KEY` than written in the file |
+| `api_key_header` | `dmtr-api-key` | Header the key travels in (Demeter's by default) |
+| `api_version` | `v1beta` | `v1alpha` for cardano-node-api, which speaks only the older API |
+
+```toml
+# A local cardano-node 11.x with "EnableRpc": true
+[utxorpc]
+url = "unix:///opt/cardano/mainnet/socket/rpc.sock"
+
+# Demeter, with the key in UTXORPC_API_KEY
+[utxorpc]
+url = "https://cardano-mainnet.utxorpc-m1.demeter.run"
+```
+
+`scm config init` fills in a node's `rpc.sock` when it finds one next to the node
+socket. Each command checks the server first: if it doesn't answer `ReadTip` within
+5 seconds, or its tip is more than 600 slots behind the context behind it (a node
+that is still syncing, say), `scm` warns and carries on without it.
 
 ### yaci section
 

@@ -28,7 +28,7 @@ let package = Package(
         .package(url: "https://github.com/Kingpin-Apps/swift-cbor-codable.git", .upToNextMinor(from: "0.5.0")),
         .package(
             url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
-            from: "0.14.0",
+            from: "0.15.0",
             // cardano-cli & node-socket backends are trait-gated as of 0.7.0
             traits: [.defaults, "CLIBackends"]
         ),
@@ -41,6 +41,10 @@ let package = Package(
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-signer.git", from: "0.1.2"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.5.10"),
         .package(url: "https://github.com/Kingpin-Apps/swift-koios.git", from: "0.3.0"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-utxorpc.git", from: "0.1.0"),
+        // Test-only: a loopback gRPC server standing in for a UTxO RPC server.
+        .package(url: "https://github.com/grpc/grpc-swift-2.git", from: "2.4.4"),
+        .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", from: "2.12.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-wallet.git", from: "2.0.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.6"),
@@ -79,6 +83,7 @@ let package = Package(
                 .product(name: "SwiftCardanoTxValidator", package: "swift-cardano-txvalidator"),
                 .product(name: "SwiftCardanoWallet", package: "swift-cardano-wallet"),
                 .product(name: "SwiftKoios", package: "swift-koios"),
+                .product(name: "UTxORPCClient", package: "swift-utxorpc"),
                 .product(name: "SwiftHandlesAPI", package: "swift-handles-api"),
                 .product(name: "SwiftNaCl", package: "swift-nacl"),
                 .product(name: "Version", package: "version"),
@@ -94,7 +99,13 @@ let package = Package(
         ),
         .testTarget(
             name: "SwiftCardanoMultitoolTests",
-            dependencies: ["SwiftCardanoMultitool"],
+            dependencies: [
+                "SwiftCardanoMultitool",
+                .product(name: "UTxORPC", package: "swift-utxorpc"),
+                .product(name: "UTxORPCClient", package: "swift-utxorpc"),
+                .product(name: "GRPCCore", package: "grpc-swift-2"),
+                .product(name: "GRPCNIOTransportHTTP2", package: "grpc-swift-nio-transport"),
+            ],
             resources: [
                 .copy("Support/Fixtures"),
             ]

@@ -195,10 +195,12 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
         )
     }
     
+    let logger = getLogger(config: config)
+
     switch config.mode {
         case .auto:
             do {
-                return try await getOnlineContext(config: config)
+                return await withUTxORPC(try await getOnlineContext(config: config), config: config, logger: logger)
             }
             catch {
                 // Resolve the Lite-mode failure, attempting Lite mode only if
@@ -209,7 +211,7 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
                     liteError = alreadyTried.underlying
                 } else {
                     do {
-                        return try await getLiteContext(config: config)
+                        return await withUTxORPC(try await getLiteContext(config: config), config: config, logger: logger)
                     } catch {
                         liteError = error
                     }
@@ -228,13 +230,13 @@ public func getContext(config: MultitoolConfig) async throws -> any ChainContext
             }
         case .online:
             do {
-                return try await getOnlineContext(config: config)
+                return await withUTxORPC(try await getOnlineContext(config: config), config: config, logger: logger)
             } catch let error as LiteModeFallbackError {
                 // Surface the underlying Lite-mode error, not the internal wrapper.
                 throw error.underlying
             }
         case .lite:
-            return try await getLiteContext(config: config)
+            return await withUTxORPC(try await getLiteContext(config: config), config: config, logger: logger)
         case .devkit:
             return try getDevkitContext(config: config)
         case .offline:

@@ -60,6 +60,17 @@ extension ConfigMainCommand {
                 found.append("socket → \(socket.string)")
             }
 
+            // UTxO RPC — cardano-node 11.x started with "EnableRpc": true puts
+            // rpc.sock next to node.socket. Unlike the node socket, it must
+            // already exist: a node without RPC enabled never creates it.
+            if config.utxorpc == nil, let socket = config.cardano?.socket {
+                let rpcSocket = socket.removingLastComponent().appending("rpc.sock")
+                if FileManager.default.fileExists(atPath: rpcSocket.string) {
+                    config.utxorpc = UTxORPCConfig(url: "unix://\(rpcSocket.string)")
+                    found.append("UTxO RPC → \(rpcSocket.string)")
+                }
+            }
+
             // Config + topology — discover from the node (then cli) install's
             // share/<network>/ directory.
             if config.cardano?.config == nil || config.cardano?.topology == nil {

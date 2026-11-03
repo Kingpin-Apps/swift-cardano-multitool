@@ -154,6 +154,9 @@ public struct MultitoolConfig: Codable, Sendable {
     /// Yaci DevKit configuration (used when `mode` is `devkit`)
     public var yaci: YaciConfig?
     
+    /// UTxO RPC server put in front of the context `mode` picks
+    public var utxorpc: UTxORPCConfig?
+    
     /// Operation mode (Auto, Online, Offline, Lite, Devkit)
     public var mode: Mode
     
@@ -221,6 +224,7 @@ public struct MultitoolConfig: Codable, Sendable {
         case ogmios
         case kupo
         case yaci
+        case utxorpc
         case mode
         case offlineFile = "offline_file"
         case tokenMetaServer = "token_meta_server"
@@ -250,6 +254,7 @@ public struct MultitoolConfig: Codable, Sendable {
         self.ogmios = try container.decodeIfPresent(OgmiosConfig.self, forKey: .ogmios)
         self.kupo = try container.decodeIfPresent(KupoConfig.self, forKey: .kupo)
         self.yaci = try container.decodeIfPresent(YaciConfig.self, forKey: .yaci)
+        self.utxorpc = try container.decodeIfPresent(UTxORPCConfig.self, forKey: .utxorpc)
         self.mode = try container.decodeIfPresent(Mode.self, forKey: .mode) ?? .auto
         let offlineFileStr = try container.decodeIfPresent(String.self, forKey: .offlineFile)
         self.offlineFile = offlineFileStr.map { FilePath($0) }
@@ -275,6 +280,7 @@ public struct MultitoolConfig: Codable, Sendable {
         try container.encodeIfPresent(ogmios, forKey: .ogmios)
         try container.encodeIfPresent(kupo, forKey: .kupo)
         try container.encodeIfPresent(yaci, forKey: .yaci)
+        try container.encodeIfPresent(utxorpc, forKey: .utxorpc)
         try container.encode(mode, forKey: .mode)
         try container.encodeIfPresent(offlineFile?.string, forKey: .offlineFile)
         try container.encode(tokenMetaServer, forKey: .tokenMetaServer)
@@ -297,6 +303,7 @@ public struct MultitoolConfig: Codable, Sendable {
         ogmios: OgmiosConfig? = nil,
         kupo: KupoConfig? = nil,
         yaci: YaciConfig? = nil,
+        utxorpc: UTxORPCConfig? = nil,
         mode: Mode = .auto,
         offlineFile: FilePath? = nil,
         tokenMetaServer: TokenMetaServerURLs,
@@ -316,6 +323,7 @@ public struct MultitoolConfig: Codable, Sendable {
         self.ogmios = ogmios
         self.kupo = kupo
         self.yaci = yaci
+        self.utxorpc = utxorpc
         self.mode = mode
         self.offlineFile = offlineFile
         self.tokenMetaServer = tokenMetaServer
@@ -348,6 +356,7 @@ public struct MultitoolConfig: Codable, Sendable {
         self.ogmios = try? OgmiosConfig(config: config)
         self.kupo = try? KupoConfig(config: config)
         self.yaci = YaciConfig(config: config)
+        self.utxorpc = UTxORPCConfig(config: config)
         
         self.mode = config.string(
             forKey: CodingKeys.mode.configKey,
