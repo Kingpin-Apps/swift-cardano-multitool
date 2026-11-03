@@ -194,7 +194,7 @@ url = "https://cardano-mainnet.utxorpc-m1.demeter.run"
 socket. Each command checks the server first: if it doesn't answer `ReadTip` within
 5 seconds, or its tip is more than 600 slots behind the context behind it (a node
 that is still syncing, say), `scm` warns and carries on without it. The result of the check, pass or fail, is kept in `~/.scm/utxorpc-health.json`
-for 60 seconds, so commands run back to back check the server only once.
+for 20 seconds, so commands run back to back check the server only once.
 
 ### yaci section
 

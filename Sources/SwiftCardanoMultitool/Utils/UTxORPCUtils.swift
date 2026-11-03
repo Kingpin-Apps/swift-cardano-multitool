@@ -12,7 +12,7 @@ let utxorpcHealthTimeout: Duration = .seconds(5)
 let utxorpcMaxTipLag = 600
 
 /// How long a health check's result is reused before the server is checked again.
-let utxorpcHealthCacheTTL: TimeInterval = 60
+let utxorpcHealthCacheTTL: TimeInterval = 20
 
 /// Where health check results are kept between `scm` runs: each command is a
 /// new process, so an in-memory cache would never be hit.

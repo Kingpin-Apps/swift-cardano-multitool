@@ -64,7 +64,7 @@ submission and evaluation; the wrapped provider answers the stake, pool and
 governance queries UTxO RPC lacks. The server is left out, with a warning, when it
 doesn't answer within 5 seconds or its tip trails the wrapped provider's by more than
 600 slots. The result of the check, pass or fail, is kept in `~/.scm/utxorpc-health.json`
-for 60 seconds, so commands run back to back check the server only once.
+for 20 seconds, so commands run back to back check the server only once.
 
 ```toml
 [utxorpc]
