@@ -28,7 +28,7 @@ let package = Package(
         .package(url: "https://github.com/Kingpin-Apps/swift-cbor-codable.git", .upToNextMinor(from: "0.5.0")),
         .package(
             url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
-            from: "0.15.1",
+            from: "0.16.1",
             // cardano-cli & node-socket backends are trait-gated as of 0.7.0
             traits: [.defaults, "CLIBackends"]
         ),
