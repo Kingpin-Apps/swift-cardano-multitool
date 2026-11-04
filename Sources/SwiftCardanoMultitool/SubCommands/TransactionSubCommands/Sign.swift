@@ -142,7 +142,7 @@ extension TransactionMainCommand {
             }
             
             let config = try await MultitoolConfig.load()
-            let context = try await getContext(config: config)
+            let context = try await getSigningContext(config: config)
             let logger = getLogger(config: config)
             
             spacedPrint("\nSigning transaction...")
@@ -276,8 +276,6 @@ extension TransactionMainCommand {
                         ] + skeyArgs
                     )
                 } else {
-                    let txBuilder = TxBuilder(context: context, logger: logger)
-                    
                     let keys: [SigningKeyType] = try signingMethods.map { method in
                         switch method {
                             case .softwareKey(let skeyPath):
@@ -288,9 +286,9 @@ extension TransactionMainCommand {
                         }
                     }
                     
-                    let signedTx = try await txBuilder.transactions.sign(
-                        transaction: tx,
-                        keys: keys
+                    let signedTx = assembleTransaction(
+                        tx,
+                        vkeyWitnesses: try witnessTransaction(tx, keys: keys)
                     )
                     
                     try await FileUtils.dumpLockedFile(outFile, data: try signedTx.toTextEnvelope()!)
@@ -321,14 +319,7 @@ extension TransactionMainCommand {
                 )
             }
             
-            let protocolParameters = try await getProtocolParameters(
-                context: context
-            )
-            
-            try checkTransactionSize(
-                transaction: signedTx,
-                protocolParameters: protocolParameters
-            )
+            try await checkSignedTransactionSize(signedTx, context: context)
             
             if submit {
                 await TransactionMainCommand.Submit.main([

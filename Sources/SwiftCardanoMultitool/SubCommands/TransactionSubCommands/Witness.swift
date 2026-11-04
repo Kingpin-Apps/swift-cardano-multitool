@@ -189,7 +189,6 @@ extension TransactionMainCommand {
             }
             
             let config = try await MultitoolConfig.load()
-            let context = try await getContext(config: config)
             let logger = getLogger(config: config)
             
             spacedPrint("\nWitnessing transaction...")
@@ -327,8 +326,6 @@ extension TransactionMainCommand {
                     
                 }
                 else {
-                    let txBuilder = TxBuilder(context: context, logger: logger)
-                    
                     for (method, witnessFile) in zip(signingMethods, witnessFiles) {
                         let skeyType: SigningKeyType
                         
@@ -340,10 +337,7 @@ extension TransactionMainCommand {
                                 throw ExitCode.validationFailure
                         }
                         
-                        let witness = try txBuilder.transactions.witness(
-                            transaction: tx,
-                            keys: [skeyType]
-                        )
+                        let witness = try witnessTransaction(tx, keys: [skeyType])
                         
                         if writesWitnessFiles {
                             try await FileUtils.dumpLockedFile(

@@ -131,7 +131,7 @@ extension TransactionMainCommand {
             }
             
             let config = try await MultitoolConfig.load()
-            let context = try await getContext(config: config)
+            let context = try await getSigningContext(config: config)
             try await printContextInfo(config: config, context: context)
             let logger = getLogger(config: config)
             
@@ -187,17 +187,11 @@ extension TransactionMainCommand {
                     ] + witnessArgs
                 )
             } else {
-                let txBuilder = TxBuilder(context: context, logger: logger)
-                
-                let signedTx = try txBuilder.transactions.assemble(
-                    transaction: tx,
-                    vkeyWitnesses: .nonEmptyOrderedSet(
-                        NonEmptyOrderedSet(
-                            witnessFiles.map {
-                                try VerificationKeyWitness.load(from: $0.string)
-                            }
-                        )
-                    )
+                let signedTx = assembleTransaction(
+                    tx,
+                    vkeyWitnesses: try witnessFiles.map {
+                        try VerificationKeyWitness.load(from: $0.string)
+                    }
                 )
                 
                 guard let data = try signedTx.toTextEnvelope() else {
@@ -222,14 +216,7 @@ extension TransactionMainCommand {
                 )
             }
             
-            let protocolParameters = try await getProtocolParameters(
-                context: context
-            )
-            
-            try checkTransactionSize(
-                transaction: signedTx,
-                protocolParameters: protocolParameters
-            )
+            try await checkSignedTransactionSize(signedTx, context: context)
             
             if submit {
                 await TransactionMainCommand.Submit.main([

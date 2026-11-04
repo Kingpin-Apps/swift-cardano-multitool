@@ -948,6 +948,70 @@ public func checkTransactionSize(
     }
 }
 
+// MARK: - Signing Without Chain Data
+
+/// The chain context for commands that only sign, witness or assemble, or
+/// `nil` in offline mode. Those steps read no chain data, so offline they
+/// must not depend on the offline transfer file, which may be missing,
+/// stale or written by another scm version.
+public func getSigningContext(config: MultitoolConfig) async throws -> (any ChainContext)? {
+    if Contexts.override == nil, config.mode == .offline {
+        return nil
+    }
+    return try await getContext(config: config)
+}
+
+/// Checks the signed transaction's size when there is a chain context to
+/// read `maxTxSize` from; offline, the node checks it on submission.
+public func checkSignedTransactionSize(
+    _ transaction: Transaction,
+    context: (any ChainContext)?
+) async throws {
+    guard let context else {
+        noora.info("Offline mode: the transaction size is checked when it is submitted.")
+        return
+    }
+    try checkTransactionSize(
+        transaction: transaction,
+        protocolParameters: try await getProtocolParameters(context: context)
+    )
+}
+
+/// Witnesses `transaction` with each key, as `TxBuilder.transactions.witness`
+/// does, without the chain context a `TxBuilder` needs.
+public func witnessTransaction(
+    _ transaction: Transaction,
+    keys: [SigningKeyType]
+) throws -> [VerificationKeyWitness] {
+    let txBodyHash = try transaction.transactionBody.hash()
+    return try keys.map { key in
+        VerificationKeyWitness(
+            vkey: try key.toVerificationKeyType(),
+            signature: try key.sign(data: txBodyHash)
+        )
+    }
+}
+
+/// Adds `vkeyWitnesses` to the transaction's witness set, as
+/// `TxBuilder.transactions.assemble` does, without a chain context.
+public func assembleTransaction(
+    _ transaction: Transaction,
+    vkeyWitnesses: [VerificationKeyWitness]
+) -> Transaction {
+    var witnessSet = transaction.transactionWitnessSet
+    if let existing = witnessSet.vkeyWitnesses {
+        witnessSet.vkeyWitnesses = .list(existing.asList + vkeyWitnesses)
+    } else {
+        witnessSet.vkeyWitnesses = .nonEmptyOrderedSet(NonEmptyOrderedSet(vkeyWitnesses))
+    }
+    return Transaction(
+        transactionBody: transaction.transactionBody,
+        transactionWitnessSet: witnessSet,
+        valid: transaction.valid,
+        auxiliaryData: transaction.auxiliaryData
+    )
+}
+
 /// The URL of the Kupo server in `[kupo]`, if it answers its health check.
 ///
 /// Generated configs always carry a `[kupo]` block, so a configured host is no sign
