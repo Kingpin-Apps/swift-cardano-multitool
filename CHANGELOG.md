@@ -1,3 +1,13 @@
+## 0.22.1 (2026-11-03)
+
+### Note
+
+- With `[utxorpc]` in front of cardano-cli or a node socket, commands that need that backend now find it behind the UTxO RPC server. In 0.22.0, `scm query leadership-schedule` refused to run ("requires an online cardano-cli context"), `scm query tip` lost its full output, the details panel lost the cardano-cli and node versions, stake delegation skipped its check that the pool is registered, and DRep info lost the node-socket handling of delegated stake.
+
+### Fix
+
+- look past the UTxO RPC server for backend-specific commands
+
 ## 0.22.0 (2026-11-03)
 
 ### Note
