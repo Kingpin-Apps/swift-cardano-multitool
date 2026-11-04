@@ -1,3 +1,14 @@
+## 0.22.0 (2026-11-03)
+
+### Feat
+
+- put a UTxO RPC server in front of the chain context
+
+### Perf
+
+- reuse the UTxO RPC health check for 20 seconds
+- reuse the UTxO RPC health check for 60 seconds
+
 ## 0.21.0 (2026-10-30)
 
 ### Feat
@@ -6,27 +17,11 @@
 
 ## 0.20.1 (2026-10-19)
 
-### Note
-
-- `scm ping` times the TCP connect and the handshake separately: `connected: tcp 56 ms, handshake 4038 ms`. A busy relay can accept the connection at once and take many seconds to answer the handshake; before, that showed up as "No answer … within 10s".
-- New `--handshake-timeout` (default 30 s) bounds the handshake on its own. `--timeout` (10 s) still bounds the connect and each answer after it.
-- Errors now name the step that failed: the connection was refused, the host never answered, it closed the connection during the handshake, or the handshake took too long (with a suggested `--handshake-timeout`).
-- Picks up swift-cardano-network 1.3.0.
-
 ### Fix
 
 - **ping**: time TCP connect and handshake apart, with a 30 s handshake timeout and clear errors
 
 ## 0.20.0 (2026-10-19)
-
-### Note
-
-- New `scm ping`, modelled on `cardano-cli ping`, with three modes:
-  - `ping` (default) connects once, shows the handshake time, then times `--count` keep-alive round trips.
-  - `--mode tip` reads a node's chain tip.
-  - `--mode query` lists every protocol version the node supports, with diffusion mode, peer sharing and Peras flags.
-- `scm ping` reaches relays as `host:port`, and a local node over its socket when given a path. It needs no API key and no config (it uses mainnet unless `--network-magic` or your config says otherwise). `--json` is supported, and a node that never answers makes it exit 1, so it works as a health check.
-- Picks up swift-cardano-network 1.2.2: NtN v15, the handshake version query, one-shot keep-alive, and library logs on stderr.
 
 ### Feat
 
@@ -45,14 +40,6 @@
 
 ## 0.19.0 (2026-10-07)
 
-### Note
-
-- Every build wizard asks for the transaction TTL, with `--ttl-extra`, `--ttl-override` and `--no-ttl`.
-- `scm transaction validate` checks the fee as the node will charge it once the transaction is signed. An unsigned transaction whose fee covers its unsigned bytes, but not the signatures still to be added, now fails with **Fee Too Small** (the node's `FeeTooSmallUTxO`) before anyone signs.
-- `scm transaction validate` now exits 1 when the transaction is invalid, as text or `--json`, so scripts can stop on it.
-- Fees are the node's minimum exactly: the transaction is sized without its one-byte validity flag, as the ledger sizes it, 44 lovelace less than before. Certificates are written as a tagged set, like the inputs.
-- Picks up swift-cardano-txbuilder 1.2.0, txvalidator 0.5.0, swift-cardano-cips 0.4.0 and swift-cose 1.3.3.
-
 ### Feat
 
 - ask for the transaction TTL in every build wizard, with --ttl-extra, --ttl-override and --no-ttl
@@ -63,14 +50,6 @@
 - **deps**: exact fees and hardware wallet builds from swift-cardano-txbuilder 1.2.0, and the signed-size fee check from swift-cardano-txvalidator 0.5.0
 
 ## 0.18.0 (2026-10-06)
-
-### Note
-
-- Every command that builds a transaction now asks **Sign the transaction?** before **Submit?**, and only asks to submit when you sign. `--no-sign` builds without reading any signing key, so keys can stay offline; the unsigned transaction is kept for `scm transaction sign`. Pool registration and retirement, votes and mint/burn no longer need the cold, owner, voter or policy signing keys unless you sign.
-- Unsigned transactions are saved as `<name>.unwitnessed.tx`; `sign` and `assemble` name their output `<name>.signed.tx`.
-- `transaction witness` saves each witness where you choose (`--out-file`, one per signing key, or the wizard), defaulting to `<transaction-name>.<key-role>.witness`, e.g. `qwe1.node.witness`. It no longer crashes with `--use-cardano-cli`, and `--submit` now submits.
-- New `scm generate pool-id` writes `<name>.pool.id` and `<name>.pool.id-bech` from a pool ID, cold key or pool file.
-- Picks up swift-cardano-core 0.8.5, swift-cardano-chain 0.12.0, txvalidator 0.4.3, txbuilder 1.1.2 and swift-cardano-explorers 0.1.2.
 
 ### Feat
 
@@ -83,24 +62,11 @@
 
 ## 0.17.0 (2026-09-29)
 
-### Note
-
-- Explorer links now come from [swift-cardano-explorers](https://github.com/Kingpin-Apps/swift-cardano-explorers). `blockchain_explorer` also takes `dreptalk` and `poolpm`.
-- Links were checked against the live sites and several were corrected: Cardanoscan blocks use `/block/`, Cexplorer governance actions use `txhash#index` and committee members `/gov/cc/`, and DReps are written as CIP-129 ids everywhere.
-- Where the chosen explorer has no page for something, or no site on the network, the link is left out.
-
 ### Feat
 
 - explorer links from swift-cardano-explorers, adding DRepTalk and Pool PM
 
 ## 0.16.0 (2026-09-27)
-
-### Note
-
-- Tab completion for zsh, bash and fish: Homebrew and the `.deb` install it; for other installs run `scm install completions`.
-- With an `[ogmios]` backend, `scm` now reads addresses and outputs from Kupo when the `[kupo]` server answers its health check, and uses Ogmios alone otherwise.
-- `--tool` now lists `swift-cardano` and `cardano-cli` in help; the old spellings still work.
-- Picks up the stack fixes from swift-cardano-core 0.8, txvalidator 0.4 and txbuilder 1.1: transaction IDs and re-encoding keep the original CBOR bytes, and fees are sized as the ledger does.
 
 ### Feat
 
@@ -117,10 +83,6 @@
 - parse install --method and cip129 --prefix as enums
 
 ## 0.15.2 (2026-09-24)
-
-### Note
-
-- An absolute `--name` (e.g. `/keys/k`) is now used as given; previously it was created inside the current directory.
 
 ### Fix
 
