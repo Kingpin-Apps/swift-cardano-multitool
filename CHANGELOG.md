@@ -1,3 +1,10 @@
+## 0.22.2 (2026-11-04)
+
+### Fix
+
+- sign, witness and assemble offline without the offline transfer file
+- assemble witness files in the older cardano-cli `[0, witness]` form (swift-cardano-core 0.10.1)
+
 ## 0.22.1 (2026-11-03)
 
 ### Note
