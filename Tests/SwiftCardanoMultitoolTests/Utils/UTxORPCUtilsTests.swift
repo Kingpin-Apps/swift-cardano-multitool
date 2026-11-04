@@ -99,6 +99,16 @@ struct UTxORPCUtilsTests {
         }
     }
 
+    @Test("backend checks see the context behind the UTxO RPC server")
+    func behindUTxORPCUnwraps() async throws {
+        try await withServer(slot: 1_000) { url in
+            let context = await withUTxORPC(base(slot: 1_000), config: config(UTxORPCConfig(url: url)), logger: logger, cacheFile: nil)
+            #expect(context.name == "UTxO RPC + Base")
+            #expect(context.behindUTxORPC is MockChainContext)
+        }
+        #expect(base(slot: nil).behindUTxORPC is MockChainContext)
+    }
+
     @Test("an unreachable server is left out")
     func unreachableSkipped() async {
         let missing = UTxORPCConfig(url: "unix:///tmp/scm-tests-no-such-rpc.sock")

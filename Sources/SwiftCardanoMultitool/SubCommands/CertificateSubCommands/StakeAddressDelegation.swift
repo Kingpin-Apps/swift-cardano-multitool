@@ -311,7 +311,7 @@ extension CertificateMainCommand {
                     poolInfo = nil
                 }
                 
-                if let context = context as? CardanoCliChainContext {
+                if let context = context.behindUTxORPC as? CardanoCliChainContext {
                     
                     do {
                         let stakePools = try await context.stakePools()

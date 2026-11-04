@@ -151,7 +151,7 @@ extension QueryMainCommand {
             try await printContextInfo(config: config, context: context)
             
             // Ensure we have a CardanoCliChainContext
-            guard let cliContext = context as? CardanoCliChainContext else {
+            guard let cliContext = context.behindUTxORPC as? CardanoCliChainContext else {
                 noora.error(.alert(
                     "Leadership schedule query requires an online cardano-cli context.",
                     takeaways: [

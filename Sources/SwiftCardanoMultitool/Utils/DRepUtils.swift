@@ -91,6 +91,8 @@ public func drepInfoSummary(
     }
     spacedPrint("Current Epoch:  \(.primary("\(currentEpoch)"))")
 
+    // DRep queries go past a UTxO RPC server to the context behind it.
+    let context = context.behindUTxORPC
     if context is NodeSocketChainContext {
         spacedPrint("Delegated Stake: \(.muted("N/A"))")
     } else {

@@ -24,7 +24,7 @@ extension QueryMainCommand {
             let context = try await getContext(config: config)
             try await printContextInfo(config: config, context: context)
             
-            if let context = context as? CardanoCliChainContext {
+            if context.behindUTxORPC is CardanoCliChainContext || context is UTxORPCChainContext {
                 let chainTip = try await noora.progressStep(
                     message: "Querying blockchain tip...",
                     successMessage: "Successfully retrieved the blockchain tip.",

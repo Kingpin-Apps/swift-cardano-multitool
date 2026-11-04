@@ -45,6 +45,15 @@ func writeUTxORPCHealth(_ health: UTxORPCHealth, url: String, to file: URL) {
     try? JSONEncoder().encode(entries).write(to: file, options: .atomic)
 }
 
+extension ChainContext {
+    /// The context a `[utxorpc]` server sits in front of, or this context
+    /// when there is none: what code that needs a particular backend (the
+    /// cardano-cli context for a leadership schedule, say) should check.
+    var behindUTxORPC: any ChainContext {
+        (self as? UTxORPCChainContext)?.wrapped ?? self
+    }
+}
+
 /// Why the `[utxorpc]` server was left out.
 enum UTxORPCSkipReason: Error, Equatable {
     case timedOut

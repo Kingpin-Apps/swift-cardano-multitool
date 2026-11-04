@@ -799,7 +799,7 @@ public func printContextInfo(
         infoString
     ]
     
-    if let _ = context as? CardanoCliChainContext {
+    if context?.behindUTxORPC is CardanoCliChainContext {
         
         let cli = try await CardanoCLI(
             configuration: config.toSwiftCardanoUtilsConfig()
