@@ -1,3 +1,9 @@
+## 0.22.4 (2026-11-06)
+
+### Fix
+
+- sort UTxOs by lovelace for the UTxO limit
+
 ## 0.22.3 (2026-11-06)
 
 ## 0.22.2 (2026-11-04)
