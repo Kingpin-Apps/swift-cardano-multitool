@@ -582,9 +582,9 @@ extension TransactionSendable {
         
         // Filter 4: UTXO limit
         if let limit = transactionOptions.utxoLimit, filteredUtxos.count > limit {
-            // Sort by value (descending) and take top N
+            // Sort by lovelace (descending) and take top N
             filteredUtxos = Array(filteredUtxos.sorted(by: { (lhs: UTxO, rhs: UTxO) in
-                lhs.output.amount > rhs.output.amount
+                lhs.output.amount.coin > rhs.output.amount.coin
             }).prefix(limit))
             print(noora.format("After limit filter: \(.primary("\(filteredUtxos.count)")) UTXOs"))
         }
