@@ -24,7 +24,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-crypto.git", "4.5.2"..<"6.0.0"),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.8.1"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "6.2.2"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.10.2"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.10.3"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cbor-codable.git", .upToNextMinor(from: "0.5.0")),
         .package(
             url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git",

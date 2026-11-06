@@ -1,5 +1,5 @@
 {
-  "originHash" : "c8162c4c6d576dfb407c4fa4a7eee32a60aa30f26d9b58a6a9acb3c9cd803d55",
+  "originHash" : "8c5424a2bc63f4e792839a819ae7af684ca51147224780eafbe49ba9b9d6dcd6",
   "pins" : [
     {
       "identity" : "base32",
@@ -222,8 +222,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "1ad20e350f83f3bc6bb7c4e90e1966e554a433c3",
-        "version" : "0.10.2"
+        "revision" : "8b54019579a46880e11ac9e4c469667f2649194f",
+        "version" : "0.10.3"
       }
     },
     {
@@ -303,8 +303,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-wallet.git",
       "state" : {
-        "revision" : "e50c688af213fae58e32a6a46d1585c31aa4c76f",
-        "version" : "2.0.1"
+        "revision" : "4d2cbe997631adeddfb3bb6d4c2860299798d912",
+        "version" : "2.0.2"
       }
     },
     {
@@ -429,8 +429,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-handles-api.git",
       "state" : {
-        "revision" : "ea0490530943fd579f76b145ee8d3c7c65fecb0d",
-        "version" : "0.1.1"
+        "revision" : "6788da90cc13f44af5682b704885abec498b7dde",
+        "version" : "0.1.2"
       }
     },
     {
@@ -681,8 +681,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-utxorpc.git",
       "state" : {
-        "revision" : "7e6bdb7c1d28371ef9393d277371dddc2dee006b",
-        "version" : "0.1.0"
+        "revision" : "6b71fbe932ef36a9c29592e611928b8110028e13",
+        "version" : "0.1.1"
       }
     },
     {
