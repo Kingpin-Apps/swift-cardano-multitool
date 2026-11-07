@@ -1,5 +1,5 @@
 {
-  "originHash" : "d63acc206aad34534e4141c3ae31b6cd649c30af2004478516982b08cbbb9b77",
+  "originHash" : "fc8911318c183c87ee53f862ff8c5c8561de0f3e8b3eab8f86ac0b6387bdfbf2",
   "pins" : [
     {
       "identity" : "base32",
@@ -267,8 +267,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git",
       "state" : {
-        "revision" : "626ae3f27738ecc801e1c5687f1b856d38a5be9d",
-        "version" : "2.0.3"
+        "revision" : "f03e6a42916475539887da827b4d6d1bea233bd0",
+        "version" : "2.0.4"
       }
     },
     {
@@ -303,8 +303,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-wallet.git",
       "state" : {
-        "revision" : "d02ff3198085563276eb9221be90c78d3b3cfb3c",
-        "version" : "2.0.4"
+        "revision" : "2fb18014d7e118b118e06b6a5399f9d2b39f01a4",
+        "version" : "2.0.5"
       }
     },
     {
