@@ -1,3 +1,9 @@
+## 0.22.5 (2026-11-07)
+
+### Fix
+
+- adapt KES period and raw extended keys to swift-cardano-core 0.11
+
 ## 0.22.4 (2026-11-06)
 
 ### Fix
