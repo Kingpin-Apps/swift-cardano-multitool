@@ -1,4 +1,5 @@
 import Foundation
+import ArgumentParser
 import SystemPackage
 import SwiftCardanoCore
 
@@ -188,7 +189,9 @@ public struct KESUtils {
         // knows the chain's exact timeline (the public networks, or any chain that has
         // always used one slot length), the slot comes from it.
         if let timeline = SlotTimeline.forChain(genesis: genesisParameters) {
-            let slot = timeline.slot(atMilliseconds: currentMilliseconds)
+            guard let slot = timeline.slot(atMilliseconds: currentMilliseconds) else {
+                throw ValidationError("The current time is outside this chain's slot range.")
+            }
             return Int(slot / slotsPerKesPeriod)
         }
 

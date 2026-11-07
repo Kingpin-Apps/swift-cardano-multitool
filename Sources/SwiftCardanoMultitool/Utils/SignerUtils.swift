@@ -83,7 +83,11 @@ public enum SignerUtils {
             if data.count == 32 {
                 return .signingKey(try SigningKey(payload: data))
             }
-            // 64-byte extended (xprv), 96-byte (xprv + chain), 128-byte (xprv + pub + chain)
+            // Extended keys must be the full 128 bytes (xprv + public key + chain code).
+            guard data.count == 128 else {
+                throw ValidationError(
+                    "--secret-key hex must be a 32-byte key or a 128-byte extended key, got \(data.count) bytes.")
+            }
             return .extendedSigningKey(try ExtendedSigningKey(payload: data))
         }
         throw ValidationError("--secret-key must be a file path or raw hex.")

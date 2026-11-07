@@ -201,13 +201,20 @@ struct SignerUtilsResolveSecretKeyTests {
         }
     }
 
-    @Test("64-byte hex yields an extended signing key")
+    @Test("128-byte hex yields an extended signing key")
     func resolveExtendedKey() throws {
-        let hex = Data(repeating: 0xab, count: 64).toHex
+        let hex = Data(repeating: 0xab, count: 128).toHex
         let result = try SignerUtils.resolveSecretKey(hex)
         guard case .extendedSigningKey = result else {
             Issue.record("expected .extendedSigningKey, got \(result)")
             return
+        }
+    }
+
+    @Test("64- and 96-byte extended hex is rejected", arguments: [64, 96])
+    func resolveShortExtendedKey(count: Int) {
+        #expect(throws: (any Error).self) {
+            _ = try SignerUtils.resolveSecretKey(Data(repeating: 0xab, count: count).toHex)
         }
     }
 
