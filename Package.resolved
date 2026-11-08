@@ -213,8 +213,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-cips.git",
       "state" : {
-        "revision" : "564fde876b758fc0caff46201db175a2796c6ce7",
-        "version" : "0.5.1"
+        "revision" : "49cddb0f9829eae3c831e93ab6e72c6753eb3e52",
+        "version" : "0.5.2"
       }
     },
     {
@@ -357,8 +357,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cose.git",
       "state" : {
-        "revision" : "0d0d9df0969c8681565d9a21336c14a166d101c0",
-        "version" : "2.0.1"
+        "revision" : "a1b4f0111df280fe09fa016c5fc0ae07ebb4752b",
+        "version" : "3.0.0"
       }
     },
     {
