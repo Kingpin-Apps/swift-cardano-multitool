@@ -24,7 +24,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-crypto.git", "4.5.2"..<"6.0.0"),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.8.1"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "6.2.2"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.11.1"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-core.git", from: "0.11.2"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cbor-codable.git", .upToNextMinor(from: "0.6.0")),
         .package(
             url: "https://github.com/Kingpin-Apps/swift-cardano-chain.git",
@@ -32,20 +32,20 @@ let package = Package(
             // cardano-cli & node-socket backends are trait-gated as of 0.7.0
             traits: [.defaults, "CLIBackends"]
         ),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-cips.git", from: "0.5.0"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-cips.git", from: "0.5.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-explorers.git", from: "0.1.5"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-network.git", from: "1.3.2"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-token-registry.git", from: "0.2.4"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "2.0.6"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.6.4"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-signer.git", from: "0.2.2"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-signer.git", from: "0.2.3"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.5.12"),
         .package(url: "https://github.com/Kingpin-Apps/swift-koios.git", from: "0.3.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-utxorpc.git", from: "0.1.0"),
         // Test-only: a loopback gRPC server standing in for a UTxO RPC server.
         .package(url: "https://github.com/grpc/grpc-swift-2.git", from: "2.4.4"),
         .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", from: "2.12.0"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-wallet.git", from: "2.0.9"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-wallet.git", from: "2.0.10"),
         .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.6"),
         .package(url: "https://github.com/Kingpin-Apps/swift-nacl.git", .upToNextMinor(from: "2.0.0")),
