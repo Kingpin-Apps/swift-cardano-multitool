@@ -32,20 +32,20 @@ let package = Package(
             // cardano-cli & node-socket backends are trait-gated as of 0.7.0
             traits: [.defaults, "CLIBackends"]
         ),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-cips.git", from: "0.4.3"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-cips.git", from: "0.4.4"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-explorers.git", from: "0.1.5"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-network.git", from: "1.3.2"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-token-registry.git", from: "0.2.4"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "2.0.5"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.6.4"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-signer.git", from: "0.1.5"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-signer.git", from: "0.2.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.5.12"),
         .package(url: "https://github.com/Kingpin-Apps/swift-koios.git", from: "0.3.0"),
         .package(url: "https://github.com/Kingpin-Apps/swift-utxorpc.git", from: "0.1.0"),
         // Test-only: a loopback gRPC server standing in for a UTxO RPC server.
         .package(url: "https://github.com/grpc/grpc-swift-2.git", from: "2.4.4"),
         .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", from: "2.12.0"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-wallet.git", from: "2.0.6"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-wallet.git", from: "2.0.7"),
         .package(url: "https://github.com/Kingpin-Apps/swift-handles-api.git", from: "0.1.1"),
         .package(url: "https://github.com/Kingpin-Apps/swift-gnupg.git", from: "0.1.6"),
         .package(url: "https://github.com/Kingpin-Apps/swift-nacl.git", .upToNextMinor(from: "2.0.0")),

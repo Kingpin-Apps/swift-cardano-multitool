@@ -1,5 +1,5 @@
 {
-  "originHash" : "41fe37b75dc580db1038098ca3c45c90b5f9991ad6385610e5620d00055ebe80",
+  "originHash" : "f3cf17617c9ae7c8e3a29f5254c7e6dd2ab41de6b27a49fc9fb53709c8ee6ef2",
   "pins" : [
     {
       "identity" : "base32",
@@ -213,8 +213,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-cips.git",
       "state" : {
-        "revision" : "884b032f15de3198871d9bc55e83b0713497f0a2",
-        "version" : "0.4.3"
+        "revision" : "b979f52208bfe45f31f2f50674daac893b545fdf",
+        "version" : "0.4.4"
       }
     },
     {
@@ -249,8 +249,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-signer.git",
       "state" : {
-        "revision" : "bf79493a374944dbd5ace684592d065e1c4179b4",
-        "version" : "0.1.5"
+        "revision" : "dd6f2cc0fcb88e7fafaa6f9485781dac54a6fe89",
+        "version" : "0.2.0"
       }
     },
     {
@@ -303,8 +303,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-wallet.git",
       "state" : {
-        "revision" : "c66e811359c3c1895b3c9fed621a63dcba558127",
-        "version" : "2.0.6"
+        "revision" : "dc49b75690d99b3bba516f0d94a101d1d694bd80",
+        "version" : "2.0.7"
       }
     },
     {
@@ -456,8 +456,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-jsonld.git",
       "state" : {
-        "revision" : "035741f377f59448de1480751ad59682ae9061cb",
-        "version" : "0.1.3"
+        "revision" : "80e56c1dcd856c62d23e816e0ae5fae116d555b2",
+        "version" : "0.1.4"
       }
     },
     {
@@ -627,8 +627,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-rdf-canonize.git",
       "state" : {
-        "revision" : "8c0c4cca908e323f88a2b91bcd985144101c6a80",
-        "version" : "0.2.2"
+        "revision" : "9b25ad1a2449b9df243cff8908d164aa5f07a867",
+        "version" : "0.2.3"
       }
     },
     {
