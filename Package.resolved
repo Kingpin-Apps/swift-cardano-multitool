@@ -1,5 +1,5 @@
 {
-  "originHash" : "f3cf17617c9ae7c8e3a29f5254c7e6dd2ab41de6b27a49fc9fb53709c8ee6ef2",
+  "originHash" : "07e8ba89934bb140c4c91038a006976db859fab127385133a9c854efb04804e9",
   "pins" : [
     {
       "identity" : "base32",
@@ -213,8 +213,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-cips.git",
       "state" : {
-        "revision" : "b979f52208bfe45f31f2f50674daac893b545fdf",
-        "version" : "0.4.4"
+        "revision" : "e795cd0897547cfb1646ddbd86f5018398c06793",
+        "version" : "0.4.5"
       }
     },
     {
@@ -222,8 +222,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-core.git",
       "state" : {
-        "revision" : "62d8ce2f790b509c04f71cc9119703b1408bf7e1",
-        "version" : "0.11.0"
+        "revision" : "4c0b51c1651c83897cd6118c21c6726f84cc4688",
+        "version" : "0.11.1"
       }
     },
     {
@@ -249,8 +249,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-signer.git",
       "state" : {
-        "revision" : "dd6f2cc0fcb88e7fafaa6f9485781dac54a6fe89",
-        "version" : "0.2.0"
+        "revision" : "8aa99373f3b0fb91b39a34c9d9de205dbc0c118d",
+        "version" : "0.2.1"
       }
     },
     {
@@ -303,8 +303,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kingpin-Apps/swift-cardano-wallet.git",
       "state" : {
-        "revision" : "dc49b75690d99b3bba516f0d94a101d1d694bd80",
-        "version" : "2.0.7"
+        "revision" : "fef6de7733a90e08a307ac8449f142dbfb1d73a5",
+        "version" : "2.0.8"
       }
     },
     {
