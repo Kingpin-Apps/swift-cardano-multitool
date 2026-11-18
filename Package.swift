@@ -37,7 +37,7 @@ let package = Package(
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-network.git", from: "1.3.2"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-token-registry.git", from: "0.2.4"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txbuilder.git", from: "2.0.6"),
-        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.6.4"),
+        .package(url: "https://github.com/Kingpin-Apps/swift-cardano-txvalidator.git", from: "0.6.5"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-signer.git", from: "0.2.3"),
         .package(url: "https://github.com/Kingpin-Apps/swift-cardano-utils.git", from: "0.5.12"),
         .package(url: "https://github.com/Kingpin-Apps/swift-koios.git", from: "0.3.0"),
